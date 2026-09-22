@@ -18,6 +18,10 @@ dependencies {
     // Gradle-DSL types — so it must be on the runtime classpath, not merely compileOnly.
     implementation(libs.compose.compiler.gradle.plugin)
 
+    // Reads kotlin.Metadata to recover real Kotlin visibility for the ABI dump (sdkbase.abi's
+    // KotlinVisibility.kt). Used at task execution time, so `implementation`, not `compileOnly`.
+    implementation(libs.kotlin.metadata.jvm)
+
     // Gradle generates `LibrariesForLibs` for this project's own build script use of `libs.*`,
     // but does not put that generated jar on the classpath used to compile the precompiled
     // script plugins under src/main/kotlin. Without this, `the<LibrariesForLibs>()` in those

@@ -77,14 +77,24 @@ diff of compiler output taken before packaging.
 
 ## Two caveats found in a real baseline
 
-**`internal` does not keep a top-level `const val` out of the ABI.** Kotlin's `internal` visibility
-is a Kotlin-compiler concept, not a JVM one — the JVM has no matching access modifier, so a
-top-level `internal const val` is compiled to a plain `public static final` field and appears in the
-dump exactly as if it had been declared `public`. `isPublicApiClass()` (`AbiTasks.kt`) only excludes
-classes by the `/internal/` **package** convention, not by the Kotlin `internal` keyword. If a
-top-level declaration must genuinely stay out of the published contract, put it in an `internal`
-*package* (a directory literally named `internal`, matching what the rest of this codebase already
-does under `.../otp/internal/`) — marking the declaration itself `internal` is not sufficient.
+**Kotlin `internal`/`private` is not a JVM concept, and the dump now reads the real Kotlin
+visibility instead of guessing from it.** The JVM has no access modifier matching Kotlin's
+`internal`, and `private` on a companion-object member does not make the JVM field private either
+— a top-level `internal const val`, a top-level `internal val`, and a `const val` inside a `private
+companion object` (even one physically emitted onto the *outer* class, as `TAG`-style companion
+constants are) all used to compile to a plain JVM-`public` member and appear in the dump exactly as
+if they had been declared `public`. This bit three separate baselines before it was fixed (Tasks 3,
+7 and 8), each time silently adding a declaration that was never really public API.
+
+The fix is `kotlinPublicApiFilter()` (`build-logic/src/main/kotlin/sdkbase/abi/KotlinVisibility.kt`):
+both dump tasks read each class's own `kotlin.Metadata` annotation (via `kotlin-metadata-jvm`) and
+drop a member whose *real* Kotlin declaration was `internal`/`private`, in addition to the existing
+`/internal/`-package and synthetic-member filters. This means the package convention below is no
+longer load-bearing for correctness — Kotlin `internal`/`private` alone is now enough to keep a
+declaration out of the dump, at any nesting level. Putting a declaration in an `internal` *package*
+(a directory literally named `internal`, matching `.../otp/internal/`) is still good practice for a
+human skimming the module's structure, and still keeps the whole class out of Dokka's rendered docs,
+but it is no longer the only thing standing between a leak and the published contract.
 
 **A default argument emits a synthetic overload, and it is recorded on purpose.** A Kotlin function
 or constructor with a default argument compiles to two JVM members: the one you wrote, and a
@@ -97,6 +107,16 @@ This is correct, not an oversight: a Java caller links against that overload dir
 the Kotlin function's default argument later would remove that overload too — recording it means
 `apiCheck` catches that as the breaking change it actually is for Java callers. Do not "clean up"
 the baseline by hand-deleting these lines.
+
+One place this overload is *not* kept: a companion or nested object's own constructor. Kotlin gives
+every companion/`object` a JVM-`public` `(..., DefaultConstructorMarker)` constructor bridge
+regardless of the real constructor's declared visibility — even a zero-argument `private companion
+object` gets one. `kotlinPublicApiFilter()` reads the real declared constructor's Kotlin visibility
+(always `private` for a companion/object — you cannot `new` one from Kotlin or Java) and drops the
+bridge along with it. This is different from the `AndroidSdkLogger` case above only in *why* the
+bridge exists: there, it dispatches a genuinely public constructor's default argument, and a real
+caller depends on it; for a companion/object, nothing can ever call it (no caller can construct a
+`DefaultConstructorMarker` to pass), so keeping it in the contract would protect nothing.
 
 ## A third caveat: Compose modules record compiler-generated lambda singletons
 

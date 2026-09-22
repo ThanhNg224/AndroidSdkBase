@@ -32,7 +32,6 @@ public final class io.github.thanhng224.sdkbase.otp.ui.OtpColors {
 
 public final class io.github.thanhng224.sdkbase.otp.ui.OtpColors$Companion {
     public final io.github.thanhng224.sdkbase.otp.ui.OtpColors fromMaterialTheme(androidx.compose.runtime.Composer, int);
-    public io.github.thanhng224.sdkbase.otp.ui.OtpColors$Companion(kotlin.jvm.internal.DefaultConstructorMarker);
 }
 
 public final class io.github.thanhng224.sdkbase.otp.ui.OtpScreenKt {

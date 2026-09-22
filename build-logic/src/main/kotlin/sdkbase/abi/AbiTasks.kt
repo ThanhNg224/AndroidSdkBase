@@ -29,6 +29,10 @@ private fun isPublicApiClass(binaryName: String): Boolean {
     }
 }
 
+// The fully-qualified class name a javap header line declares, e.g. "io.foo.Bar$Companion" out of
+// "public final class io.foo.Bar$Companion {" — used to key kotlinPublicApiFilter's per-line check.
+private val CLASS_NAME_IN_HEADER = Regex("""(?:class|interface)\s+([\w$.]+)""")
+
 private fun isMangledMember(line: String): Boolean =
     line.contains(Regex("\\baccess\\$[A-Za-z0-9_$]*\\(")) ||
         line.contains("\$default(") ||
@@ -124,9 +128,14 @@ public abstract class GenerateApiDumpTask : DefaultTask() {
         }
 
         // javap emits a flat block per class: a header line ending in `{`, indented members, `}`.
-        // Members are sorted so a compiler reordering never reads as an API change.
+        // Members are sorted so a compiler reordering never reads as an API change. In addition to
+        // the package-convention/synthetic-name filters above, kotlinPublicApiFilter reads each
+        // class's own kotlin.Metadata to drop a member javap reports as JVM-public but Kotlin
+        // recorded as internal/private — see KotlinVisibility.kt.
+        val isKotlinPublic = kotlinPublicApiFilter(root)
         val blocks = linkedMapOf<String, List<String>>()
         var header: String? = null
+        var currentClassName: String? = null
         var members = mutableListOf<String>()
         javapOutput.lineSequence().forEach { raw ->
             val line = raw.trim()
@@ -134,13 +143,16 @@ public abstract class GenerateApiDumpTask : DefaultTask() {
                 line.isEmpty() || line.startsWith("Compiled from") -> Unit
                 line.endsWith("{") -> {
                     header = line
+                    currentClassName = CLASS_NAME_IN_HEADER.find(line)?.groupValues?.get(1)
                     members = mutableListOf()
                 }
                 line == "}" -> {
                     header?.let { blocks[it] = members.sorted() }
                     header = null
+                    currentClassName = null
                 }
-                header != null && !isMangledMember(line) -> members += line
+                header != null && !isMangledMember(line) &&
+                    (currentClassName == null || isKotlinPublic(currentClassName!!, line)) -> members += line
             }
         }
 
@@ -230,9 +242,14 @@ public abstract class GenerateJvmApiDumpTask : DefaultTask() {
         }
 
         // javap emits a flat block per class: a header line ending in `{`, indented members, `}`.
-        // Members are sorted so a compiler reordering never reads as an API change.
+        // Members are sorted so a compiler reordering never reads as an API change. In addition to
+        // the package-convention/synthetic-name filters above, kotlinPublicApiFilter reads each
+        // class's own kotlin.Metadata to drop a member javap reports as JVM-public but Kotlin
+        // recorded as internal/private — see KotlinVisibility.kt.
+        val isKotlinPublic = kotlinPublicApiFilter(root)
         val blocks = linkedMapOf<String, List<String>>()
         var header: String? = null
+        var currentClassName: String? = null
         var members = mutableListOf<String>()
         javapOutput.lineSequence().forEach { raw ->
             val line = raw.trim()
@@ -240,13 +257,16 @@ public abstract class GenerateJvmApiDumpTask : DefaultTask() {
                 line.isEmpty() || line.startsWith("Compiled from") -> Unit
                 line.endsWith("{") -> {
                     header = line
+                    currentClassName = CLASS_NAME_IN_HEADER.find(line)?.groupValues?.get(1)
                     members = mutableListOf()
                 }
                 line == "}" -> {
                     header?.let { blocks[it] = members.sorted() }
                     header = null
+                    currentClassName = null
                 }
-                header != null && !isMangledMember(line) -> members += line
+                header != null && !isMangledMember(line) &&
+                    (currentClassName == null || isKotlinPublic(currentClassName!!, line)) -> members += line
             }
         }
 

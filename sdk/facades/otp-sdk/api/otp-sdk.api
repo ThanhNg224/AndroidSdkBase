@@ -3,7 +3,6 @@
 # Removing or changing a recorded signature is breaking and fails apiCheck.
 
 final class io.github.thanhng224.sdkbase.otpsdk.OtpSdkConfig$Builder$Companion {
-    public io.github.thanhng224.sdkbase.otpsdk.OtpSdkConfig$Builder$Companion(kotlin.jvm.internal.DefaultConstructorMarker);
 }
 
 public final class io.github.thanhng224.sdkbase.otpsdk.OtpSdk {
@@ -17,7 +16,6 @@ public final class io.github.thanhng224.sdkbase.otpsdk.OtpSdkConfig {
     public final io.github.thanhng224.sdkbase.core.gateway.OtpGateway getGateway();
     public final io.github.thanhng224.sdkbase.core.gateway.TelemetrySink getTelemetry();
     public final java.lang.String getDestination();
-    public io.github.thanhng224.sdkbase.otpsdk.OtpSdkConfig(java.lang.String, io.github.thanhng224.sdkbase.core.gateway.OtpGateway, int, io.github.thanhng224.sdkbase.core.SdkLogger, io.github.thanhng224.sdkbase.core.gateway.TelemetrySink, kotlin.jvm.internal.DefaultConstructorMarker);
 }
 
 public final class io.github.thanhng224.sdkbase.otpsdk.OtpSdkConfig$Builder {

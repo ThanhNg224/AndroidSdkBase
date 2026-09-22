@@ -3,7 +3,6 @@
 # Removing or changing a recorded signature is breaking and fails apiCheck.
 
 final class io.github.thanhng224.sdkbase.otp.OtpEngine$Companion {
-    public io.github.thanhng224.sdkbase.otp.OtpEngine$Companion(kotlin.jvm.internal.DefaultConstructorMarker);
 }
 
 public final class io.github.thanhng224.sdkbase.otp.OtpCommand$AppendDigit implements io.github.thanhng224.sdkbase.otp.OtpCommand {
@@ -51,7 +50,6 @@ public final class io.github.thanhng224.sdkbase.otp.OtpEngine {
     public final void close();
     public io.github.thanhng224.sdkbase.otp.OtpEngine(io.github.thanhng224.sdkbase.core.gateway.OtpGateway, io.github.thanhng224.sdkbase.core.DispatcherProvider, io.github.thanhng224.sdkbase.core.SdkLogger, int);
     public io.github.thanhng224.sdkbase.otp.OtpEngine(io.github.thanhng224.sdkbase.core.gateway.OtpGateway, io.github.thanhng224.sdkbase.core.DispatcherProvider, io.github.thanhng224.sdkbase.core.SdkLogger, int, int, kotlin.jvm.internal.DefaultConstructorMarker);
-    public static final java.lang.String TAG;
 }
 
 public final class io.github.thanhng224.sdkbase.otp.OtpState {
@@ -81,7 +79,6 @@ public final class io.github.thanhng224.sdkbase.otp.OtpState {
 
 public final class io.github.thanhng224.sdkbase.otp.OtpState$Companion {
     public final io.github.thanhng224.sdkbase.otp.OtpState initial(int);
-    public io.github.thanhng224.sdkbase.otp.OtpState$Companion(kotlin.jvm.internal.DefaultConstructorMarker);
 }
 
 public final class io.github.thanhng224.sdkbase.otp.OtpState$Phase extends java.lang.Enum<io.github.thanhng224.sdkbase.otp.OtpState$Phase> {
