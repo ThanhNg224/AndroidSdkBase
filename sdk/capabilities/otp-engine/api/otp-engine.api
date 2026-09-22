@@ -49,8 +49,8 @@ public final class io.github.thanhng224.sdkbase.otp.OtpEngine {
     public final java.lang.Object start(java.lang.String, kotlin.coroutines.Continuation<? super kotlin.Unit>);
     public final kotlinx.coroutines.flow.StateFlow<io.github.thanhng224.sdkbase.otp.OtpState> getState();
     public final void close();
-    public io.github.thanhng224.sdkbase.otp.OtpEngine(io.github.thanhng224.sdkbase.core.gateway.OtpGateway, io.github.thanhng224.sdkbase.platform.DispatcherProvider, io.github.thanhng224.sdkbase.core.SdkLogger, int);
-    public io.github.thanhng224.sdkbase.otp.OtpEngine(io.github.thanhng224.sdkbase.core.gateway.OtpGateway, io.github.thanhng224.sdkbase.platform.DispatcherProvider, io.github.thanhng224.sdkbase.core.SdkLogger, int, int, kotlin.jvm.internal.DefaultConstructorMarker);
+    public io.github.thanhng224.sdkbase.otp.OtpEngine(io.github.thanhng224.sdkbase.core.gateway.OtpGateway, io.github.thanhng224.sdkbase.core.DispatcherProvider, io.github.thanhng224.sdkbase.core.SdkLogger, int);
+    public io.github.thanhng224.sdkbase.otp.OtpEngine(io.github.thanhng224.sdkbase.core.gateway.OtpGateway, io.github.thanhng224.sdkbase.core.DispatcherProvider, io.github.thanhng224.sdkbase.core.SdkLogger, int, int, kotlin.jvm.internal.DefaultConstructorMarker);
     public static final java.lang.String TAG;
 }
 

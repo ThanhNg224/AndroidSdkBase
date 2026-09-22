@@ -2,6 +2,13 @@
 # Regenerate with ./gradlew :platform:apiDump after an ADDITIVE change.
 # Removing or changing a recorded signature is breaking and fails apiCheck.
 
+public final class io.github.thanhng224.sdkbase.platform.AndroidDispatchers implements io.github.thanhng224.sdkbase.core.DispatcherProvider {
+    public kotlinx.coroutines.CoroutineDispatcher getDefault();
+    public kotlinx.coroutines.CoroutineDispatcher getIo();
+    public kotlinx.coroutines.CoroutineDispatcher getMain();
+    public static final io.github.thanhng224.sdkbase.platform.AndroidDispatchers INSTANCE;
+}
+
 public final class io.github.thanhng224.sdkbase.platform.AndroidSdkLogger implements io.github.thanhng224.sdkbase.core.SdkLogger {
     public io.github.thanhng224.sdkbase.platform.AndroidSdkLogger();
     public io.github.thanhng224.sdkbase.platform.AndroidSdkLogger(java.lang.String, boolean);
@@ -9,15 +16,4 @@ public final class io.github.thanhng224.sdkbase.platform.AndroidSdkLogger implem
     public void debug(java.lang.String, java.lang.String);
     public void error(java.lang.String, java.lang.String, java.lang.Throwable);
     public void info(java.lang.String, java.lang.String);
-}
-
-public final class io.github.thanhng224.sdkbase.platform.DispatcherProvider$Companion {
-    public final io.github.thanhng224.sdkbase.platform.DispatcherProvider getDefault();
-}
-
-public interface io.github.thanhng224.sdkbase.platform.DispatcherProvider {
-    public abstract kotlinx.coroutines.CoroutineDispatcher getDefault();
-    public abstract kotlinx.coroutines.CoroutineDispatcher getIo();
-    public abstract kotlinx.coroutines.CoroutineDispatcher getMain();
-    public static final io.github.thanhng224.sdkbase.platform.DispatcherProvider$Companion Companion;
 }

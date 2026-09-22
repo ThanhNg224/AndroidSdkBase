@@ -1,12 +1,12 @@
 package io.github.thanhng224.sdkbase.otp
 
+import io.github.thanhng224.sdkbase.core.DispatcherProvider
 import io.github.thanhng224.sdkbase.core.SdkErrors
 import io.github.thanhng224.sdkbase.core.SdkLogger
 import io.github.thanhng224.sdkbase.core.SdkResult
 import io.github.thanhng224.sdkbase.core.gateway.OtpGateway
 import io.github.thanhng224.sdkbase.core.redact
 import io.github.thanhng224.sdkbase.otp.internal.OtpStateMachine
-import io.github.thanhng224.sdkbase.platform.DispatcherProvider
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -25,7 +25,7 @@ import kotlinx.coroutines.flow.update
  */
 public class OtpEngine(
     private val gateway: OtpGateway,
-    private val dispatchers: DispatcherProvider = DispatcherProvider.Default,
+    private val dispatchers: DispatcherProvider,
     private val logger: SdkLogger = SdkLogger.NoOp,
     private val maxAttempts: Int = 3,
 ) {

@@ -109,6 +109,12 @@ public final class io.github.thanhng224.sdkbase.core.gateway.OtpChallenge {
     public java.lang.String toString();
 }
 
+public interface io.github.thanhng224.sdkbase.core.DispatcherProvider {
+    public abstract kotlinx.coroutines.CoroutineDispatcher getDefault();
+    public abstract kotlinx.coroutines.CoroutineDispatcher getIo();
+    public abstract kotlinx.coroutines.CoroutineDispatcher getMain();
+}
+
 public interface io.github.thanhng224.sdkbase.core.SdkLogger {
     public abstract void debug(java.lang.String, java.lang.String);
     public abstract void error(java.lang.String, java.lang.String, java.lang.Throwable);

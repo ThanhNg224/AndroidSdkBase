@@ -1,10 +1,10 @@
 package io.github.thanhng224.sdkbase.otp
 
+import io.github.thanhng224.sdkbase.core.DispatcherProvider
 import io.github.thanhng224.sdkbase.core.SdkErrors
 import io.github.thanhng224.sdkbase.core.SdkResult
 import io.github.thanhng224.sdkbase.core.gateway.OtpChallenge
 import io.github.thanhng224.sdkbase.core.gateway.OtpGateway
-import io.github.thanhng224.sdkbase.platform.DispatcherProvider
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
