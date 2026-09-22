@@ -1,0 +1,44 @@
+# Public ABI baseline for :otp-ui-compose — see docs/COMPATIBILITY.md.
+# Regenerate with ./gradlew :otp-ui-compose:apiDump after an ADDITIVE change.
+# Removing or changing a recorded signature is breaking and fails apiCheck.
+
+public final class io.github.thanhng224.sdkbase.otp.ui.ComposableSingletons$OtpScreenKt {
+    public final kotlin.jvm.functions.Function3<androidx.compose.foundation.layout.RowScope, androidx.compose.runtime.Composer, java.lang.Integer, kotlin.Unit> getLambda$-1696491560$otp_ui_compose();
+    public final kotlin.jvm.functions.Function3<androidx.compose.foundation.layout.RowScope, androidx.compose.runtime.Composer, java.lang.Integer, kotlin.Unit> getLambda$1624835535$otp_ui_compose();
+    public final kotlin.jvm.functions.Function3<androidx.compose.foundation.layout.RowScope, androidx.compose.runtime.Composer, java.lang.Integer, kotlin.Unit> getLambda$1688800185$otp_ui_compose();
+    public io.github.thanhng224.sdkbase.otp.ui.ComposableSingletons$OtpScreenKt();
+    public static final io.github.thanhng224.sdkbase.otp.ui.ComposableSingletons$OtpScreenKt INSTANCE;
+}
+
+public final class io.github.thanhng224.sdkbase.otp.ui.OtpColors {
+    public boolean equals(java.lang.Object);
+    public final io.github.thanhng224.sdkbase.otp.ui.OtpColors copy-t635Npw(long, long, long, long, long);
+    public final long component1-0d7_KjU();
+    public final long component2-0d7_KjU();
+    public final long component3-0d7_KjU();
+    public final long component4-0d7_KjU();
+    public final long component5-0d7_KjU();
+    public final long getAccent-0d7_KjU();
+    public final long getBackground-0d7_KjU();
+    public final long getCellBorder-0d7_KjU();
+    public final long getError-0d7_KjU();
+    public final long getOnBackground-0d7_KjU();
+    public int hashCode();
+    public io.github.thanhng224.sdkbase.otp.ui.OtpColors(long, long, long, long, long, kotlin.jvm.internal.DefaultConstructorMarker);
+    public java.lang.String toString();
+    public static final int $stable;
+    public static final io.github.thanhng224.sdkbase.otp.ui.OtpColors$Companion Companion;
+}
+
+public final class io.github.thanhng224.sdkbase.otp.ui.OtpColors$Companion {
+    public final io.github.thanhng224.sdkbase.otp.ui.OtpColors fromMaterialTheme(androidx.compose.runtime.Composer, int);
+    public io.github.thanhng224.sdkbase.otp.ui.OtpColors$Companion(kotlin.jvm.internal.DefaultConstructorMarker);
+}
+
+public final class io.github.thanhng224.sdkbase.otp.ui.OtpScreenKt {
+    public static final void OtpScreen(io.github.thanhng224.sdkbase.otp.OtpState, kotlin.jvm.functions.Function1<? super io.github.thanhng224.sdkbase.otp.OtpCommand, kotlin.Unit>, androidx.compose.ui.Modifier, androidx.compose.runtime.Composer, int, int);
+}
+
+public final class io.github.thanhng224.sdkbase.otp.ui.OtpThemeKt {
+    public static final void OtpTheme(io.github.thanhng224.sdkbase.otp.ui.OtpColors, kotlin.jvm.functions.Function2<? super androidx.compose.runtime.Composer, ? super java.lang.Integer, kotlin.Unit>, androidx.compose.runtime.Composer, int, int);
+}
