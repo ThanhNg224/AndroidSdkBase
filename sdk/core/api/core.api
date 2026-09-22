@@ -93,6 +93,10 @@ public final class io.github.thanhng224.sdkbase.core.SdkResultKt {
     public static final <T> io.github.thanhng224.sdkbase.core.SdkError errorOrNull(io.github.thanhng224.sdkbase.core.SdkResult<? extends T>);
 }
 
+public final class io.github.thanhng224.sdkbase.core.gateway.OtpCallbackGatewayKt {
+    public static final io.github.thanhng224.sdkbase.core.gateway.OtpGateway asGateway(io.github.thanhng224.sdkbase.core.gateway.OtpCallbackGateway);
+}
+
 public final class io.github.thanhng224.sdkbase.core.gateway.OtpChallenge {
     public boolean equals(java.lang.Object);
     public final int component2();
@@ -123,6 +127,16 @@ public interface io.github.thanhng224.sdkbase.core.SdkLogger {
 }
 
 public interface io.github.thanhng224.sdkbase.core.SdkResult<T> {
+}
+
+public interface io.github.thanhng224.sdkbase.core.gateway.GatewayCallback<T> {
+    public abstract void onFailure(io.github.thanhng224.sdkbase.core.SdkError);
+    public abstract void onSuccess(T);
+}
+
+public interface io.github.thanhng224.sdkbase.core.gateway.OtpCallbackGateway {
+    public abstract void requestOtp(java.lang.String, io.github.thanhng224.sdkbase.core.gateway.GatewayCallback<io.github.thanhng224.sdkbase.core.gateway.OtpChallenge>);
+    public abstract void verifyOtp(java.lang.String, java.lang.String, io.github.thanhng224.sdkbase.core.gateway.GatewayCallback<kotlin.Unit>);
 }
 
 public interface io.github.thanhng224.sdkbase.core.gateway.OtpGateway {

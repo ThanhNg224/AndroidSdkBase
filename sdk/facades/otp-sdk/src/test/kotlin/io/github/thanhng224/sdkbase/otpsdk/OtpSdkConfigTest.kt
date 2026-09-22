@@ -3,6 +3,8 @@ package io.github.thanhng224.sdkbase.otpsdk
 import io.github.thanhng224.sdkbase.core.SdkErrors
 import io.github.thanhng224.sdkbase.core.SdkResult
 import io.github.thanhng224.sdkbase.core.errorOrNull
+import io.github.thanhng224.sdkbase.core.gateway.GatewayCallback
+import io.github.thanhng224.sdkbase.core.gateway.OtpCallbackGateway
 import io.github.thanhng224.sdkbase.core.gateway.OtpChallenge
 import io.github.thanhng224.sdkbase.core.gateway.OtpGateway
 import io.github.thanhng224.sdkbase.core.getOrNull
@@ -18,6 +20,15 @@ class OtpSdkConfigTest {
             SdkResult.Success(OtpChallenge("ch", 6, 60, 30))
         override suspend fun verifyOtp(challengeId: String, code: String): SdkResult<Unit> =
             SdkResult.Success(Unit)
+    }
+
+    private val callbackGateway = object : OtpCallbackGateway {
+        override fun requestOtp(destination: String, callback: GatewayCallback<OtpChallenge>) {
+            callback.onSuccess(OtpChallenge("ch", 6, 60, 30))
+        }
+        override fun verifyOtp(challengeId: String, code: String, callback: GatewayCallback<Unit>) {
+            callback.onSuccess(Unit)
+        }
     }
 
     @Test
@@ -52,5 +63,18 @@ class OtpSdkConfigTest {
         val result = OtpSdkConfig.Builder("0900000000", gateway).telemetry(null).build()
         assertNotNull(result.getOrNull())
         assertEquals(null, result.getOrNull()?.telemetry)
+    }
+
+    @Test
+    fun `a config built from a callback gateway validates the same way`() {
+        val result = OtpSdkConfig.Builder("0900000000", callbackGateway).build()
+        assertNotNull(result.getOrNull())
+        assertEquals(3, result.getOrNull()?.maxAttempts)
+    }
+
+    @Test
+    fun `a callback gateway config still rejects a blank destination`() {
+        val result = OtpSdkConfig.Builder("   ", callbackGateway).build()
+        assertEquals(SdkErrors.INVALID_CONFIG, result.errorOrNull()?.code)
     }
 }

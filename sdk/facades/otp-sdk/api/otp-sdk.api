@@ -23,6 +23,7 @@ public final class io.github.thanhng224.sdkbase.otpsdk.OtpSdkConfig$Builder {
     public final io.github.thanhng224.sdkbase.otpsdk.OtpSdkConfig$Builder logger(io.github.thanhng224.sdkbase.core.SdkLogger);
     public final io.github.thanhng224.sdkbase.otpsdk.OtpSdkConfig$Builder maxAttempts(int);
     public final io.github.thanhng224.sdkbase.otpsdk.OtpSdkConfig$Builder telemetry(io.github.thanhng224.sdkbase.core.gateway.TelemetrySink);
+    public io.github.thanhng224.sdkbase.otpsdk.OtpSdkConfig$Builder(java.lang.String, io.github.thanhng224.sdkbase.core.gateway.OtpCallbackGateway);
     public io.github.thanhng224.sdkbase.otpsdk.OtpSdkConfig$Builder(java.lang.String, io.github.thanhng224.sdkbase.core.gateway.OtpGateway);
 }
 

@@ -3,8 +3,10 @@ package io.github.thanhng224.sdkbase.otpsdk
 import io.github.thanhng224.sdkbase.core.SdkErrors
 import io.github.thanhng224.sdkbase.core.SdkLogger
 import io.github.thanhng224.sdkbase.core.SdkResult
+import io.github.thanhng224.sdkbase.core.gateway.OtpCallbackGateway
 import io.github.thanhng224.sdkbase.core.gateway.OtpGateway
 import io.github.thanhng224.sdkbase.core.gateway.TelemetrySink
+import io.github.thanhng224.sdkbase.core.gateway.asGateway
 
 /**
  * Host-supplied configuration. Validated once, here, at the public boundary — never deeper. A
@@ -24,6 +26,14 @@ public class OtpSdkConfig private constructor(
         private val destination: String,
         private val gateway: OtpGateway,
     ) {
+        /**
+         * A Java host with a callback-based async client never needs to see [OtpGateway] or a
+         * `Continuation` at all: it implements [OtpCallbackGateway] and this constructor adapts it
+         * via [asGateway]. Kotlin hosts should keep using the suspend-based constructor above.
+         */
+        public constructor(destination: String, gateway: OtpCallbackGateway) :
+            this(destination, gateway.asGateway())
+
         private var maxAttempts: Int = DEFAULT_MAX_ATTEMPTS
         private var logger: SdkLogger = SdkLogger.NoOp
         private var telemetry: TelemetrySink? = null
