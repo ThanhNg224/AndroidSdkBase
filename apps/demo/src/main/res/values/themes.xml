@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        The demo draws everything through Compose (MaterialTheme + the SDK's own OtpTheme), so this
+        only needs to be a valid platform theme — no AppCompat/Material Components dependency, which
+        this app deliberately does not carry.
+    -->
+    <style name="Theme.Demo" parent="android:Theme.Material.Light.NoActionBar" />
+</resources>

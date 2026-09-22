@@ -42,10 +42,19 @@ kotlin {
 dependencies {
     implementation(project(":sdk:facades:otp-sdk"))
     implementation(project(":sdk:capabilities:otp-ui-compose"))
+    // For AndroidSdkLogger, which the demo wires in as its SdkLogger — a real host's choice, not
+    // something the facade could default to without depending on :platform itself.
+    implementation(project(":sdk:platform"))
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)
     implementation(libs.activity.compose)
     implementation(libs.androidx.lifecycle.runtime)
+    // Not in gradle/libs.versions.toml: this app-only dependency reuses the already-catalogued
+    // androidxLifecycle version rather than adding a library entry to the shared catalog, which
+    // is owned by the module-topology/publishing work in flight elsewhere in this repo. It must
+    // never be added to a published SDK module — collectAsStateWithLifecycle() is a host/app
+    // convenience, not part of the SDK's contract.
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:${libs.versions.androidxLifecycle.get()}")
     debugImplementation(libs.compose.tooling)
 }
