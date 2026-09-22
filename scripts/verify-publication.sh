@@ -5,6 +5,23 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 REPO_DIR="$PWD/build/local-repo"
+
+# The consumer is a SEPARATE Gradle build with no local.properties of its own (that file is
+# gitignored, by design). It therefore cannot find the Android SDK unless we tell it. Take the
+# location from this project's own local.properties, falling back to an already-exported
+# ANDROID_HOME, so this script works in a clean shell and in CI without manual setup.
+if [ -z "${ANDROID_HOME:-}" ] && [ -f local.properties ]; then
+  ANDROID_HOME="$(grep -E '^sdk\.dir=' local.properties | head -1 | cut -d= -f2-)"
+fi
+if [ -z "${ANDROID_HOME:-}" ] && [ -d "$HOME/Library/Android/sdk" ]; then
+  ANDROID_HOME="$HOME/Library/Android/sdk"
+fi
+if [ -z "${ANDROID_HOME:-}" ] || [ ! -d "$ANDROID_HOME" ]; then
+  echo "FAIL cannot locate the Android SDK. Set ANDROID_HOME, or put sdk.dir=... in local.properties." >&2
+  exit 1
+fi
+export ANDROID_HOME
+echo "==> Using Android SDK at $ANDROID_HOME"
 rm -rf "$REPO_DIR"
 
 echo "==> Publishing to $REPO_DIR"
