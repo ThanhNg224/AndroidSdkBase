@@ -10,12 +10,14 @@ dependencies {
     // Convention plugins configure the AGP and Kotlin DSLs, so they compile against them.
     compileOnly(libs.agp.gradle.plugin)
     compileOnly(libs.kotlin.gradle.plugin)
-    compileOnly(libs.dokka.gradle.plugin)
-    compileOnly(libs.mavenpublish.gradle.plugin)
 
-    // Unlike the plugins above, this one is actually APPLIED (via `plugins { id(...) }`) inside a
-    // precompiled script plugin (sdkbase.android.compose.gradle.kts), not just referenced for its
-    // Gradle-DSL types — so it must be on the runtime classpath, not merely compileOnly.
+    // Unlike the two above, dokka and vanniktech maven-publish ARE actually applied (via
+    // `plugins { id(...) }`) inside precompiled script plugins — dokka and mavenpublish inside
+    // sdkbase.android.publishing.gradle.kts, and compose-compiler inside
+    // sdkbase.android.compose.gradle.kts — so all three must be on the runtime classpath, not
+    // merely compileOnly, the same reasoning documented for compose-compiler below.
+    implementation(libs.dokka.gradle.plugin)
+    implementation(libs.mavenpublish.gradle.plugin)
     implementation(libs.compose.compiler.gradle.plugin)
 
     // Reads kotlin.Metadata to recover real Kotlin visibility for the ABI dump (sdkbase.abi's

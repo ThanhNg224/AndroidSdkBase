@@ -1,6 +1,7 @@
 plugins {
     id("sdkbase.android.library")
     id("sdkbase.abi")
+    id("sdkbase.android.publishing")
 }
 
 android {

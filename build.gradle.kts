@@ -106,6 +106,19 @@ gradle.projectsEvaluated {
         }
     }
 
+    // Rule 3: every published artifact must actually have an ABI contract and a publication.
+    // Registration alone is not enough — an artifact with no baseline has no contract.
+    publishedArtifacts.forEach { modulePath ->
+        val module = rootProject.findProject(modulePath) ?: return@forEach
+        if (module.tasks.findByName("apiCheck") == null) {
+            violations += "$modulePath is registered as published but applies no ABI plugin " +
+                "(sdkbase.abi for Android modules, sdkbase.abi.jvm for Kotlin JVM modules)"
+        }
+        if (module.tasks.findByName("publishToMavenLocal") == null) {
+            violations += "$modulePath is registered as published but applies no publishing plugin"
+        }
+    }
+
     if (violations.isNotEmpty()) {
         throw GradleException(
             "Module zone violation(s) — see docs/ARCHITECTURE.md:\n" +
