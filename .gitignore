@@ -1,0 +1,96 @@
+# ---------------------------------------------------------------------------
+# Gradle
+# ---------------------------------------------------------------------------
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!src/**/build/
+gradle-app.setting
+.gradletasknamecache
+
+# ---------------------------------------------------------------------------
+# Android / SDK
+# ---------------------------------------------------------------------------
+local.properties
+*.apk
+*.aab
+*.aar
+*.ap_
+*.dex
+*.class
+bin/
+gen/
+out/
+release/
+.cxx/
+.externalNativeBuild/
+captures/
+lint/intermediates/
+lint/generated/
+lint/outputs/
+lint/tmp/
+lint/reports/
+
+# ---------------------------------------------------------------------------
+# Signing & secrets — never commit
+# ---------------------------------------------------------------------------
+*.jks
+*.keystore
+*.p12
+*.pem
+*.key
+keystore.properties
+signing.properties
+secrets.properties
+gradle-publish.properties
+.env
+.env.*
+
+# ---------------------------------------------------------------------------
+# IntelliJ / Android Studio
+# ---------------------------------------------------------------------------
+*.iml
+*.ipr
+*.iws
+.idea/*
+!.idea/codeStyles/
+!.idea/inspectionProfiles/
+!.idea/icon.png
+.kotlin/
+
+# ---------------------------------------------------------------------------
+# Eclipse / VS Code / Fleet
+# ---------------------------------------------------------------------------
+.classpath
+.project
+.settings/
+.vscode/*
+!.vscode/settings.json
+!.vscode/extensions.json
+.fleet/
+
+# ---------------------------------------------------------------------------
+# OS noise
+# ---------------------------------------------------------------------------
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+Thumbs.db
+ehthumbs.db
+desktop.ini
+
+# ---------------------------------------------------------------------------
+# Working docs — plans and specs stay local (see docs/CONTRIBUTING.md)
+# Reference docs under docs/*.md ARE tracked.
+# ---------------------------------------------------------------------------
+docs/superpowers/
+
+# ---------------------------------------------------------------------------
+# Misc
+# ---------------------------------------------------------------------------
+*.log
+*.hprof
+.cache/
+node_modules/

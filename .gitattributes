@@ -1,0 +1,20 @@
+# Normalise line endings so the repo is identical on macOS, Linux and Windows.
+* text=auto eol=lf
+
+*.bat           text eol=crlf
+gradlew         text eol=lf
+
+*.jar           binary
+*.aar           binary
+*.png           binary
+*.jpg           binary
+*.webp          binary
+*.ttf           binary
+*.otf           binary
+*.so            binary
+*.keystore      binary
+*.jks           binary
+
+# Keep generated baselines out of diff noise but still reviewable.
+api/*.api       text eol=lf linguist-generated=false
+gradle/wrapper/gradle-wrapper.jar binary linguist-vendored
