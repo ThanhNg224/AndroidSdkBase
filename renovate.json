@@ -1,0 +1,26 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
+  "labels": ["dependencies"],
+  "packageRules": [
+    {
+      "description": "The toolchain floor is a compatibility decision, not a routine bump. Never automerge it.",
+      "matchPackageNames": [
+        "com.android.tools.build:gradle",
+        "org.jetbrains.kotlin:kotlin-gradle-plugin"
+      ],
+      "automerge": false,
+      "addLabels": ["toolchain-floor", "needs-compatibility-review"]
+    },
+    {
+      "description": "Group AndroidX so one PR does not fan out into twenty.",
+      "matchPackagePrefixes": ["androidx."],
+      "groupName": "androidx"
+    },
+    {
+      "matchPackagePrefixes": ["org.jetbrains.kotlinx:"],
+      "groupName": "kotlinx"
+    }
+  ],
+  "ignorePaths": ["verification/**"]
+}
