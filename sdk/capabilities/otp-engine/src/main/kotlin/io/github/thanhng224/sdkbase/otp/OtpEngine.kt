@@ -69,7 +69,17 @@ public class OtpEngine(
         }
     }
 
-    /** Cancels the engine's scope. After this the engine must not be reused. */
+    /**
+     * Cancels the engine's scope. After this the engine must not be reused.
+     *
+     * The [timer] stop is belt-and-braces, not load-bearing: [OtpTimer] launches into this same
+     * scope, so `scope.cancel()` already cancels its job structurally. Verified by removing this
+     * line — every test still passed. It is kept because it states the intent at the call site and
+     * would become necessary the moment [OtpTimer] is given a scope of its own. If you ever make
+     * that change, add a test that fails without this line (assert on the timer's job directly, or
+     * give the timer a scope `close()` does not cancel) — the current
+     * `OtpTimerTest.close stops the ticker` cannot distinguish the two.
+     */
     public fun close() {
         timer.stop()
         scope.cancel()

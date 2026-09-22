@@ -62,6 +62,8 @@ class OtpTimerTest {
     }
 
     @Test
+    // Proves the BEHAVIOUR (no ticking after close), not the mechanism: the ticker shares the
+    // engine's scope, so scope cancellation is what actually stops it. See OtpEngine.close().
     fun `close stops the ticker`() = runTest {
         val engine = OtpEngine(
             gateway = StubGateway(OtpChallenge("ch-1", 6, expiresInSeconds = 120, resendAfterSeconds = 60)),
