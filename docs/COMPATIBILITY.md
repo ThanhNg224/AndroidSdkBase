@@ -98,6 +98,28 @@ the Kotlin function's default argument later would remove that overload too — 
 `apiCheck` catches that as the breaking change it actually is for Java callers. Do not "clean up"
 the baseline by hand-deleting these lines.
 
+## A third caveat: Compose modules record compiler-generated lambda singletons
+
+A Compose module's baseline contains entries like:
+
+```
+public final class ...otp.ui.ComposableSingletons$OtpScreenKt {
+    public final Function3<...> getLambda$-1696491560$otp_ui_compose();
+}
+```
+
+These are Compose compiler artifacts, not API anyone calls. They were tested rather than assumed:
+changing the text inside an existing lambda, and adding a new composable call inside one, both left
+every hash unchanged and `apiCheck` green — so ordinary UI edits do **not** churn the baseline.
+
+The hashes are keyed on the composable group's identity, however, not on its content. Renaming the
+enclosing file or function, or reordering the top-level composables in a file, can change them. So:
+
+> If `apiCheck` fails on a Compose module and **every** removed signature it names belongs to a
+> `ComposableSingletons$...` class, that is a false positive from a code move, not a broken contract.
+> Re-dump, and say so in the commit message. If even one named signature is a real declaration of
+> yours, treat it as a genuine break.
+
 ## Toolchain floor
 
 | Tool | Version | Constraint |
