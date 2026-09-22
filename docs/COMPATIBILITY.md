@@ -197,38 +197,68 @@ project still on an older Kotlin version cannot read metadata newer than what it
 understands, so shipping `mv = 2.4.0` would silently break consumption for any such host — with no
 compile error on the SDK's own build to catch it.
 
-Pinning `compilerOptions.languageVersion` and `apiVersion` to **either** `2.0` **or** `2.2` makes the
-*same* 2.4.20 toolchain emit metadata `mv = 2.0.0` instead — the metadata binary format version does
-not track `languageVersion` one-for-one, and both of these language versions happen to land on the
-same format version.
+Pinning `compilerOptions.languageVersion` and `apiVersion` makes the *same* 2.4.20 toolchain emit
+older metadata. The metadata format version tracks `languageVersion` one-for-one. Measured on this
+repository, by reading the `kotlin.Metadata` annotation out of the built AAR:
 
-**The floor is set to `2.2`, not `2.0`,** even though both emit the same `mv`, because
-`languageVersion = 2.0` additionally emits:
+| `languageVersion` / `apiVersion` | emitted `mv` | consumer needs |
+|---|---|---|
+| unpinned (2.4) | `2.4.0` | Kotlin 2.4+ |
+| `2.2` — **this repo's floor** | `2.2.0` | Kotlin 2.2+ |
+| `2.0` | `2.0.0` | Kotlin 2.0+ |
+
+> An earlier revision of this document claimed `2.0` and `2.2` both emitted `mv = 2.0.0`, so that
+> `2.2` cost nothing in reach. That was wrong: it came from a broken measurement (see the note at the
+> end of this section). The trade-off below is real.
+
+**The floor is `2.2`, and that is a deliberate trade-off, not a free choice.** `languageVersion = 2.0`
+reaches more consumers, but it emits:
 
 ```
-w: Language version 2.0 is deprecated and its support will be removed in a future version of Kotlin
+w: Language version 2.0 is deprecated and its support will be removed in a future version of Kotlin.
+   Update the version to 2.2.
 ```
 
-and this warning fails any build run with `-Psdkbase.warningsAsErrors=true` — which is how CI runs
-(`sdkbase.warningsAsErrors=false` is the local default in `gradle.properties`). `2.2` emits the
-identical `mv = 2.0.0` metadata with no such warning, so it is strictly better than `2.0` at zero
-compatibility cost. The floor is declared once, as `kotlinMetadataFloor` in
-`gradle/libs.versions.toml`, specifically so a project derived from this base can change it in one
-place.
+which becomes `e: warnings found and -Werror specified` under `-Psdkbase.warningsAsErrors=true` — how
+CI runs. That warning comes from the compiler's CLI argument handling, not from a named source
+diagnostic, so `-Xsuppress-warning=...` cannot silence it (tried; it does not work). So the choice is:
 
-**Raising `kotlinMetadataFloor` above `2.2` in a way that changes the emitted `mv` is a breaking
-change for consumers** — it can silently drop support for hosts on older Kotlin — and must ship with
-a major version bump, not as an incidental part of an unrelated change.
+- **`2.0`** — consumers on Kotlin 2.0+ can use the SDK, but CI cannot run with warnings-as-errors, and
+  Kotlin has announced 2.0 support will be removed outright.
+- **`2.2`** — consumers need Kotlin 2.2+ (released mid-2025), and CI stays clean.
 
-`scripts/verify-kotlin-metadata.sh` gates this by unpacking every published release AAR's
-`classes.jar`, running `javap -v -p` against each class, reading the `mv` pair out of the classfile's
-attribute table, and failing if any class exceeds format version `2.0` (the script gates on the
-*format version* ceiling `2.0`, not on the source-level `kotlinMetadataFloor` string, since those two
-numbers are not the same axis — see the comment at the top of the script). It is **AAR-only**: it
-walks `build/outputs/aar/*-release.aar`, so `:sdk:core` — a pure-Kotlin JVM module that produces a
-plain `.jar` — is not covered by this script at all. `:sdk:core` still has `languageVersion`/
-`apiVersion` pinned in `sdkbase.kotlin.jvm.gradle.kts`, but nothing currently re-verifies its emitted
-metadata format the way this script does for AARs.
+This base picks `2.2`. If your consumers genuinely include projects on Kotlin 2.0 or 2.1, change
+`kotlinMetadataFloor` in `gradle/libs.versions.toml` to `2.0` and set `sdkbase.warningsAsErrors=false`
+in CI, accepting the loss of that guarantee. It is one line in each place, deliberately.
+
+**Raising `kotlinMetadataFloor` is a breaking change for consumers** — it silently drops support for
+hosts on older Kotlin — and must ship with a major version bump, not as an incidental part of an
+unrelated change.
+
+`scripts/verify-kotlin-metadata.sh` gates this. It unpacks every published release AAR's
+`classes.jar`, runs `javap -v -p` on each class, and reads the version straight out of the printed
+annotation:
+
+```
+kotlin.Metadata(
+  mv=[2,2,0]
+```
+
+It compares that against `kotlinMetadataFloor` from the version catalog, names the offending class on
+failure, and reports how many Kotlin classes it actually checked — so a run that silently checked
+nothing cannot be mistaken for a pass.
+
+> **A lesson worth keeping.** The first version of this script did not read the annotation. It
+> scraped two `Integer` constant-pool entries that happened to follow the `mv` Utf8 string, on the
+> assumption they were the version. The constant pool has no such ordering guarantee, so the script
+> reported unrelated numbers: it printed `2.0` for AARs that actually carried `mv=[2,2,0]`, and
+> `mv=2.3` / `mv=3` for others. It "passed" and "failed" for reasons unconnected to the thing it was
+> meant to measure, and one of this document's own claims was derived from its output. **A gate that
+> measures the wrong thing is worse than no gate, because it is believed.** If you change this script,
+> prove it both ways: unpin `languageVersion` in the library convention plugin, confirm the gate fails
+> and names a class, then restore and confirm it passes.
+
+It is AAR-only: `:sdk:core` is a pure-Kotlin JVM module producing a jar, and is not covered.
 
 ## `aarMetadata.minCompileSdk` / `minAgpVersion`
 
