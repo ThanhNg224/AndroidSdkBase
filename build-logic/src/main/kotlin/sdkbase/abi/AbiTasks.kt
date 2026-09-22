@@ -161,9 +161,119 @@ public abstract class GenerateApiDumpTask : DefaultTask() {
 }
 
 /**
+ * The JAR twin of [GenerateApiDumpTask], for pure-Kotlin (`org.jetbrains.kotlin.jvm`) modules such
+ * as `:sdk:core` that publish a plain `.jar` instead of an AAR. There is no `classes.jar` wrapper
+ * to unzip first, so this reads the module's own jar directly with `ZipInputStream`; everything
+ * else — the public-API filtering, the `javap` dump and the normalized rendering — is identical to
+ * [GenerateApiDumpTask].
+ *
+ * Lives in this plain `.kt` file as a real top-level `abstract class ... : DefaultTask()` for the
+ * same configuration-cache reason documented on [GenerateApiDumpTask]: a `doLast { }` closure or a
+ * class nested inside a `.gradle.kts` script cannot be serialized by the configuration cache.
+ */
+public abstract class GenerateJvmApiDumpTask : DefaultTask() {
+
+    @get:InputFile
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    public abstract val jarFile: RegularFileProperty
+
+    @get:OutputFile
+    public abstract val generatedApiFile: RegularFileProperty
+
+    @get:Internal
+    public abstract val extractDir: DirectoryProperty
+
+    @get:Internal
+    public abstract val javapExecutable: Property<String>
+
+    @get:Internal
+    public abstract val moduleName: Property<String>
+
+    @TaskAction
+    public fun generate() {
+        val jarAsFile = jarFile.get().asFile
+        val root = extractDir.get().asFile
+        val javap = javapExecutable.get()
+        val name = moduleName.get()
+
+        root.deleteRecursively()
+        root.mkdirs()
+
+        val classNames = mutableListOf<String>()
+        ZipInputStream(jarAsFile.inputStream()).use { zip ->
+            while (true) {
+                val entry = zip.nextEntry ?: break
+                if (!entry.name.endsWith(".class")) continue
+                val binaryName = entry.name.removeSuffix(".class")
+                if (isPublicApiClass(binaryName)) {
+                    classNames += binaryName.replace('/', '.')
+                }
+                val target = File(root, entry.name)
+                target.parentFile.mkdirs()
+                target.outputStream().use { output -> zip.copyTo(output) }
+            }
+        }
+        classNames.sort()
+
+        if (classNames.isEmpty()) {
+            throw GradleException(
+                "No public API classes found in ${jarAsFile.name}; refusing to write an empty baseline"
+            )
+        }
+
+        val process = ProcessBuilder(
+            listOf(javap, "-protected", "-classpath", root.absolutePath) + classNames
+        ).redirectErrorStream(true).start()
+        val javapOutput = process.inputStream.bufferedReader().readText()
+        if (process.waitFor() != 0) {
+            throw GradleException("javap failed for $name:\n$javapOutput")
+        }
+
+        // javap emits a flat block per class: a header line ending in `{`, indented members, `}`.
+        // Members are sorted so a compiler reordering never reads as an API change.
+        val blocks = linkedMapOf<String, List<String>>()
+        var header: String? = null
+        var members = mutableListOf<String>()
+        javapOutput.lineSequence().forEach { raw ->
+            val line = raw.trim()
+            when {
+                line.isEmpty() || line.startsWith("Compiled from") -> Unit
+                line.endsWith("{") -> {
+                    header = line
+                    members = mutableListOf()
+                }
+                line == "}" -> {
+                    header?.let { blocks[it] = members.sorted() }
+                    header = null
+                }
+                header != null && !isMangledMember(line) -> members += line
+            }
+        }
+
+        val rendered = StringBuilder()
+        rendered.append("# Public ABI baseline for :$name — see docs/COMPATIBILITY.md.\n")
+        rendered.append("# Regenerate with ./gradlew :$name:apiDump after an ADDITIVE change.\n")
+        rendered.append("# Removing or changing a recorded signature is breaking and fails apiCheck.\n")
+        blocks.keys.sorted().forEach { key ->
+            rendered.append("\n$key\n")
+            blocks.getValue(key).forEach { member -> rendered.append("    $member\n") }
+            rendered.append("}\n")
+        }
+
+        val outFile = generatedApiFile.get().asFile
+        outFile.parentFile.mkdirs()
+        outFile.writeText(rendered.toString())
+    }
+}
+
+/**
  * Fails the build if a signature recorded in the committed baseline is missing from the freshly
  * generated dump. Additions are always allowed — the asymmetry is the policy. Lives in this plain
  * `.kt` file for the same configuration-cache reason as [GenerateApiDumpTask].
+ *
+ * Artifact-agnostic by construction — it only compares two `.api` text files — so it is reused
+ * as-is by both [GenerateApiDumpTask] (AAR-backed modules) and [GenerateJvmApiDumpTask]
+ * (JAR-backed modules) instead of being duplicated.
  */
 public abstract class ApiCheckTask : DefaultTask() {
 
