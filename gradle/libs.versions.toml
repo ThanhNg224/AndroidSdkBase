@@ -4,7 +4,7 @@ agp = "9.4.1"
 kotlin = "2.4.20"
 # Kotlin metadata emitted to consumers. Compiling on newer Kotlin while emitting an older
 # metadata version is what lets hosts on older Kotlin consume these AARs.
-kotlinMetadataFloor = "2.0"
+kotlinMetadataFloor = "2.2"
 javaToolchain = "17"
 compileSdk = "37"
 minSdk = "24"

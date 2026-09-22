@@ -68,9 +68,13 @@ extensions.configure<LibraryExtension> {
     }
 
     buildFeatures {
-        // Off by default: both cost build time and leak surface. A module opts in if it needs them.
+        // Off by default: it costs build time and widens the surface. A module opts in if it needs it.
         buildConfig = false
-        androidResources = false
+    }
+
+    // `buildFeatures.androidResources` is deprecated and removed in AGP 10; this is the replacement.
+    androidResources {
+        enable = false
     }
 
     testOptions {
