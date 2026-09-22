@@ -7,6 +7,7 @@ import io.github.thanhng224.sdkbase.core.SdkResult
 import io.github.thanhng224.sdkbase.core.gateway.OtpGateway
 import io.github.thanhng224.sdkbase.core.redact
 import io.github.thanhng224.sdkbase.otp.internal.OtpStateMachine
+import io.github.thanhng224.sdkbase.otp.internal.OtpTimer
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -30,6 +31,7 @@ public class OtpEngine(
     private val maxAttempts: Int = 3,
 ) {
     private val scope = CoroutineScope(SupervisorJob() + dispatchers.default)
+    private val timer = OtpTimer(scope)
     private val _state = MutableStateFlow(OtpState.initial())
     private var challengeId: String? = null
 
@@ -37,7 +39,7 @@ public class OtpEngine(
 
     /** Requests the first challenge for [destination]. Safe to call once per session. */
     public suspend fun start(destination: String) {
-        _state.update { it.copy(phase = OtpState.Phase.Requesting, error = null) }
+        updateState { it.copy(phase = OtpState.Phase.Requesting, error = null) }
         logger.debug(TAG, "requesting challenge for ${redact(destination, keepLast = 3)}")
         requestChallenge(destination)
     }
@@ -48,38 +50,57 @@ public class OtpEngine(
             OtpCommand.Submit -> {
                 if (!_state.value.canSubmit) return
                 val code = _state.value.enteredCode
-                _state.update { OtpStateMachine.reduce(it, OtpCommand.Submit) }
+                updateState { OtpStateMachine.reduce(it, OtpCommand.Submit) }
                 verify(code)
             }
 
             OtpCommand.Resend -> {
                 if (!_state.value.canResend) {
-                    _state.update {
+                    updateState {
                         it.copy(error = SdkErrors.otpResendTooSoon(it.secondsUntilResend))
                     }
                     return
                 }
-                _state.update { OtpStateMachine.reduce(it, OtpCommand.Resend) }
+                updateState { OtpStateMachine.reduce(it, OtpCommand.Resend) }
                 requestChallenge(lastDestination ?: return)
             }
 
-            else -> _state.update { OtpStateMachine.reduce(it, command) }
+            else -> updateState { OtpStateMachine.reduce(it, command) }
         }
     }
 
     /** Cancels the engine's scope. After this the engine must not be reused. */
     public fun close() {
+        timer.stop()
         scope.cancel()
     }
 
     private var lastDestination: String? = null
+
+    /**
+     * Every state mutation in the engine goes through here, never through `_state.update` directly,
+     * so the ticker's lifecycle cannot be forgotten at a new call site. [OtpState.Phase.Verified] and
+     * [OtpState.Phase.Failed] are the flow's only terminal phases — reached from a successful verify,
+     * exhausted attempts, a cancel, a fatal gateway error, or tick-driven expiry — and each one stops
+     * the ticker. [OtpState.Phase.Verifying] is deliberately NOT treated as a reason to stop: it is a
+     * transient detour off [OtpState.Phase.AwaitingCode] while a submit is in flight, and
+     * [OtpStateMachine.onTick] already no-ops outside `AwaitingCode`, so leaving the ticker running
+     * through it is both safe and necessary — stopping it there would leave a retried, still-awaiting
+     * session with a countdown that never resumes.
+     */
+    private fun updateState(transform: (OtpState) -> OtpState) {
+        _state.update(transform)
+        if (_state.value.phase == OtpState.Phase.Verified || _state.value.phase == OtpState.Phase.Failed) {
+            timer.stop()
+        }
+    }
 
     private suspend fun requestChallenge(destination: String) {
         lastDestination = destination
         when (val result = gateway.requestOtp(destination)) {
             is SdkResult.Success -> {
                 challengeId = result.value.challengeId
-                _state.update {
+                updateState {
                     OtpStateMachine.onChallengeIssued(
                         state = it,
                         codeLength = result.value.codeLength,
@@ -88,11 +109,14 @@ public class OtpEngine(
                         maxAttempts = maxAttempts,
                     )
                 }
+                // A challenge just became active: (re)arm the countdown. `OtpTimer.start` stops any
+                // previous job first, so a resend cleanly replaces the prior challenge's ticker.
+                timer.start { updateState { OtpStateMachine.onTick(it) } }
             }
 
             is SdkResult.Failure -> {
                 logger.error(TAG, "challenge request failed: ${result.error}")
-                _state.update { OtpStateMachine.onFatal(it, result.error) }
+                updateState { OtpStateMachine.onFatal(it, result.error) }
             }
         }
     }
@@ -100,12 +124,12 @@ public class OtpEngine(
     private suspend fun verify(code: String) {
         val id = challengeId
         if (id == null) {
-            _state.update { OtpStateMachine.onFatal(it, SdkErrors.notStarted()) }
+            updateState { OtpStateMachine.onFatal(it, SdkErrors.notStarted()) }
             return
         }
         when (val result = gateway.verifyOtp(id, code)) {
-            is SdkResult.Success -> _state.update { OtpStateMachine.onVerified(it) }
-            is SdkResult.Failure -> _state.update {
+            is SdkResult.Success -> updateState { OtpStateMachine.onVerified(it) }
+            is SdkResult.Failure -> updateState {
                 OtpStateMachine.onVerificationFailed(it, result.error)
             }
         }
