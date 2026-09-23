@@ -93,3 +93,21 @@ change, for:
 
 If you are unsure which side of that line a change falls on, look at the existing test files next to
 the equivalent OTP code for the pattern to follow.
+
+### What this policy does not catch, and what to do about it
+
+This rule has a cost, and it is worth stating instead of discovering it in production. A UI that
+renders the wrong thing for a *correct* state is invisible to every test in this repository.
+
+A real example from this repo's own history: `OtpScreen`'s status `when` block had branches for
+`Requesting`/`Verifying`, for an error, and for the expiry countdown — but none for `Verified`. On
+success the screen fell through to the countdown branch and displayed a frozen "Expires in 63s". The
+engine was correct, all 43 unit tests passed, and the user was simply never told the flow had
+succeeded. It was found in ten seconds by running the demo on a device, and could not have been found
+any other way under this policy.
+
+So: **run `apps/demo` on a real device or emulator before shipping a UI change**, and walk every
+terminal state, not just the happy path you were working on. Success, failure, lockout and expiry all
+need to look different from each other. If you add a phase to a state enum, grep the UI for the
+`when` blocks that switch on it — an exhaustive `when` on the enum (rather than a `when {}` with
+boolean branches) would have made the compiler catch this one, and is worth preferring in new code.
