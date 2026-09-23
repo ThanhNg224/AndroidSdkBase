@@ -1,3 +1,30 @@
+public final class io/github/thanhng224/sdkbase/core/call/RetryPolicy {
+	public static final field Companion Lio/github/thanhng224/sdkbase/core/call/RetryPolicy$Companion;
+	public fun <init> ()V
+	public fun <init> (I)V
+	public fun <init> (IJ)V
+	public fun <init> (IJJ)V
+	public fun <init> (IJJD)V
+	public fun <init> (IJJDLkotlin/jvm/functions/Function1;)V
+	public synthetic fun <init> (IJJDLkotlin/jvm/functions/Function1;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getFactor ()D
+	public final fun getInitialDelayMillis ()J
+	public final fun getMaxAttempts ()I
+	public final fun getMaxDelayMillis ()J
+	public final fun getRetryOn ()Lkotlin/jvm/functions/Function1;
+	public final fun run (Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/thanhng224/sdkbase/core/call/RetryPolicy$Companion {
+	public final fun getNone ()Lio/github/thanhng224/sdkbase/core/call/RetryPolicy;
+	public final fun getTransientErrors ()Lkotlin/jvm/functions/Function1;
+}
+
+public final class io/github/thanhng224/sdkbase/core/call/SafeCallKt {
+	public static final fun safeCall (Ljava/lang/String;Ljava/lang/Long;Lio/github/thanhng224/sdkbase/core/error/FailureMapper;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static synthetic fun safeCall$default (Ljava/lang/String;Ljava/lang/Long;Lio/github/thanhng224/sdkbase/core/error/FailureMapper;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;ILjava/lang/Object;)Ljava/lang/Object;
+}
+
 public final class io/github/thanhng224/sdkbase/core/concurrency/AndroidDispatchers : io/github/thanhng224/sdkbase/core/concurrency/DispatcherProvider {
 	public static final field INSTANCE Lio/github/thanhng224/sdkbase/core/concurrency/AndroidDispatchers;
 	public fun getDefault ()Lkotlinx/coroutines/CoroutineDispatcher;
@@ -9,6 +36,15 @@ public abstract interface class io/github/thanhng224/sdkbase/core/concurrency/Di
 	public abstract fun getDefault ()Lkotlinx/coroutines/CoroutineDispatcher;
 	public abstract fun getIo ()Lkotlinx/coroutines/CoroutineDispatcher;
 	public abstract fun getMain ()Lkotlinx/coroutines/CoroutineDispatcher;
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/core/error/FailureMapper {
+	public static final field Companion Lio/github/thanhng224/sdkbase/core/error/FailureMapper$Companion;
+	public abstract fun map (Ljava/lang/String;Ljava/lang/Throwable;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+}
+
+public final class io/github/thanhng224/sdkbase/core/error/FailureMapper$Companion {
+	public final fun getDefault ()Lio/github/thanhng224/sdkbase/core/error/FailureMapper;
 }
 
 public abstract class io/github/thanhng224/sdkbase/core/error/SdkError {
@@ -121,10 +157,33 @@ public final class io/github/thanhng224/sdkbase/core/result/SdkResult$Success : 
 
 public final class io/github/thanhng224/sdkbase/core/result/SdkResultKt {
 	public static final fun errorOrNull (Lio/github/thanhng224/sdkbase/core/result/SdkResult;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public static final fun flatMap (Lio/github/thanhng224/sdkbase/core/result/SdkResult;Lkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+	public static final fun fold (Lio/github/thanhng224/sdkbase/core/result/SdkResult;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 	public static final fun getOrNull (Lio/github/thanhng224/sdkbase/core/result/SdkResult;)Ljava/lang/Object;
+	public static final fun map (Lio/github/thanhng224/sdkbase/core/result/SdkResult;Lkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+	public static final fun onFailure (Lio/github/thanhng224/sdkbase/core/result/SdkResult;Lkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+	public static final fun onSuccess (Lio/github/thanhng224/sdkbase/core/result/SdkResult;Lkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
 }
 
 public abstract interface class io/github/thanhng224/sdkbase/core/telemetry/TelemetrySink {
 	public abstract fun onEvent (Ljava/lang/String;Ljava/util/Map;)V
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/core/time/Clock {
+	public static final field Companion Lio/github/thanhng224/sdkbase/core/time/Clock$Companion;
+	public abstract fun nowMillis ()J
+}
+
+public final class io/github/thanhng224/sdkbase/core/time/Clock$Companion {
+	public final fun getSystem ()Lio/github/thanhng224/sdkbase/core/time/Clock;
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/core/time/IdGenerator {
+	public static final field Companion Lio/github/thanhng224/sdkbase/core/time/IdGenerator$Companion;
+	public abstract fun newId ()Ljava/lang/String;
+}
+
+public final class io/github/thanhng224/sdkbase/core/time/IdGenerator$Companion {
+	public final fun getUuid ()Lio/github/thanhng224/sdkbase/core/time/IdGenerator;
 }
 
