@@ -44,7 +44,7 @@ internal class OtpEngine(
     // one; every gateway call that could throw goes through `callGateway` instead.
     private val scope = CoroutineScope(
         SupervisorJob() + dispatchers.default +
-            CoroutineExceptionHandler { _, throwable -> logger.error(TAG, "unexpected failure", throwable) },
+            CoroutineExceptionHandler { _, throwable -> logErrorSafely("unexpected failure", throwable) },
     )
     private val timer = OtpTimer(scope)
     private val _state = MutableStateFlow(OtpState.initial())
@@ -66,7 +66,7 @@ internal class OtpEngine(
         }
         started = true
         updateState { it.copy(phase = OtpState.Phase.Requesting, error = null) }
-        logger.debug(TAG, "requesting challenge for ${redact(destination, keepLast = 3)}")
+        logDebugSafely("requesting challenge for ${redact(destination, keepLast = 3)}")
         requestChallenge(destination)
     }
 
@@ -159,7 +159,7 @@ internal class OtpEngine(
             }
 
             is SdkResult.Failure -> {
-                logger.error(TAG, "challenge request failed: ${result.error}")
+                logErrorSafely("challenge request failed: ${result.error}")
                 updateState { OtpStateMachine.onFatal(it, result.error) }
             }
         }
@@ -192,6 +192,22 @@ internal class OtpEngine(
         } catch (e: Exception) {
             SdkResult.Failure(SdkErrors.gatewayFailure(operation, e))
         }
+
+    private fun logDebugSafely(message: String) {
+        try {
+            logger.debug(TAG, message)
+        } catch (_: Exception) {
+            // Logging is ancillary and must not interrupt an OTP state transition.
+        }
+    }
+
+    private fun logErrorSafely(message: String, throwable: Throwable? = null) {
+        try {
+            logger.error(TAG, message, throwable)
+        } catch (_: Exception) {
+            // A failing logger must not escape from an error path or coroutine exception handler.
+        }
+    }
 
     private companion object {
         const val TAG = "OtpEngine"

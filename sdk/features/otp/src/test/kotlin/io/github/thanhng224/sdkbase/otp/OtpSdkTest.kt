@@ -1,9 +1,11 @@
 package io.github.thanhng224.sdkbase.otp
 
 import io.github.thanhng224.sdkbase.core.SdkErrors
+import io.github.thanhng224.sdkbase.core.SdkLogger
 import io.github.thanhng224.sdkbase.core.SdkResult
 import io.github.thanhng224.sdkbase.core.errorOrNull
 import io.github.thanhng224.sdkbase.core.getOrNull
+import io.github.thanhng224.sdkbase.core.gateway.TelemetrySink
 import java.io.IOException
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest
@@ -35,8 +37,16 @@ class OtpSdkTest {
         }
     }
 
-    private fun configOf(gateway: OtpGateway): OtpSdkConfig =
-        OtpSdkConfig.Builder("0900000000", gateway).build().getOrNull()!!
+    private fun configOf(
+        gateway: OtpGateway,
+        logger: SdkLogger = SdkLogger.NoOp,
+        telemetry: TelemetrySink? = null,
+    ): OtpSdkConfig =
+        OtpSdkConfig.Builder("0900000000", gateway)
+            .logger(logger)
+            .telemetry(telemetry)
+            .build()
+            .getOrNull()!!
 
     private fun throwingGateway(onRequest: () -> Nothing): OtpGateway = object : OtpGateway {
         override suspend fun requestOtp(destination: String): SdkResult<OtpChallenge> = onRequest()
@@ -53,6 +63,40 @@ class OtpSdkTest {
     fun `any other exception from the gateway becomes GATEWAY_FAILURE`() = runTest {
         val result = OtpSdk.start(configOf(throwingGateway { throw IllegalStateException("boom") }))
         assertEquals(SdkErrors.GATEWAY_FAILURE, result.errorOrNull()?.code)
+    }
+
+    @Test
+    fun `throwing logger cannot replace gateway failure or prevent fatal state`() = runTest {
+        val logger = object : SdkLogger {
+            override fun debug(tag: String, message: String): Unit = error("debug sink failed")
+            override fun info(tag: String, message: String): Unit = error("info sink failed")
+            override fun error(tag: String, message: String, throwable: Throwable?): Unit = error("error sink failed")
+        }
+        val result = OtpSdk.start(
+            configOf(
+                FakeGateway(requestResult = { SdkResult.Failure(SdkErrors.networkUnavailable()) }),
+                logger = logger,
+            ),
+        )
+
+        assertEquals(SdkErrors.NETWORK_UNAVAILABLE, result.errorOrNull()?.code)
+    }
+
+    @Test
+    fun `throwing telemetry cannot fail start or verified submit`() = runTest {
+        val events = mutableListOf<String>()
+        val telemetry = TelemetrySink { name, _ ->
+            events += name
+            error("telemetry sink failed")
+        }
+        val session = OtpSdk.start(configOf(FakeGateway(), telemetry = telemetry)).getOrNull()!!
+
+        val result = session.submit("123456")
+
+        assertTrue(result is SdkResult.Success)
+        assertEquals(OtpState.Phase.Verified, session.state.value.phase)
+        assertEquals(listOf("otp_started", "otp_verified"), events)
+        session.close()
     }
 
     @Test

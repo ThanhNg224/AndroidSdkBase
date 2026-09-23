@@ -34,7 +34,15 @@ public object OtpSdk {
             return SdkResult.Failure(state.error ?: SdkErrors.unknown())
         }
 
-        config.telemetry?.onEvent("otp_started", mapOf("max_attempts" to config.maxAttempts.toString()))
+        emitTelemetry(config, "otp_started", mapOf("max_attempts" to config.maxAttempts.toString()))
         return SdkResult.Success(OtpSdkRuntime(engine, config))
+    }
+
+    private fun emitTelemetry(config: OtpSdkConfig, name: String, attributes: Map<String, String>) {
+        try {
+            config.telemetry?.onEvent(name, attributes)
+        } catch (_: Exception) {
+            // Telemetry is ancillary and must not change the OTP result or leak the live engine.
+        }
     }
 }

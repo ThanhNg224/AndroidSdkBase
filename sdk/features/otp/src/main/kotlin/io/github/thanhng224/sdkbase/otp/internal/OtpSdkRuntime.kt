@@ -23,14 +23,14 @@ internal class OtpSdkRuntime(
     // thread's default handler, which on Android kills the host process.
     private val scope = CoroutineScope(
         SupervisorJob() + AndroidDispatchers.default +
-            CoroutineExceptionHandler { _, t -> config.logger.error(TAG, "dispatch failed", t) },
+            CoroutineExceptionHandler { _, t -> logErrorSafely("dispatch failed", t) },
     )
 
     override val state: StateFlow<OtpState> get() = engine.state
 
     override suspend fun submit(code: String): SdkResult<Unit> =
         engine.submitCode(code).also { result ->
-            if (result is SdkResult.Success) config.telemetry?.onEvent("otp_verified", emptyMap())
+            if (result is SdkResult.Success) emitTelemetry("otp_verified", emptyMap())
         }
 
     override suspend fun resend(): SdkResult<Unit> = engine.resend()
@@ -42,6 +42,22 @@ internal class OtpSdkRuntime(
     override fun close() {
         scope.cancel()
         engine.close()
+    }
+
+    private fun emitTelemetry(name: String, attributes: Map<String, String>) {
+        try {
+            config.telemetry?.onEvent(name, attributes)
+        } catch (_: Exception) {
+            // Telemetry is ancillary and must not change the OTP result.
+        }
+    }
+
+    private fun logErrorSafely(message: String, throwable: Throwable) {
+        try {
+            config.logger.error(TAG, message, throwable)
+        } catch (_: Exception) {
+            // A failing logger must not escape from a coroutine exception handler.
+        }
     }
 
     private companion object {
