@@ -9,13 +9,20 @@ import io.github.thanhng224.sdkbase.otp.OtpCommand
 import io.github.thanhng224.sdkbase.otp.OtpErrors
 import io.github.thanhng224.sdkbase.otp.OtpGateway
 import io.github.thanhng224.sdkbase.otp.OtpState
+import java.io.IOException
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withTimeout
 
 /**
  * Drives the OTP flow. Owns the effects (gateway calls, countdown); delegates every rule to
@@ -30,43 +37,65 @@ internal class OtpEngine(
     private val dispatchers: DispatcherProvider,
     private val logger: SdkLogger = SdkLogger.NoOp,
     private val maxAttempts: Int = 3,
+    private val gatewayTimeoutMillis: Long = 30_000L,
 ) {
-    private val scope = CoroutineScope(SupervisorJob() + dispatchers.default)
+    // A CoroutineExceptionHandler here is not optional: the ticker (and any future fire-and-forget
+    // work) runs in this scope, and a SupervisorJob with no handler rethrows an uncaught exception
+    // to the thread's default handler, which on Android kills the host process. Every gateway call
+    // that could throw goes through `callGateway` instead, which never lets an exception reach here.
+    private val scope = CoroutineScope(
+        SupervisorJob() + dispatchers.default +
+            CoroutineExceptionHandler { _, throwable -> logger.error(TAG, "unexpected failure", throwable) },
+    )
     private val timer = OtpTimer(scope)
     private val _state = MutableStateFlow(OtpState.initial())
     private var challengeId: String? = null
 
+    // Guards every state transition: `dispatch` (fired from a UI callback on Dispatchers.Default via
+    // OtpSdkRuntime) and `submitCode`/`resend` (called directly by a host coroutine) must not
+    // interleave, or two concurrent submits could both observe `canSubmit` true and both verify.
+    private val mutex = Mutex()
+    private var started = false
+
     public val state: StateFlow<OtpState> = _state.asStateFlow()
 
     /** Requests the first challenge for [destination]. Safe to call once per session. */
-    public suspend fun start(destination: String) {
+    public suspend fun start(destination: String): Unit = mutex.withLock {
+        if (started) {
+            updateState { it.copy(error = SdkErrors.alreadyRunning()) }
+            return@withLock
+        }
+        started = true
         updateState { it.copy(phase = OtpState.Phase.Requesting, error = null) }
         logger.debug(TAG, "requesting challenge for ${redact(destination, keepLast = 3)}")
         requestChallenge(destination)
     }
 
     /** Applies [command], performing any effect it implies. */
-    public suspend fun dispatch(command: OtpCommand) {
-        when (command) {
-            OtpCommand.Submit -> {
-                if (!_state.value.canSubmit) return
-                val code = _state.value.enteredCode
-                updateState { OtpStateMachine.reduce(it, OtpCommand.Submit) }
-                verify(code)
-            }
+    public suspend fun dispatch(command: OtpCommand): Unit = mutex.withLock { dispatchLocked(command) }
 
-            OtpCommand.Resend -> {
-                if (!_state.value.canResend) {
-                    updateState {
-                        it.copy(error = OtpErrors.otpResendTooSoon(it.secondsUntilResend))
-                    }
-                    return
-                }
-                updateState { OtpStateMachine.reduce(it, OtpCommand.Resend) }
-                requestChallenge(lastDestination ?: return)
-            }
+    /** Replaces any partial entry with [code] and submits it, atomically with respect to [dispatch]. */
+    public suspend fun submitCode(code: String): SdkResult<Unit> = mutex.withLock {
+        updateState { OtpStateMachine.clearCode(it) }
+        code.forEach { dispatchLocked(OtpCommand.AppendDigit(it)) }
+        dispatchLocked(OtpCommand.Submit)
+        val current = _state.value
+        if (current.phase == OtpState.Phase.Verified) {
+            SdkResult.Success(Unit)
+        } else {
+            SdkResult.Failure(current.error ?: OtpErrors.otpInvalid())
+        }
+    }
 
-            else -> updateState { OtpStateMachine.reduce(it, command) }
+    /** Resends the challenge, atomically with respect to [dispatch]. */
+    public suspend fun resend(): SdkResult<Unit> = mutex.withLock {
+        dispatchLocked(OtpCommand.Resend)
+        val current = _state.value
+        val error = current.error
+        when {
+            error != null -> SdkResult.Failure(error)
+            current.phase == OtpState.Phase.Failed -> SdkResult.Failure(SdkErrors.unknown())
+            else -> SdkResult.Success(Unit)
         }
     }
 
@@ -106,9 +135,34 @@ internal class OtpEngine(
         }
     }
 
+    /** The body [dispatch] used to be, run only while [mutex] is already held. */
+    private suspend fun dispatchLocked(command: OtpCommand) {
+        when (command) {
+            OtpCommand.Submit -> {
+                if (!_state.value.canSubmit) return
+                val code = _state.value.enteredCode
+                updateState { OtpStateMachine.reduce(it, OtpCommand.Submit) }
+                verify(code)
+            }
+
+            OtpCommand.Resend -> {
+                if (!_state.value.canResend) {
+                    updateState {
+                        it.copy(error = OtpErrors.otpResendTooSoon(it.secondsUntilResend))
+                    }
+                    return
+                }
+                updateState { OtpStateMachine.reduce(it, OtpCommand.Resend) }
+                requestChallenge(lastDestination ?: return)
+            }
+
+            else -> updateState { OtpStateMachine.reduce(it, command) }
+        }
+    }
+
     private suspend fun requestChallenge(destination: String) {
         lastDestination = destination
-        when (val result = gateway.requestOtp(destination)) {
+        when (val result = callGateway("requestOtp") { gateway.requestOtp(destination) }) {
             is SdkResult.Success -> {
                 challengeId = result.value.challengeId
                 updateState {
@@ -138,13 +192,27 @@ internal class OtpEngine(
             updateState { OtpStateMachine.onFatal(it, SdkErrors.notStarted()) }
             return
         }
-        when (val result = gateway.verifyOtp(id, code)) {
+        when (val result = callGateway("verifyOtp") { gateway.verifyOtp(id, code) }) {
             is SdkResult.Success -> updateState { OtpStateMachine.onVerified(it) }
             is SdkResult.Failure -> updateState {
                 OtpStateMachine.onVerificationFailed(it, result.error)
             }
         }
     }
+
+    /** Every host call goes through here: nothing the host throws or hangs on reaches the caller. */
+    private suspend fun <T> callGateway(operation: String, call: suspend () -> SdkResult<T>): SdkResult<T> =
+        try {
+            withTimeout(gatewayTimeoutMillis) { call() }
+        } catch (e: TimeoutCancellationException) {
+            SdkResult.Failure(SdkErrors.timeout(operation))
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: IOException) {
+            SdkResult.Failure(SdkErrors.networkUnavailable(e))
+        } catch (e: Exception) {
+            SdkResult.Failure(SdkErrors.gatewayFailure(operation, e))
+        }
 
     private companion object {
         const val TAG = "OtpEngine"

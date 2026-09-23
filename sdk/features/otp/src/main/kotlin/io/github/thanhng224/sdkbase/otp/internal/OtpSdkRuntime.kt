@@ -2,10 +2,10 @@ package io.github.thanhng224.sdkbase.otp.internal
 
 import io.github.thanhng224.sdkbase.core.SdkResult
 import io.github.thanhng224.sdkbase.otp.OtpCommand
-import io.github.thanhng224.sdkbase.otp.OtpErrors
 import io.github.thanhng224.sdkbase.otp.OtpSdkConfig
 import io.github.thanhng224.sdkbase.otp.OtpSession
 import io.github.thanhng224.sdkbase.otp.OtpState
+import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
@@ -25,39 +25,23 @@ internal class OtpSdkRuntime(
 
     // dispatch() below is deliberately non-suspending (a UI callback can't suspend), so it needs a
     // scope to fire-and-forget into the suspend engine. AndroidDispatchers is the same dispatcher
-    // instance OtpSdk.start used to construct the engine.
-    private val scope = CoroutineScope(SupervisorJob() + AndroidDispatchers.default)
+    // instance OtpSdk.start used to construct the engine. The CoroutineExceptionHandler is not
+    // optional: a SupervisorJob with no handler rethrows an uncaught exception to the thread's
+    // default handler, which on Android kills the host process — see OtpEngine's own scope for the
+    // same reasoning.
+    private val scope = CoroutineScope(
+        SupervisorJob() + AndroidDispatchers.default +
+            CoroutineExceptionHandler { _, t -> config.logger.error(TAG, "dispatch failed", t) },
+    )
 
     override val state: StateFlow<OtpState> get() = engine.state
 
-    override suspend fun submit(code: String): SdkResult<Unit> {
-        // Clear whatever the engine already holds before entering the caller's code. Appending on
-        // top of a stale partial entry (left over from a UI dispatch, or SMS autofill racing a
-        // hand-typed digit) would silently submit a wrong, mixed code.
-        val staleDigits = engine.state.value.enteredCode.length
-        repeat(staleDigits) { engine.dispatch(OtpCommand.DeleteDigit) }
-        code.forEach { engine.dispatch(OtpCommand.AppendDigit(it)) }
-        engine.dispatch(OtpCommand.Submit)
-
-        val current = engine.state.value
-        return when (current.phase) {
-            OtpState.Phase.Verified -> {
-                config.telemetry?.onEvent("otp_verified", emptyMap())
-                SdkResult.Success(Unit)
-            }
-            else -> SdkResult.Failure(current.error ?: OtpErrors.otpInvalid())
+    override suspend fun submit(code: String): SdkResult<Unit> =
+        engine.submitCode(code).also { result ->
+            if (result is SdkResult.Success) config.telemetry?.onEvent("otp_verified", emptyMap())
         }
-    }
 
-    override suspend fun resend(): SdkResult<Unit> {
-        engine.dispatch(OtpCommand.Resend)
-        val error = engine.state.value.error
-        return if (error?.code == OtpErrors.OTP_RESEND_TOO_SOON) {
-            SdkResult.Failure(error)
-        } else {
-            SdkResult.Success(Unit)
-        }
-    }
+    override suspend fun resend(): SdkResult<Unit> = engine.resend()
 
     override fun dispatch(command: OtpCommand) {
         scope.launch { engine.dispatch(command) }
@@ -66,5 +50,9 @@ internal class OtpSdkRuntime(
     override fun close() {
         scope.cancel()
         engine.close()
+    }
+
+    private companion object {
+        const val TAG = "OtpSession"
     }
 }

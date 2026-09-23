@@ -32,10 +32,11 @@ internal object OtpStateMachine {
 
         OtpCommand.Resend -> if (state.canResend) state.copy(phase = OtpState.Phase.Requesting) else state
 
-        OtpCommand.Cancel -> state.copy(
-            phase = OtpState.Phase.Failed,
-            error = SdkErrors.cancelledByUser(),
-        )
+        OtpCommand.Cancel -> if (state.phase == OtpState.Phase.Verified || state.phase == OtpState.Phase.Failed) {
+            state
+        } else {
+            state.copy(phase = OtpState.Phase.Failed, error = SdkErrors.cancelledByUser())
+        }
     }
 
     fun onChallengeIssued(
@@ -54,10 +55,13 @@ internal object OtpStateMachine {
         error = null,
     )
 
-    fun onVerified(state: OtpState): OtpState =
-        state.copy(phase = OtpState.Phase.Verified, error = null)
+    fun onVerified(state: OtpState): OtpState {
+        if (state.phase != OtpState.Phase.Verifying) return state
+        return state.copy(phase = OtpState.Phase.Verified, error = null)
+    }
 
     fun onVerificationFailed(state: OtpState, error: SdkError): OtpState {
+        if (state.phase != OtpState.Phase.Verifying) return state
         val remaining = (state.attemptsRemaining - 1).coerceAtLeast(0)
         return if (remaining == 0) {
             state.copy(
@@ -78,6 +82,10 @@ internal object OtpStateMachine {
 
     fun onFatal(state: OtpState, error: SdkError): OtpState =
         state.copy(phase = OtpState.Phase.Failed, error = error)
+
+    /** Clears any partial entry so a fresh code can be submitted without mixing with a stale one. */
+    fun clearCode(state: OtpState): OtpState =
+        if (state.phase == OtpState.Phase.AwaitingCode) state.copy(enteredCode = "") else state
 
     fun onTick(state: OtpState): OtpState {
         if (state.phase != OtpState.Phase.AwaitingCode) return state

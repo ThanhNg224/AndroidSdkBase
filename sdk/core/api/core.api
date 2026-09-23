@@ -107,6 +107,11 @@ public final class io/github/thanhng224/sdkbase/core/SdkResultKt {
 	public static final fun getOrNull (Lio/github/thanhng224/sdkbase/core/SdkResult;)Ljava/lang/Object;
 }
 
+public abstract interface class io/github/thanhng224/sdkbase/core/gateway/CompletionCallback {
+	public abstract fun onFailure (Lio/github/thanhng224/sdkbase/core/SdkError;)V
+	public abstract fun onSuccess ()V
+}
+
 public abstract interface class io/github/thanhng224/sdkbase/core/gateway/GatewayCallback {
 	public abstract fun onFailure (Lio/github/thanhng224/sdkbase/core/SdkError;)V
 	public abstract fun onSuccess (Ljava/lang/Object;)V

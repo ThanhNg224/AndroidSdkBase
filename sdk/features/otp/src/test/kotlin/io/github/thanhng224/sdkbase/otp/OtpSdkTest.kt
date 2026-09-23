@@ -4,6 +4,8 @@ import io.github.thanhng224.sdkbase.core.SdkErrors
 import io.github.thanhng224.sdkbase.core.SdkResult
 import io.github.thanhng224.sdkbase.core.errorOrNull
 import io.github.thanhng224.sdkbase.core.getOrNull
+import java.io.IOException
+import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -35,6 +37,48 @@ class OtpSdkTest {
 
     private fun configOf(gateway: OtpGateway): OtpSdkConfig =
         OtpSdkConfig.Builder("0900000000", gateway).build().getOrNull()!!
+
+    private fun throwingGateway(onRequest: () -> Nothing): OtpGateway = object : OtpGateway {
+        override suspend fun requestOtp(destination: String): SdkResult<OtpChallenge> = onRequest()
+        override suspend fun verifyOtp(challengeId: String, code: String): SdkResult<Unit> = SdkResult.Success(Unit)
+    }
+
+    @Test
+    fun `an IOException from the gateway becomes NETWORK_UNAVAILABLE, never a throw`() = runTest {
+        val result = OtpSdk.start(configOf(throwingGateway { throw IOException("socket closed") }))
+        assertEquals(SdkErrors.NETWORK_UNAVAILABLE, result.errorOrNull()?.code)
+    }
+
+    @Test
+    fun `any other exception from the gateway becomes GATEWAY_FAILURE`() = runTest {
+        val result = OtpSdk.start(configOf(throwingGateway { throw IllegalStateException("boom") }))
+        assertEquals(SdkErrors.GATEWAY_FAILURE, result.errorOrNull()?.code)
+    }
+
+    @Test
+    fun `a gateway that never answers times out`() = runTest {
+        val hanging = object : OtpGateway {
+            override suspend fun requestOtp(destination: String): SdkResult<OtpChallenge> = awaitCancellation()
+            override suspend fun verifyOtp(challengeId: String, code: String): SdkResult<Unit> = awaitCancellation()
+        }
+        val config = OtpSdkConfig.Builder("0900000000", hanging).gatewayTimeoutSeconds(1).build().getOrNull()!!
+        assertEquals(SdkErrors.TIMEOUT, OtpSdk.start(config).errorOrNull()?.code)
+    }
+
+    @Test
+    fun `resend reports a failed resend as a failure`() = runTest {
+        var calls = 0
+        val gateway = FakeGateway(
+            challenge = OtpChallenge("ch-1", 6, 60, 0),
+            requestResult = {
+                if (calls++ == 0) SdkResult.Success(OtpChallenge("ch-1", 6, 60, 0))
+                else SdkResult.Failure(SdkErrors.networkUnavailable())
+            },
+        )
+        val session = OtpSdk.start(configOf(gateway)).getOrNull()!!
+        assertEquals(SdkErrors.NETWORK_UNAVAILABLE, session.resend().errorOrNull()?.code)
+        session.close()
+    }
 
     @Test
     fun `start surfaces the gateway's own error code, not unknown`() = runTest {

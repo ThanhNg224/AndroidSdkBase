@@ -5,7 +5,11 @@ import io.github.thanhng224.sdkbase.core.SdkErrors
 import io.github.thanhng224.sdkbase.core.SdkResult
 import io.github.thanhng224.sdkbase.otp.internal.OtpEngine
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.joinAll
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -36,6 +40,22 @@ class OtpEngineTest {
         override val main: CoroutineDispatcher = dispatcher
         override val default: CoroutineDispatcher = dispatcher
         override val io: CoroutineDispatcher = dispatcher
+    }
+
+    /** All three dispatchers are the real `Dispatchers.Default`, for tests that need real threads. */
+    private val realDispatchers: DispatcherProvider = dispatchers(Dispatchers.Default)
+
+    /** Builds an [OtpEngine] from bare request/verify lambdas, for tests that don't need [FakeGateway]'s counters. */
+    private fun engineWith(
+        requestOtp: suspend () -> SdkResult<OtpChallenge> = { SdkResult.Success(OtpChallenge("c", 6, 60, 30)) },
+        verifyOtp: suspend () -> SdkResult<Unit> = { SdkResult.Success(Unit) },
+        dispatchers: DispatcherProvider = dispatchers(StandardTestDispatcher()),
+    ): OtpEngine {
+        val gateway = object : OtpGateway {
+            override suspend fun requestOtp(destination: String): SdkResult<OtpChallenge> = requestOtp()
+            override suspend fun verifyOtp(challengeId: String, code: String): SdkResult<Unit> = verifyOtp()
+        }
+        return OtpEngine(gateway, dispatchers)
     }
 
     @Test
@@ -126,5 +146,33 @@ class OtpEngineTest {
         assertEquals(OtpState.Phase.Failed, engine.state.value.phase)
         assertEquals(SdkErrors.NETWORK_UNAVAILABLE, engine.state.value.error?.code)
         engine.close()
+    }
+
+    @Test
+    fun `start is honoured once`() = runTest {
+        var requests = 0
+        val engine = engineWith(requestOtp = { requests++; SdkResult.Success(OtpChallenge("c", 6, 60, 30)) })
+        engine.start("0900")
+        engine.start("0900")
+        assertEquals(1, requests)
+        assertEquals(SdkErrors.ALREADY_RUNNING, engine.state.value.error?.code)
+        engine.close()
+    }
+
+    @Test
+    fun `concurrent submits verify exactly once`() = runBlocking(Dispatchers.Default) {
+        repeat(200) {
+            val verifies = java.util.concurrent.atomic.AtomicInteger()
+            val engine = engineWith(
+                requestOtp = { SdkResult.Success(OtpChallenge("c", 1, 60, 30)) },
+                verifyOtp = { verifies.incrementAndGet(); kotlinx.coroutines.yield(); SdkResult.Success(Unit) },
+                dispatchers = realDispatchers,
+            )
+            engine.start("0900")
+            engine.dispatch(OtpCommand.AppendDigit('1'))
+            (1..2).map { launch { engine.dispatch(OtpCommand.Submit) } }.joinAll()
+            assertEquals(1, verifies.get())
+            engine.close()
+        }
     }
 }

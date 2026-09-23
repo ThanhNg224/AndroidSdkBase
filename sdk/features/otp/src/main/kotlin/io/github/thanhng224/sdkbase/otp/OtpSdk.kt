@@ -18,6 +18,7 @@ public object OtpSdk {
             dispatchers = AndroidDispatchers,
             logger = config.logger,
             maxAttempts = config.maxAttempts,
+            gatewayTimeoutMillis = config.gatewayTimeoutSeconds * 1_000L,
         )
         // OtpEngine.start is suspend and updates `state` synchronously (via direct suspend calls,
         // not a launch into its own scope) before returning, so inspecting state.value immediately

@@ -2,6 +2,7 @@ package io.github.thanhng224.sdkbase.otp
 
 import io.github.thanhng224.sdkbase.core.SdkError
 import io.github.thanhng224.sdkbase.core.SdkResult
+import io.github.thanhng224.sdkbase.core.gateway.CompletionCallback
 import io.github.thanhng224.sdkbase.core.gateway.GatewayCallback
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -20,7 +21,7 @@ public interface OtpCallbackGateway {
     public fun requestOtp(destination: String, callback: GatewayCallback<OtpChallenge>)
 
     /** Submits [code] for the challenge identified by [challengeId]. */
-    public fun verifyOtp(challengeId: String, code: String, callback: GatewayCallback<Unit>)
+    public fun verifyOtp(challengeId: String, code: String, callback: CompletionCallback)
 }
 
 /**
@@ -38,7 +39,16 @@ public fun OtpCallbackGateway.asGateway(): OtpGateway {
             bridge { callback -> delegate.requestOtp(destination, callback) }
 
         override suspend fun verifyOtp(challengeId: String, code: String): SdkResult<Unit> =
-            bridge { callback -> delegate.verifyOtp(challengeId, code, callback) }
+            bridgeCompletion { resume ->
+                delegate.verifyOtp(
+                    challengeId,
+                    code,
+                    object : CompletionCallback {
+                        override fun onSuccess() = resume(SdkResult.Success(Unit))
+                        override fun onFailure(error: SdkError) = resume(SdkResult.Failure(error))
+                    },
+                )
+            }
     }
 }
 
@@ -66,4 +76,13 @@ private suspend fun <T> bridge(register: (GatewayCallback<T>) -> Unit): SdkResul
                 }
             },
         )
+    }
+
+/** Suspends until the host's first terminal callback; later callbacks are ignored. */
+private suspend fun <T> bridgeCompletion(register: (resume: (SdkResult<T>) -> Unit) -> Unit): SdkResult<T> =
+    suspendCancellableCoroutine { continuation ->
+        val resumed = AtomicBoolean(false)
+        register { result ->
+            if (resumed.compareAndSet(false, true)) continuation.resumeWith(Result.success(result))
+        }
     }

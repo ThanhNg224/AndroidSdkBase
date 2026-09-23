@@ -18,6 +18,7 @@ public class OtpSdkConfig private constructor(
     public val maxAttempts: Int,
     public val logger: SdkLogger,
     public val telemetry: TelemetrySink?,
+    public val gatewayTimeoutSeconds: Int,
 ) {
     public class Builder(
         private val destination: String,
@@ -34,12 +35,15 @@ public class OtpSdkConfig private constructor(
         private var maxAttempts: Int = DEFAULT_MAX_ATTEMPTS
         private var logger: SdkLogger = SdkLogger.NoOp
         private var telemetry: TelemetrySink? = null
+        private var gatewayTimeoutSeconds: Int = DEFAULT_GATEWAY_TIMEOUT_SECONDS
 
         public fun maxAttempts(value: Int): Builder = apply { maxAttempts = value }
 
         public fun logger(value: SdkLogger): Builder = apply { logger = value }
 
         public fun telemetry(value: TelemetrySink?): Builder = apply { telemetry = value }
+
+        public fun gatewayTimeoutSeconds(value: Int): Builder = apply { gatewayTimeoutSeconds = value }
 
         public fun build(): SdkResult<OtpSdkConfig> {
             if (destination.isBlank()) {
@@ -50,6 +54,11 @@ public class OtpSdkConfig private constructor(
                     SdkErrors.invalidConfig("maxAttempts must be in $MIN_ATTEMPTS..$MAX_ATTEMPTS")
                 )
             }
+            if (gatewayTimeoutSeconds !in 1..MAX_GATEWAY_TIMEOUT_SECONDS) {
+                return SdkResult.Failure(
+                    SdkErrors.invalidConfig("gatewayTimeoutSeconds must be in 1..$MAX_GATEWAY_TIMEOUT_SECONDS")
+                )
+            }
             return SdkResult.Success(
                 OtpSdkConfig(
                     destination = destination,
@@ -57,21 +66,18 @@ public class OtpSdkConfig private constructor(
                     maxAttempts = maxAttempts,
                     logger = logger,
                     telemetry = telemetry,
+                    gatewayTimeoutSeconds = gatewayTimeoutSeconds,
                 )
             )
         }
 
         private companion object {
-            // `private` on each const val, not just on the companion: a companion object's own
-            // visibility does not make its JVM-level fields private — Kotlin still emits a
-            // `public static final` field on the outer class for a `const val` unless the
-            // property itself is marked private (verified: without this, DEFAULT_MAX_ATTEMPTS,
-            // MIN_ATTEMPTS and MAX_ATTEMPTS showed up as public fields of OtpSdkConfig$Builder in
-            // the committed ABI baseline). See docs/COMPATIBILITY.md's internal-package caveat —
-            // this is the same class of leak, one level deeper.
+            // private per const: a const in a companion is otherwise a public static field.
             private const val DEFAULT_MAX_ATTEMPTS = 3
             private const val MIN_ATTEMPTS = 1
             private const val MAX_ATTEMPTS = 10
+            private const val DEFAULT_GATEWAY_TIMEOUT_SECONDS = 30
+            private const val MAX_GATEWAY_TIMEOUT_SECONDS = 300
         }
     }
 }

@@ -1,6 +1,6 @@
 public abstract interface class io/github/thanhng224/sdkbase/otp/OtpCallbackGateway {
 	public abstract fun requestOtp (Ljava/lang/String;Lio/github/thanhng224/sdkbase/core/gateway/GatewayCallback;)V
-	public abstract fun verifyOtp (Ljava/lang/String;Ljava/lang/String;Lio/github/thanhng224/sdkbase/core/gateway/GatewayCallback;)V
+	public abstract fun verifyOtp (Ljava/lang/String;Ljava/lang/String;Lio/github/thanhng224/sdkbase/core/gateway/CompletionCallback;)V
 }
 
 public final class io/github/thanhng224/sdkbase/otp/OtpCallbackGatewayKt {
@@ -92,6 +92,7 @@ public final class io/github/thanhng224/sdkbase/otp/OtpSdk {
 public final class io/github/thanhng224/sdkbase/otp/OtpSdkConfig {
 	public final fun getDestination ()Ljava/lang/String;
 	public final fun getGateway ()Lio/github/thanhng224/sdkbase/otp/OtpGateway;
+	public final fun getGatewayTimeoutSeconds ()I
 	public final fun getLogger ()Lio/github/thanhng224/sdkbase/core/SdkLogger;
 	public final fun getMaxAttempts ()I
 	public final fun getTelemetry ()Lio/github/thanhng224/sdkbase/core/gateway/TelemetrySink;
@@ -101,6 +102,7 @@ public final class io/github/thanhng224/sdkbase/otp/OtpSdkConfig$Builder {
 	public fun <init> (Ljava/lang/String;Lio/github/thanhng224/sdkbase/otp/OtpCallbackGateway;)V
 	public fun <init> (Ljava/lang/String;Lio/github/thanhng224/sdkbase/otp/OtpGateway;)V
 	public final fun build ()Lio/github/thanhng224/sdkbase/core/SdkResult;
+	public final fun gatewayTimeoutSeconds (I)Lio/github/thanhng224/sdkbase/otp/OtpSdkConfig$Builder;
 	public final fun logger (Lio/github/thanhng224/sdkbase/core/SdkLogger;)Lio/github/thanhng224/sdkbase/otp/OtpSdkConfig$Builder;
 	public final fun maxAttempts (I)Lio/github/thanhng224/sdkbase/otp/OtpSdkConfig$Builder;
 	public final fun telemetry (Lio/github/thanhng224/sdkbase/core/gateway/TelemetrySink;)Lio/github/thanhng224/sdkbase/otp/OtpSdkConfig$Builder;

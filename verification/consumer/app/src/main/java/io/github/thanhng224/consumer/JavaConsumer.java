@@ -1,6 +1,7 @@
 package io.github.thanhng224.consumer;
 
 import io.github.thanhng224.sdkbase.core.SdkResult;
+import io.github.thanhng224.sdkbase.core.gateway.CompletionCallback;
 import io.github.thanhng224.sdkbase.core.gateway.GatewayCallback;
 import io.github.thanhng224.sdkbase.otp.OtpCallbackGateway;
 import io.github.thanhng224.sdkbase.otp.OtpChallenge;
@@ -81,8 +82,8 @@ public final class JavaConsumer {
 
         @Override
         public void verifyOtp(@NotNull String challengeId, @NotNull String code,
-                              @NotNull GatewayCallback<kotlin.Unit> callback) {
-            new Thread(() -> callback.onSuccess(kotlin.Unit.INSTANCE)).start();
+                              @NotNull CompletionCallback callback) {
+            new Thread(callback::onSuccess).start();
         }
     }
 

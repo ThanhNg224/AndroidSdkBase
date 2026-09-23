@@ -3,6 +3,7 @@ package io.github.thanhng224.sdkbase.otp
 import io.github.thanhng224.sdkbase.core.SdkErrors
 import io.github.thanhng224.sdkbase.core.SdkResult
 import io.github.thanhng224.sdkbase.core.errorOrNull
+import io.github.thanhng224.sdkbase.core.gateway.CompletionCallback
 import io.github.thanhng224.sdkbase.core.gateway.GatewayCallback
 import io.github.thanhng224.sdkbase.core.getOrNull
 import org.junit.Assert.assertEquals
@@ -23,8 +24,8 @@ class OtpSdkConfigTest {
         override fun requestOtp(destination: String, callback: GatewayCallback<OtpChallenge>) {
             callback.onSuccess(OtpChallenge("ch", 6, 60, 30))
         }
-        override fun verifyOtp(challengeId: String, code: String, callback: GatewayCallback<Unit>) {
-            callback.onSuccess(Unit)
+        override fun verifyOtp(challengeId: String, code: String, callback: CompletionCallback) {
+            callback.onSuccess()
         }
     }
 
@@ -73,5 +74,16 @@ class OtpSdkConfigTest {
     fun `a callback gateway config still rejects a blank destination`() {
         val result = OtpSdkConfig.Builder("   ", callbackGateway).build()
         assertEquals(SdkErrors.INVALID_CONFIG, result.errorOrNull()?.code)
+    }
+
+    @Test
+    fun `gateway timeout must be within 1 to 300 seconds`() {
+        val gateway = object : OtpGateway {
+            override suspend fun requestOtp(destination: String): SdkResult<OtpChallenge> = error("unused")
+            override suspend fun verifyOtp(challengeId: String, code: String): SdkResult<Unit> = error("unused")
+        }
+        assertEquals(30, OtpSdkConfig.Builder("0900", gateway).build().getOrNull()!!.gatewayTimeoutSeconds)
+        assertEquals(SdkErrors.INVALID_CONFIG, OtpSdkConfig.Builder("0900", gateway).gatewayTimeoutSeconds(0).build().errorOrNull()?.code)
+        assertEquals(SdkErrors.INVALID_CONFIG, OtpSdkConfig.Builder("0900", gateway).gatewayTimeoutSeconds(301).build().errorOrNull()?.code)
     }
 }

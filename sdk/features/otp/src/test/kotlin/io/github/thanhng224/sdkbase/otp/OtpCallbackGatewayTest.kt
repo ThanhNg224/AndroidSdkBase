@@ -2,6 +2,7 @@ package io.github.thanhng224.sdkbase.otp
 
 import io.github.thanhng224.sdkbase.core.SdkErrors
 import io.github.thanhng224.sdkbase.core.SdkResult
+import io.github.thanhng224.sdkbase.core.gateway.CompletionCallback
 import io.github.thanhng224.sdkbase.core.gateway.GatewayCallback
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
@@ -22,8 +23,8 @@ class OtpCallbackGatewayTest {
             override fun requestOtp(destination: String, callback: GatewayCallback<OtpChallenge>) {
                 callback.onSuccess(challenge)
             }
-            override fun verifyOtp(challengeId: String, code: String, callback: GatewayCallback<Unit>) {
-                callback.onSuccess(Unit)
+            override fun verifyOtp(challengeId: String, code: String, callback: CompletionCallback) {
+                callback.onSuccess()
             }
         }.asGateway()
 
@@ -37,8 +38,8 @@ class OtpCallbackGatewayTest {
             override fun requestOtp(destination: String, callback: GatewayCallback<OtpChallenge>) {
                 callback.onFailure(SdkErrors.networkUnavailable())
             }
-            override fun verifyOtp(challengeId: String, code: String, callback: GatewayCallback<Unit>) {
-                callback.onSuccess(Unit)
+            override fun verifyOtp(challengeId: String, code: String, callback: CompletionCallback) {
+                callback.onSuccess()
             }
         }.asGateway()
 
@@ -59,8 +60,8 @@ class OtpCallbackGatewayTest {
             override fun requestOtp(destination: String, callback: GatewayCallback<OtpChallenge>) {
                 Thread { callback.onSuccess(challenge) }.start()
             }
-            override fun verifyOtp(challengeId: String, code: String, callback: GatewayCallback<Unit>) {
-                callback.onSuccess(Unit)
+            override fun verifyOtp(challengeId: String, code: String, callback: CompletionCallback) {
+                callback.onSuccess()
             }
         }.asGateway()
 
@@ -77,12 +78,23 @@ class OtpCallbackGatewayTest {
                 callback.onSuccess(challenge)
                 callback.onFailure(SdkErrors.unknown())
             }
-            override fun verifyOtp(challengeId: String, code: String, callback: GatewayCallback<Unit>) {
-                callback.onSuccess(Unit)
+            override fun verifyOtp(challengeId: String, code: String, callback: CompletionCallback) {
+                callback.onSuccess()
             }
         }.asGateway()
 
         val result = withTimeout(5_000) { gateway.requestOtp("0900000000") }
         assertEquals(challenge, (result as SdkResult.Success).value)
+    }
+
+    @Test
+    fun `a completion callback resumes verify with success`() = runTest {
+        val gateway = object : OtpCallbackGateway {
+            override fun requestOtp(destination: String, callback: GatewayCallback<OtpChallenge>) = error("unused")
+            override fun verifyOtp(challengeId: String, code: String, callback: CompletionCallback) {
+                Thread { callback.onSuccess(); callback.onSuccess() }.start()
+            }
+        }
+        assertEquals(SdkResult.Success(Unit), gateway.asGateway().verifyOtp("c", "1"))
     }
 }

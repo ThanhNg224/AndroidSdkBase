@@ -60,7 +60,10 @@ class OtpStateMachineTest {
 
     @Test
     fun `a wrong code consumes one attempt and clears the entry`() {
-        val entered = awaiting.copy(enteredCode = "123456")
+        // Verifying, not AwaitingCode: onVerificationFailed only applies while a verify is in flight
+        // (see `a verify result is ignored unless a verify is in flight`), which is the phase Submit
+        // leaves the state in before the engine calls this reducer.
+        val entered = awaiting.copy(phase = OtpState.Phase.Verifying, enteredCode = "123456")
         val next = OtpStateMachine.onVerificationFailed(entered, OtpErrors.otpInvalid())
         assertEquals(2, next.attemptsRemaining)
         assertEquals("", next.enteredCode)
@@ -70,7 +73,7 @@ class OtpStateMachineTest {
 
     @Test
     fun `running out of attempts is terminal`() {
-        var state = awaiting.copy(enteredCode = "111111", attemptsRemaining = 1)
+        var state = awaiting.copy(phase = OtpState.Phase.Verifying, enteredCode = "111111", attemptsRemaining = 1)
         state = OtpStateMachine.onVerificationFailed(state, OtpErrors.otpInvalid())
         assertEquals(0, state.attemptsRemaining)
         assertEquals(OtpState.Phase.Failed, state.phase)
@@ -99,5 +102,26 @@ class OtpStateMachineTest {
         val state = OtpStateMachine.reduce(awaiting, OtpCommand.Cancel)
         assertEquals(OtpState.Phase.Failed, state.phase)
         assertEquals(SdkErrors.CANCELLED_BY_USER, state.error?.code)
+    }
+
+    @Test
+    fun `cancel does not undo a terminal phase`() {
+        val verified = OtpState.initial().copy(phase = OtpState.Phase.Verified)
+        assertEquals(verified, OtpStateMachine.reduce(verified, OtpCommand.Cancel))
+    }
+
+    @Test
+    fun `a verify result is ignored unless a verify is in flight`() {
+        val expired = OtpState.initial().copy(phase = OtpState.Phase.Failed, error = OtpErrors.otpExpired())
+        assertEquals(expired, OtpStateMachine.onVerified(expired))
+        assertEquals(expired, OtpStateMachine.onVerificationFailed(expired, OtpErrors.otpInvalid()))
+    }
+
+    @Test
+    fun `clearCode only clears while awaiting a code`() {
+        val awaiting = OtpState.initial().copy(phase = OtpState.Phase.AwaitingCode, enteredCode = "12")
+        assertEquals("", OtpStateMachine.clearCode(awaiting).enteredCode)
+        val verifying = awaiting.copy(phase = OtpState.Phase.Verifying)
+        assertEquals(verifying, OtpStateMachine.clearCode(verifying))
     }
 }
