@@ -70,10 +70,8 @@ public fun OtpScreen(
             state.phase == OtpState.Phase.Requesting || state.phase == OtpState.Phase.Verifying ->
                 CircularProgressIndicator(Modifier.size(24.dp))
 
-            // Verified must be checked before the expiry fallback. Without this branch the screen
-            // silently falls through to "Expires in Ns" with a frozen counter, and a host that
-            // relies on the bundled UI never tells the user the flow succeeded. Found by running
-            // the demo on a device: every unit test passed while the success state was invisible.
+            // Verified must be checked before the expiry fallback, or the screen falls through to
+            // a frozen "Expires in Ns" and never tells the user the flow succeeded.
             state.phase == OtpState.Phase.Verified ->
                 Text(text = "Verified", color = colors.accent, textAlign = TextAlign.Center)
 

@@ -13,18 +13,9 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 /**
- * Compiles against the published AAR from Java. If a Kotlin-only construct leaked into the public
- * surface — a default argument, an inline class, a `suspend` function with no Java-friendly
- * alternative — this file stops compiling, which is exactly the signal we want.
- *
- * Confirmed against the real compiled bytecode of the published `otp`/`core` AARs with:
- *   javap -p io/github/thanhng224/sdkbase/otp/OtpGateway.class
- * The `OtpGateway` methods erase to `Object requestOtp(String, Continuation)` and
- * `Object verifyOtp(String, String, Continuation)` — Kotlin's suspend-function calling convention.
- * A Java implementation CAN satisfy this interface, but only by hand-writing the Continuation
- * parameter and returning the result directly instead of ever suspending — see the class doc on
- * JavaGateway below. The Java-facing answer for a genuinely asynchronous host is
- * {@link OtpCallbackGateway} / {@link JavaCallbackGateway} below, not this interface.
+ * Compiles against the published AAR from Java. A Kotlin-only construct in the public surface —
+ * a default argument, a `suspend` fun with no Java-friendly alternative — would stop this file
+ * compiling, which is exactly the signal wanted.
  */
 public final class JavaConsumer {
 
@@ -32,17 +23,9 @@ public final class JavaConsumer {
     }
 
     /**
-     * A host gateway written in Java.
-     *
-     * This compiles and behaves correctly ONLY because it never actually needs to suspend: it
-     * returns a fully-formed {@link SdkResult} synchronously instead of invoking the continuation.
-     * Kotlin's suspend calling convention lets a non-suspending JVM caller/implementor return the
-     * real result directly in place of the `COROUTINE_SUSPENDED` sentinel, so a synchronous Java
-     * implementation is possible. A Java host that genuinely needs to call an async API (a
-     * callback-based HTTP client, for instance) should implement {@link OtpCallbackGateway}
-     * instead — see {@link JavaCallbackGateway} below — rather than hand-driving the raw
-     * `Continuation.resumeWith` protocol, which is undocumented for Java callers and not a
-     * supported public API.
+     * A host gateway written in Java. Compiles only because it never actually suspends: it returns
+     * a fully-formed {@link SdkResult} synchronously instead of invoking the continuation. A host
+     * needing genuine async should implement {@link OtpCallbackGateway} instead (see below).
      */
     public static final class JavaGateway implements OtpGateway {
 
@@ -95,9 +78,8 @@ public final class JavaConsumer {
     }
 
     /**
-     * Note: there is deliberately no `OtpSdk.VERSION`. Task 8 removed it — wiring a version constant
-     * would have meant enabling `buildConfig`, and AGP generates `BuildConfig` in the module's
-     * namespace root where the ABI dump cannot exclude it, making it permanent published contract.
-     * A host reads the resolved Maven coordinate instead.
+     * Note: there is deliberately no {@code OtpSdk.VERSION} — AGP's generated {@code BuildConfig}
+     * would sit in the module's namespace root, where the ABI dump cannot exclude it, making any
+     * field there permanent published contract. A host reads the resolved Maven coordinate instead.
      */
 }

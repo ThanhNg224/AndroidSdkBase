@@ -5,16 +5,9 @@ import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SourcesJar
 
-// ---------------------------------------------------------------------------------------------
 // Publishing for every published module: Android library, Kotlin JVM, or java-platform (BOM).
-// Local file repo only — Maven Central is deliberately not configured while this is a base.
-//
-// Verified against the real vanniktech maven-publish 0.37.0 jar (javap + the -sources jar in
-// ~/.gradle/caches), not transcribed from the plan: `AndroidSingleVariantLibrary(javadocJar,
-// sourcesJar, variant)`, `KotlinJvm(javadocJar, sourcesJar)` and `JavaPlatform()` are the
-// non-deprecated constructors — the Boolean-taking overloads of the first two are
-// `@Deprecated`, which would fail `-Psdkbase.warningsAsErrors=true`.
-// ---------------------------------------------------------------------------------------------
+// Local file repo only — Maven Central is deliberately not configured while this is a base. The
+// Boolean-taking constructor overloads are `@Deprecated`, which fails -Werror; these are not.
 
 plugins {
     id("com.vanniktech.maven.publish")

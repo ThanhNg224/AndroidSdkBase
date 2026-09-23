@@ -82,8 +82,7 @@ ehthumbs.db
 desktop.ini
 
 # ---------------------------------------------------------------------------
-# Working docs — plans and specs stay local (see docs/CONTRIBUTING.md)
-# Reference docs under docs/*.md ARE tracked.
+# Working docs — plans and specs stay local; reference docs under docs/*.md ARE tracked.
 # ---------------------------------------------------------------------------
 docs/superpowers/
 

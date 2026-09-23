@@ -39,10 +39,9 @@ internal class OtpEngine(
     private val maxAttempts: Int = 3,
     private val gatewayTimeoutMillis: Long = 30_000L,
 ) {
-    // A CoroutineExceptionHandler here is not optional: the ticker (and any future fire-and-forget
-    // work) runs in this scope, and a SupervisorJob with no handler rethrows an uncaught exception
-    // to the thread's default handler, which on Android kills the host process. Every gateway call
-    // that could throw goes through `callGateway` instead, which never lets an exception reach here.
+    // A SupervisorJob with no handler rethrows an uncaught exception to the thread's default
+    // handler, which on Android kills the host process. The ticker runs in this scope, so it needs
+    // one; every gateway call that could throw goes through `callGateway` instead.
     private val scope = CoroutineScope(
         SupervisorJob() + dispatchers.default +
             CoroutineExceptionHandler { _, throwable -> logger.error(TAG, "unexpected failure", throwable) },
@@ -99,17 +98,7 @@ internal class OtpEngine(
         }
     }
 
-    /**
-     * Cancels the engine's scope. After this the engine must not be reused.
-     *
-     * The [timer] stop is belt-and-braces, not load-bearing: [OtpTimer] launches into this same
-     * scope, so `scope.cancel()` already cancels its job structurally. Verified by removing this
-     * line — every test still passed. It is kept because it states the intent at the call site and
-     * would become necessary the moment [OtpTimer] is given a scope of its own. If you ever make
-     * that change, add a test that fails without this line (assert on the timer's job directly, or
-     * give the timer a scope `close()` does not cancel) — the current
-     * `OtpTimerTest.close stops the ticker` cannot distinguish the two.
-     */
+    /** Cancels the engine's scope; the engine must not be reused. */
     public fun close() {
         timer.stop()
         scope.cancel()
@@ -117,17 +106,7 @@ internal class OtpEngine(
 
     private var lastDestination: String? = null
 
-    /**
-     * Every state mutation in the engine goes through here, never through `_state.update` directly,
-     * so the ticker's lifecycle cannot be forgotten at a new call site. [OtpState.Phase.Verified] and
-     * [OtpState.Phase.Failed] are the flow's only terminal phases — reached from a successful verify,
-     * exhausted attempts, a cancel, a fatal gateway error, or tick-driven expiry — and each one stops
-     * the ticker. [OtpState.Phase.Verifying] is deliberately NOT treated as a reason to stop: it is a
-     * transient detour off [OtpState.Phase.AwaitingCode] while a submit is in flight, and
-     * [OtpStateMachine.onTick] already no-ops outside `AwaitingCode`, so leaving the ticker running
-     * through it is both safe and necessary — stopping it there would leave a retried, still-awaiting
-     * session with a countdown that never resumes.
-     */
+    /** The single mutation point, so the ticker always stops when the phase becomes terminal. */
     private fun updateState(transform: (OtpState) -> OtpState) {
         _state.update(transform)
         if (_state.value.phase == OtpState.Phase.Verified || _state.value.phase == OtpState.Phase.Failed) {

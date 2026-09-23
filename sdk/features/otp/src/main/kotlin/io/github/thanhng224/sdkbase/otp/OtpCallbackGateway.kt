@@ -8,12 +8,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
- * The Java-implementable form of [OtpGateway]: no suspend, no Continuation.
- *
- * A Java host with a genuinely asynchronous client — a callback-based HTTP library, the normal
- * case for enterprise Android hosts — implements this directly instead of hand-driving Kotlin's
- * undocumented `Continuation.resumeWith` protocol. [asGateway] adapts it into the suspend contract
- * the engine consumes.
+ * The Java-implementable form of [OtpGateway]: no suspend, no Continuation. A callback-based host
+ * implements this directly; [asGateway] adapts it into the suspend contract the engine consumes.
  */
 public interface OtpCallbackGateway {
 
@@ -25,12 +21,9 @@ public interface OtpCallbackGateway {
 }
 
 /**
- * Adapts a callback gateway into the suspend contract [OtpGateway] consumes.
- *
- * Two things are not optional here: a callback delivered from a thread other than the caller's
- * must still resume the suspended coroutine — the normal case for an async client, and exactly why
- * `CancellableContinuation.resume` is documented as safe to call from any thread — and a host that
- * calls back more than once must not crash the SDK, so only the first terminal call is honoured.
+ * Adapts a callback gateway into the suspend contract [OtpGateway] consumes. The callback may
+ * arrive on any thread, and only the first terminal call resumes the coroutine, so a host calling
+ * back twice cannot crash the SDK.
  */
 public fun OtpCallbackGateway.asGateway(): OtpGateway {
     val delegate = this
@@ -53,10 +46,9 @@ public fun OtpCallbackGateway.asGateway(): OtpGateway {
 }
 
 /**
- * Suspends until [register] delivers exactly one terminal call, guarding against a second one with
- * [AtomicBoolean.compareAndSet] so a misbehaving host cannot double-resume the continuation. If the
- * coroutine is cancelled before the host calls back, [suspendCancellableCoroutine] simply never
- * resumes — that is correct: cancellation is not swallowed here.
+ * Suspends until [register] delivers exactly one terminal call, guarded by
+ * [AtomicBoolean.compareAndSet] against a double-resume. A cancellation before the callback simply
+ * never resumes, which is correct.
  */
 private suspend fun <T> bridge(register: (GatewayCallback<T>) -> Unit): SdkResult<T> =
     suspendCancellableCoroutine { continuation ->

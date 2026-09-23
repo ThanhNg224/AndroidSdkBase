@@ -46,7 +46,7 @@ public object SdkErrors {
     public fun alreadyRunning(): SdkError =
         SdkError.Lifecycle(ALREADY_RUNNING, "A session is already running")
 
-    /** Every code in the catalog. Used by tests and by the docs generator. */
+    /** Every code in this catalog. */
     public fun all(): List<Int> = listOf(
         UNKNOWN, INVALID_CONFIG, CANCELLED_BY_USER,
         NETWORK_UNAVAILABLE, GATEWAY_FAILURE, TIMEOUT,

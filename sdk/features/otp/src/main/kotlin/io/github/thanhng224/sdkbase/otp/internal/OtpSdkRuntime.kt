@@ -12,23 +12,15 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-/**
- * Wires an [OtpEngine] to the public [OtpSession] contract. Kept in an `internal` **package**, not
- * just marked Kotlin-`internal`: the ABI baseline tool (`sdkbase.abi`) only excludes declarations by
- * package path, so a top-level `internal` class would still show up in the committed dump (see
- * docs/COMPATIBILITY.md and the lesson from Task 7).
- */
+/** Wires an [OtpEngine] to the public [OtpSession] contract. Kept Kotlin `internal`. */
 internal class OtpSdkRuntime(
     private val engine: OtpEngine,
     private val config: OtpSdkConfig,
 ) : OtpSession {
 
-    // dispatch() below is deliberately non-suspending (a UI callback can't suspend), so it needs a
-    // scope to fire-and-forget into the suspend engine. AndroidDispatchers is the same dispatcher
-    // instance OtpSdk.start used to construct the engine. The CoroutineExceptionHandler is not
-    // optional: a SupervisorJob with no handler rethrows an uncaught exception to the thread's
-    // default handler, which on Android kills the host process — see OtpEngine's own scope for the
-    // same reasoning.
+    // dispatch() is non-suspending (a UI callback can't suspend), so it fires into this scope
+    // instead. The handler matters: a SupervisorJob with none rethrows an uncaught exception to the
+    // thread's default handler, which on Android kills the host process.
     private val scope = CoroutineScope(
         SupervisorJob() + AndroidDispatchers.default +
             CoroutineExceptionHandler { _, t -> config.logger.error(TAG, "dispatch failed", t) },

@@ -1,9 +1,8 @@
 package io.github.thanhng224.sdkbase.core
 
 /**
- * Technical logging contract. `:core` owns the contract and the redaction policy;
- * `:platform` owns the Logcat sink. The SDK must never log a secret, a token, or a full
- * user identifier — route anything sensitive through [redact] first.
+ * Technical logging contract. The host (or the demo app's `LogcatSdkLogger`) supplies the sink; the
+ * SDK must never log a secret, a token, or a full user identifier — route it through [redact] first.
  */
 public interface SdkLogger {
 
