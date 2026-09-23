@@ -30,90 +30,71 @@ tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
 
-// ---------------------------------------------------------------------------
-// Zone guard — docs/ARCHITECTURE.md is enforced here, not by code review.
-//
-// Two independent rules:
-//   1. Direction: a module may only depend on modules in zones below it.
-//   2. Purity:    a published artifact's transitive compile graph may not reach an unpublished zone,
-//                 because a consumer resolving it from Maven Central could not resolve that edge.
-// Only `api` and `implementation` project edges are inspected; androidTest is deliberately exempt.
-// ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------------------------
+// Zone guard: module boundaries are enforced here, at configuration time, not by review.
+// Rules: (1) every included module is registered; (2) edges only go to allowed zones, across every
+// non-test configuration (compileOnly, runtimeOnly and variant-specific ones included); (3) a
+// published module depends only on published modules; (4) a published module has an ABI check and a
+// local publication.
+// ---------------------------------------------------------------------------------------------
 
 @Suppress("UNCHECKED_CAST")
 val zones = rootProject.extra["zones"] as Map<String, List<String>>
 
 @Suppress("UNCHECKED_CAST")
-val publishedArtifacts = rootProject.extra["publishedArtifacts"] as List<String>
+val publishedArtifacts = (rootProject.extra["publishedArtifacts"] as List<String>).toSet()
 
 val zoneByPath: Map<String, String> =
     zones.flatMap { (zone, paths) -> paths.map { it to zone } }.toMap()
 
-// What each zone is allowed to reach. `core` reaches nothing: it is the bottom.
 val allowedTargets: Map<String, Set<String>> = mapOf(
     "core" to emptySet(),
     "feature" to setOf("core", "feature"),
+    "bom" to setOf("core", "feature"),
     "app" to setOf("core", "feature", "app"),
 )
 
-// A published AAR must never reach one of these.
-val unpublishableZones = setOf("app", "unregistered")
+fun isTestConfiguration(name: String): Boolean = name.contains("test", ignoreCase = true)
 
-fun directProjectDeps(project: Project): Set<String> =
-    listOf("api", "implementation")
-        .mapNotNull { project.configurations.findByName(it) }
-        .flatMap { configuration ->
-            configuration.dependencies
-                .filterIsInstance<ProjectDependency>()
-                .map { it.path }
-        }
+fun projectEdges(project: Project): Set<String> =
+    project.configurations
+        .filterNot { isTestConfiguration(it.name) }
+        .flatMap { it.dependencies.withType(ProjectDependency::class.java) }
+        .map { it.path }
         .toSet()
-
-fun transitiveProjectDeps(project: Project, visited: MutableSet<String>): Set<String> {
-    directProjectDeps(project).forEach { path ->
-        if (visited.add(path)) {
-            project.rootProject.findProject(path)?.let { transitiveProjectDeps(it, visited) }
-        }
-    }
-    return visited
-}
 
 gradle.projectsEvaluated {
     val violations = mutableListOf<String>()
 
-    // Rule 1: direction.
-    rootProject.subprojects.forEach { source ->
-        val sourceZone = zoneByPath[source.path] ?: "unregistered"
-        val allowed = allowedTargets[sourceZone]
-        directProjectDeps(source).forEach { targetPath ->
-            val targetZone = zoneByPath[targetPath] ?: "unregistered"
-            if (allowed == null || targetZone !in allowed) {
-                violations += "${source.path} [$sourceZone] -> $targetPath [$targetZone] is not allowed"
+    (zones.keys - allowedTargets.keys).forEach { violations += "unknown zone '$it' in the registry" }
+    zoneByPath.keys.filter { rootProject.findProject(it) == null }
+        .forEach { violations += "$it is registered but not included in settings.gradle.kts" }
+
+    // Parent projects implied by nested paths (`:sdk`, `:sdk:features`) have no build file.
+    rootProject.subprojects.filter { it.buildFile.exists() }.forEach { source ->
+        val sourceZone = zoneByPath[source.path]
+        if (sourceZone == null) {
+            violations += "${source.path} is not registered in gradle/module-topology.gradle.kts"
+            return@forEach
+        }
+        val allowed = allowedTargets[sourceZone].orEmpty()
+        val published = source.path in publishedArtifacts
+        projectEdges(source).forEach { target ->
+            val targetZone = zoneByPath[target] ?: "unregistered"
+            if (targetZone !in allowed) {
+                violations += "${source.path} [$sourceZone] -> $target [$targetZone] is not allowed"
+            }
+            if (published && target !in publishedArtifacts) {
+                violations += "${source.path} is published but depends on unpublished $target"
             }
         }
-    }
-
-    // Rule 2: purity of every published graph.
-    publishedArtifacts.forEach { modulePath ->
-        val module = rootProject.findProject(modulePath) ?: return@forEach
-        transitiveProjectDeps(module, mutableSetOf()).forEach { depPath ->
-            val depZone = zoneByPath[depPath] ?: "unregistered"
-            if (depZone in unpublishableZones) {
-                violations += "$modulePath reaches $depPath [$depZone] in its published compile graph"
+        if (published) {
+            if (sourceZone != "bom" && source.tasks.findByName("apiCheck") == null) {
+                violations += "${source.path} is published but has no apiCheck (apply sdkbase.abi)"
             }
-        }
-    }
-
-    // Rule 3: every published artifact must actually have an ABI contract and a publication.
-    // Registration alone is not enough — an artifact with no baseline has no contract.
-    publishedArtifacts.forEach { modulePath ->
-        val module = rootProject.findProject(modulePath) ?: return@forEach
-        if (module.tasks.findByName("apiCheck") == null) {
-            violations += "$modulePath is registered as published but applies no ABI plugin " +
-                "(sdkbase.abi for Android modules, sdkbase.abi.jvm for Kotlin JVM modules)"
-        }
-        if (module.tasks.findByName("publishToMavenLocal") == null) {
-            violations += "$modulePath is registered as published but applies no publishing plugin"
+            if (source.tasks.findByName("publishAllPublicationsToLocalTestRepository") == null) {
+                violations += "${source.path} is published but has no localTest publication"
+            }
         }
     }
 
