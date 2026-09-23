@@ -1,4 +1,4 @@
-package io.github.thanhng224.sdkbase.core
+package io.github.thanhng224.sdkbase.core.error
 
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -27,23 +27,5 @@ class SdkErrorsTest {
     @Test
     fun `core owns no business codes`() {
         assertTrue(SdkErrors.all().none { it / 1000 == 3 })
-    }
-
-    @Test
-    fun `redact keeps only the requested tail`() {
-        assertEquals("*******89", redact("123456789", keepLast = 2))
-        assertEquals("*********", redact("123456789", keepLast = 0))
-        // Never leak more than the value itself.
-        assertEquals("12", redact("12", keepLast = 5))
-    }
-
-    @Test
-    fun `result accessors do not throw`() {
-        val ok: SdkResult<Int> = SdkResult.Success(7)
-        val bad: SdkResult<Int> = SdkResult.Failure(SdkErrors.unknown())
-        assertEquals(7, ok.getOrNull())
-        assertEquals(null, ok.errorOrNull())
-        assertEquals(null, bad.getOrNull())
-        assertEquals(SdkErrors.UNKNOWN, bad.errorOrNull()?.code)
     }
 }

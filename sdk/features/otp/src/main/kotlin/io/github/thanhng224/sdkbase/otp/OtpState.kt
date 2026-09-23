@@ -1,6 +1,6 @@
 package io.github.thanhng224.sdkbase.otp
 
-import io.github.thanhng224.sdkbase.core.SdkError
+import io.github.thanhng224.sdkbase.core.error.SdkError
 
 /** Immutable snapshot of the OTP flow. The UI renders this and nothing else. */
 public data class OtpState(

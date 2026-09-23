@@ -1,10 +1,10 @@
 package io.github.thanhng224.sdkbase.otp.internal
 
-import io.github.thanhng224.sdkbase.core.DispatcherProvider
-import io.github.thanhng224.sdkbase.core.SdkErrors
-import io.github.thanhng224.sdkbase.core.SdkLogger
-import io.github.thanhng224.sdkbase.core.SdkResult
-import io.github.thanhng224.sdkbase.core.redact
+import io.github.thanhng224.sdkbase.core.concurrency.DispatcherProvider
+import io.github.thanhng224.sdkbase.core.error.SdkErrors
+import io.github.thanhng224.sdkbase.core.logging.SdkLogger
+import io.github.thanhng224.sdkbase.core.logging.redact
+import io.github.thanhng224.sdkbase.core.result.SdkResult
 import io.github.thanhng224.sdkbase.otp.OtpCommand
 import io.github.thanhng224.sdkbase.otp.OtpErrors
 import io.github.thanhng224.sdkbase.otp.OtpGateway

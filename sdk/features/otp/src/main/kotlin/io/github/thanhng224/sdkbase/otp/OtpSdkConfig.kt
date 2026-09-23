@@ -1,9 +1,9 @@
 package io.github.thanhng224.sdkbase.otp
 
-import io.github.thanhng224.sdkbase.core.SdkErrors
-import io.github.thanhng224.sdkbase.core.SdkLogger
-import io.github.thanhng224.sdkbase.core.SdkResult
-import io.github.thanhng224.sdkbase.core.gateway.TelemetrySink
+import io.github.thanhng224.sdkbase.core.error.SdkErrors
+import io.github.thanhng224.sdkbase.core.logging.SdkLogger
+import io.github.thanhng224.sdkbase.core.result.SdkResult
+import io.github.thanhng224.sdkbase.core.telemetry.TelemetrySink
 
 /**
  * Host-supplied configuration. Validated once, here, at the public boundary — never deeper. A

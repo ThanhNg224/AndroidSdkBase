@@ -1,11 +1,10 @@
 import com.android.build.api.artifact.SingleArtifact
 import com.android.build.api.variant.LibraryAndroidComponentsExtension
 import org.gradle.accessors.dm.LibrariesForLibs
-import org.gradle.api.tasks.bundling.Jar
 import sdkbase.abi.CheckAbiTask
 import sdkbase.abi.DumpAbiTask
 
-// apiDump / apiCheck for Android (release AAR) and JVM (jar) modules. Exact match: every change to
+// apiDump / apiCheck for Android (release AAR) modules. Exact match: every change to
 // the public surface shows up as a reviewed diff of api/<name>.api.
 val libs = the<LibrariesForLibs>()
 
@@ -53,8 +52,4 @@ plugins.withId("com.android.library") {
     components.onVariants(components.selector().withBuildType("release")) { variant ->
         dumpAbi.configure { artifact.set(variant.artifacts.get(SingleArtifact.AAR)) }
     }
-}
-
-plugins.withId("org.jetbrains.kotlin.jvm") {
-    dumpAbi.configure { artifact.set(tasks.named<Jar>("jar").flatMap { it.archiveFile }) }
 }

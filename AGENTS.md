@@ -11,7 +11,7 @@ own feature. Published artifacts: `core`, `otp`, `otp-ui-compose`, `bom`.
 ```
 
 ## Layout
-- `sdk/core` — pure Kotlin/JVM contracts shared by every feature. No Android.
+- `sdk/core` — Android library contracts shared by every feature: results, errors, logging, concurrency.
 - `sdk/features/<name>` — one published artifact per feature. Engine code lives in `internal/` and is Kotlin `internal`.
 - `sdk/features/<name>-ui-compose` — optional UI artifact. Compose never enters a non-UI module.
 - `sdk/bom` — lists every published module automatically.

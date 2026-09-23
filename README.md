@@ -26,7 +26,7 @@ verification — exercises every layer end to end so you have something real to 
 ## Layout
 
 ```text
-sdk/core                         pure Kotlin/JVM contracts shared by every feature. No Android.
+sdk/core                         Android library contracts shared by every feature: results, errors, logging.
 sdk/features/<name>               one published artifact per feature; engine code is internal/.
 sdk/features/<name>-ui-compose    optional UI artifact; Compose never enters a non-UI module.
 sdk/bom                           lists every published module automatically.

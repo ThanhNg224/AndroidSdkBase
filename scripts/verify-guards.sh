@@ -109,28 +109,28 @@ CORE=sdk/core/src/main/kotlin/io/github/thanhng224/sdkbase/core
 OTP=sdk/features/otp/src/main/kotlin/io/github/thanhng224/sdkbase/otp
 ABI_CORE='Public ABI of :sdk:core differs'
 run_case abi-delete-signature \
-  "edit $CORE/SdkErrors.kt 'public fun notStarted(): SdkError =' 'internal fun notStarted(): SdkError ='" \
+  "edit $CORE/error/SdkErrors.kt 'public fun notStarted(): SdkError =' 'internal fun notStarted(): SdkError ='" \
   "./gradlew :sdk:core:apiCheck -q" "$ABI_CORE"
 run_case abi-move-toplevel-function \
   "python3 - <<'EOF'
-d='$CORE/'
+d='$CORE/logging/'
 t=open(d+'SdkLogger.kt').read(); i=t.index('/**\n * Masks all')
 open(d+'SdkLogger.kt','w').write(t[:i]+'/** Added API. */\npublic fun noOpLogger(): SdkLogger = SdkLogger.NoOp\n')
-open(d+'Redact.kt','w').write('package io.github.thanhng224.sdkbase.core\n\n'+t[i:])
+open(d+'Redact.kt','w').write('package io.github.thanhng224.sdkbase.core.logging\n\n'+t[i:])
 EOF" \
   "./gradlew :sdk:core:apiCheck -q" "$ABI_CORE"
 run_case abi-add-abstract-to-host-interface \
-  "edit $CORE/SdkLogger.kt '    public fun info(tag: String, message: String)
-' '    public fun info(tag: String, message: String)
+  "edit $CORE/concurrency/DispatcherProvider.kt '    public val io: CoroutineDispatcher
+}' '    public val io: CoroutineDispatcher
 
-    public fun warn(tag: String, message: String)
-' && edit $CORE/SdkLogger.kt '            override fun info(tag: String, message: String): Unit = Unit
-' '            override fun info(tag: String, message: String): Unit = Unit
-            override fun warn(tag: String, message: String): Unit = Unit
-'" \
+    public val unconfined: CoroutineDispatcher
+}' && edit $CORE/concurrency/AndroidDispatchers.kt '    override val io: CoroutineDispatcher get() = Dispatchers.IO
+}' '    override val io: CoroutineDispatcher get() = Dispatchers.IO
+    override val unconfined: CoroutineDispatcher get() = Dispatchers.Unconfined
+}'" \
   "./gradlew :sdk:core:apiCheck -q" "$ABI_CORE"
 run_case abi-add-sealed-subtype \
-  "edit $CORE/SdkResult.kt '    public data class Failure' '    public data object Pending : SdkResult<Nothing>
+  "edit $CORE/result/SdkResult.kt '    public data class Failure' '    public data object Pending : SdkResult<Nothing>
 
     public data class Failure'" \
   "./gradlew :sdk:core:apiCheck -q" "$ABI_CORE"
@@ -155,17 +155,13 @@ ACT=verification/consumer/app/src/main/kotlin/io/github/thanhng224/consumer/Cons
 run_case floor-stdlib-unpinned \
   "edit gradle.properties 'kotlin.stdlib.default.dependency=false' 'kotlin.stdlib.default.dependency=true' &&
    edit build-logic/src/main/kotlin/sdkbase.android.library.gradle.kts '\"api\"(libs.kotlin.stdlib)
-    ' '' &&
-   edit build-logic/src/main/kotlin/sdkbase.kotlin.jvm.gradle.kts '\"api\"(libs.kotlin.stdlib)
     ' ''" \
   "$PUB" "declares kotlin-stdlib"
+# The `sdkbase.kotlin.jvm` convention no longer exists (every module, including core, is now an
+# Android library) — this case alone covers the floor for all of them.
 run_case floor-unpin-android-library \
   "edit build-logic/src/main/kotlin/sdkbase.android.library.gradle.kts 'languageVersion.set(floor)' '' &&
    edit build-logic/src/main/kotlin/sdkbase.android.library.gradle.kts 'apiVersion.set(floor)' ''" \
-  "$PUB" "compiled with an incompatible version of Kotlin"
-run_case floor-unpin-kotlin-jvm \
-  "edit build-logic/src/main/kotlin/sdkbase.kotlin.jvm.gradle.kts 'languageVersion.set(floor)' '' &&
-   edit build-logic/src/main/kotlin/sdkbase.kotlin.jvm.gradle.kts 'apiVersion.set(floor)' ''" \
   "$PUB" "compiled with an incompatible version of Kotlin"
 run_case r8-canary-unreachable-sdk \
   "edit $ACT '/* SDK_CALLS_BEGIN */' '/* SDK_CALLS_BEGIN' && edit $ACT '/* SDK_CALLS_END */' 'SDK_CALLS_END */'" \

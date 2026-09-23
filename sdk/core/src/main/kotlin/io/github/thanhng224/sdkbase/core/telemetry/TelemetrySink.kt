@@ -1,4 +1,4 @@
-package io.github.thanhng224.sdkbase.core.gateway
+package io.github.thanhng224.sdkbase.core.telemetry
 
 /**
  * Business telemetry. The SDK emits named events; the host decides whether and where they go.

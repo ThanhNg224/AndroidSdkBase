@@ -1,9 +1,9 @@
 package io.github.thanhng224.sdkbase.otp
 
-import io.github.thanhng224.sdkbase.core.SdkError
-import io.github.thanhng224.sdkbase.core.SdkResult
+import io.github.thanhng224.sdkbase.core.error.SdkError
 import io.github.thanhng224.sdkbase.core.gateway.CompletionCallback
 import io.github.thanhng224.sdkbase.core.gateway.GatewayCallback
+import io.github.thanhng224.sdkbase.core.result.SdkResult
 import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.suspendCancellableCoroutine
 

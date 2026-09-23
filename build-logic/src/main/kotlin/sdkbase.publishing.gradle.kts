@@ -1,11 +1,10 @@
 import com.vanniktech.maven.publish.AndroidSingleVariantLibrary
 import com.vanniktech.maven.publish.JavaPlatform
 import com.vanniktech.maven.publish.JavadocJar
-import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.SourcesJar
 
-// Publishing for every published module: Android library, Kotlin JVM, or java-platform (BOM).
+// Publishing for every published module: Android library, or java-platform (BOM).
 // Local file repo only — Maven Central is deliberately not configured while this is a base. The
 // Boolean-taking constructor overloads are `@Deprecated`, which fails -Werror; these are not.
 
@@ -33,10 +32,6 @@ plugins.withId("com.android.library") {
     pluginManager.apply("org.jetbrains.dokka")
     publishing.configure(AndroidSingleVariantLibrary(dokkaJavadoc, SourcesJar.Sources(), "release"))
 }
-plugins.withId("org.jetbrains.kotlin.jvm") {
-    pluginManager.apply("org.jetbrains.dokka")
-    publishing.configure(KotlinJvm(dokkaJavadoc, SourcesJar.Sources()))
-}
 plugins.withId("java-platform") {
     publishing.configure(JavaPlatform())
 }
@@ -52,11 +47,11 @@ publishing.apply {
     pom {
         val url = pomProperty("url")
         name.set(project.name)
-        // Lazy, not `project.description ?: project.name` eagerly: for a Kotlin JVM or
-        // java-platform module this `pom {}` action runs (as part of `configure(Platform)`,
-        // which creates the publication synchronously) before the module's own `description =
-        // "..."` line executes, so an eager read would always see null and fall back to the
-        // project name. An Android module defers publication creation, so it never showed this.
+        // Lazy, not `project.description ?: project.name` eagerly: for a java-platform module this
+        // `pom {}` action runs (as part of `configure(Platform)`, which creates the publication
+        // synchronously) before the module's own `description = "..."` line executes, so an eager
+        // read would always see null and fall back to the project name. An Android module defers
+        // publication creation, so it never showed this.
         description.set(project.provider { project.description ?: project.name })
         inceptionYear.set(pomProperty("inceptionYear"))
         this.url.set(url)

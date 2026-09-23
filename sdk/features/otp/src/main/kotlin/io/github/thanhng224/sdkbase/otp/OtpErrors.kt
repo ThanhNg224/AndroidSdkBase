@@ -1,6 +1,6 @@
 package io.github.thanhng224.sdkbase.otp
 
-import io.github.thanhng224.sdkbase.core.SdkError
+import io.github.thanhng224.sdkbase.core.error.SdkError
 
 /** Business errors of the OTP feature, in the 3xxx family. Codes are append-only. */
 public object OtpErrors {

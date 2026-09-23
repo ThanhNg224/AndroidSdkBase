@@ -4,8 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import io.github.thanhng224.sdkbase.core.SdkResult
-import io.github.thanhng224.sdkbase.core.getOrNull
+import io.github.thanhng224.sdkbase.core.result.SdkResult
+import io.github.thanhng224.sdkbase.core.result.getOrNull
 import io.github.thanhng224.sdkbase.otp.OtpChallenge
 import io.github.thanhng224.sdkbase.otp.OtpCommand
 import io.github.thanhng224.sdkbase.otp.OtpGateway

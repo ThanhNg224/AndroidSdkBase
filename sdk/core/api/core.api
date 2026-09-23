@@ -1,10 +1,17 @@
-public abstract interface class io/github/thanhng224/sdkbase/core/DispatcherProvider {
+public final class io/github/thanhng224/sdkbase/core/concurrency/AndroidDispatchers : io/github/thanhng224/sdkbase/core/concurrency/DispatcherProvider {
+	public static final field INSTANCE Lio/github/thanhng224/sdkbase/core/concurrency/AndroidDispatchers;
+	public fun getDefault ()Lkotlinx/coroutines/CoroutineDispatcher;
+	public fun getIo ()Lkotlinx/coroutines/CoroutineDispatcher;
+	public fun getMain ()Lkotlinx/coroutines/CoroutineDispatcher;
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/core/concurrency/DispatcherProvider {
 	public abstract fun getDefault ()Lkotlinx/coroutines/CoroutineDispatcher;
 	public abstract fun getIo ()Lkotlinx/coroutines/CoroutineDispatcher;
 	public abstract fun getMain ()Lkotlinx/coroutines/CoroutineDispatcher;
 }
 
-public abstract class io/github/thanhng224/sdkbase/core/SdkError {
+public abstract class io/github/thanhng224/sdkbase/core/error/SdkError {
 	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/Throwable;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getCause ()Ljava/lang/Throwable;
 	public final fun getCode ()I
@@ -12,112 +19,112 @@ public abstract class io/github/thanhng224/sdkbase/core/SdkError {
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class io/github/thanhng224/sdkbase/core/SdkError$Business : io/github/thanhng224/sdkbase/core/SdkError {
+public final class io/github/thanhng224/sdkbase/core/error/SdkError$Business : io/github/thanhng224/sdkbase/core/error/SdkError {
 	public fun <init> (ILjava/lang/String;Ljava/lang/Throwable;)V
 	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
-public final class io/github/thanhng224/sdkbase/core/SdkError$Common : io/github/thanhng224/sdkbase/core/SdkError {
+public final class io/github/thanhng224/sdkbase/core/error/SdkError$Common : io/github/thanhng224/sdkbase/core/error/SdkError {
 	public fun <init> (ILjava/lang/String;Ljava/lang/Throwable;)V
 	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
-public final class io/github/thanhng224/sdkbase/core/SdkError$Lifecycle : io/github/thanhng224/sdkbase/core/SdkError {
+public final class io/github/thanhng224/sdkbase/core/error/SdkError$Lifecycle : io/github/thanhng224/sdkbase/core/error/SdkError {
 	public fun <init> (ILjava/lang/String;Ljava/lang/Throwable;)V
 	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
-public final class io/github/thanhng224/sdkbase/core/SdkError$System : io/github/thanhng224/sdkbase/core/SdkError {
+public final class io/github/thanhng224/sdkbase/core/error/SdkError$System : io/github/thanhng224/sdkbase/core/error/SdkError {
 	public fun <init> (ILjava/lang/String;Ljava/lang/Throwable;)V
 	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
-public final class io/github/thanhng224/sdkbase/core/SdkErrors {
+public final class io/github/thanhng224/sdkbase/core/error/SdkErrors {
 	public static final field ALREADY_RUNNING I
 	public static final field CANCELLED_BY_USER I
 	public static final field GATEWAY_FAILURE I
-	public static final field INSTANCE Lio/github/thanhng224/sdkbase/core/SdkErrors;
+	public static final field INSTANCE Lio/github/thanhng224/sdkbase/core/error/SdkErrors;
 	public static final field INVALID_CONFIG I
 	public static final field NETWORK_UNAVAILABLE I
 	public static final field NOT_STARTED I
 	public static final field TIMEOUT I
 	public static final field UNKNOWN I
 	public final fun all ()Ljava/util/List;
-	public final fun alreadyRunning ()Lio/github/thanhng224/sdkbase/core/SdkError;
-	public final fun cancelledByUser ()Lio/github/thanhng224/sdkbase/core/SdkError;
-	public final fun gatewayFailure (Ljava/lang/String;Ljava/lang/Throwable;)Lio/github/thanhng224/sdkbase/core/SdkError;
-	public static synthetic fun gatewayFailure$default (Lio/github/thanhng224/sdkbase/core/SdkErrors;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/SdkError;
-	public final fun invalidConfig (Ljava/lang/String;)Lio/github/thanhng224/sdkbase/core/SdkError;
-	public final fun networkUnavailable (Ljava/lang/Throwable;)Lio/github/thanhng224/sdkbase/core/SdkError;
-	public static synthetic fun networkUnavailable$default (Lio/github/thanhng224/sdkbase/core/SdkErrors;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/SdkError;
-	public final fun notStarted ()Lio/github/thanhng224/sdkbase/core/SdkError;
-	public final fun timeout (Ljava/lang/String;)Lio/github/thanhng224/sdkbase/core/SdkError;
-	public final fun unknown (Ljava/lang/Throwable;)Lio/github/thanhng224/sdkbase/core/SdkError;
-	public static synthetic fun unknown$default (Lio/github/thanhng224/sdkbase/core/SdkErrors;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/SdkError;
+	public final fun alreadyRunning ()Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun cancelledByUser ()Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun gatewayFailure (Ljava/lang/String;Ljava/lang/Throwable;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public static synthetic fun gatewayFailure$default (Lio/github/thanhng224/sdkbase/core/error/SdkErrors;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun invalidConfig (Ljava/lang/String;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun networkUnavailable (Ljava/lang/Throwable;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public static synthetic fun networkUnavailable$default (Lio/github/thanhng224/sdkbase/core/error/SdkErrors;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun notStarted ()Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun timeout (Ljava/lang/String;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun unknown (Ljava/lang/Throwable;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public static synthetic fun unknown$default (Lio/github/thanhng224/sdkbase/core/error/SdkErrors;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
 }
 
-public abstract interface class io/github/thanhng224/sdkbase/core/SdkLogger {
-	public static final field Companion Lio/github/thanhng224/sdkbase/core/SdkLogger$Companion;
+public abstract interface class io/github/thanhng224/sdkbase/core/gateway/CompletionCallback {
+	public abstract fun onFailure (Lio/github/thanhng224/sdkbase/core/error/SdkError;)V
+	public abstract fun onSuccess ()V
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/core/gateway/GatewayCallback {
+	public abstract fun onFailure (Lio/github/thanhng224/sdkbase/core/error/SdkError;)V
+	public abstract fun onSuccess (Ljava/lang/Object;)V
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/core/logging/SdkLogger {
+	public static final field Companion Lio/github/thanhng224/sdkbase/core/logging/SdkLogger$Companion;
 	public abstract fun debug (Ljava/lang/String;Ljava/lang/String;)V
 	public abstract fun error (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V
-	public static synthetic fun error$default (Lio/github/thanhng224/sdkbase/core/SdkLogger;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)V
+	public static synthetic fun error$default (Lio/github/thanhng224/sdkbase/core/logging/SdkLogger;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)V
 	public abstract fun info (Ljava/lang/String;Ljava/lang/String;)V
 }
 
-public final class io/github/thanhng224/sdkbase/core/SdkLogger$Companion {
-	public final fun getNoOp ()Lio/github/thanhng224/sdkbase/core/SdkLogger;
+public final class io/github/thanhng224/sdkbase/core/logging/SdkLogger$Companion {
+	public final fun getNoOp ()Lio/github/thanhng224/sdkbase/core/logging/SdkLogger;
 }
 
-public final class io/github/thanhng224/sdkbase/core/SdkLogger$DefaultImpls {
-	public static synthetic fun error$default (Lio/github/thanhng224/sdkbase/core/SdkLogger;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)V
+public final class io/github/thanhng224/sdkbase/core/logging/SdkLogger$DefaultImpls {
+	public static synthetic fun error$default (Lio/github/thanhng224/sdkbase/core/logging/SdkLogger;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)V
 }
 
-public final class io/github/thanhng224/sdkbase/core/SdkLoggerKt {
+public final class io/github/thanhng224/sdkbase/core/logging/SdkLoggerKt {
 	public static final fun redact (Ljava/lang/String;I)Ljava/lang/String;
 	public static synthetic fun redact$default (Ljava/lang/String;IILjava/lang/Object;)Ljava/lang/String;
 }
 
-public abstract interface class io/github/thanhng224/sdkbase/core/SdkResult {
+public abstract interface class io/github/thanhng224/sdkbase/core/result/SdkResult {
 }
 
-public final class io/github/thanhng224/sdkbase/core/SdkResult$Failure : io/github/thanhng224/sdkbase/core/SdkResult {
-	public fun <init> (Lio/github/thanhng224/sdkbase/core/SdkError;)V
-	public final fun component1 ()Lio/github/thanhng224/sdkbase/core/SdkError;
-	public final fun copy (Lio/github/thanhng224/sdkbase/core/SdkError;)Lio/github/thanhng224/sdkbase/core/SdkResult$Failure;
-	public static synthetic fun copy$default (Lio/github/thanhng224/sdkbase/core/SdkResult$Failure;Lio/github/thanhng224/sdkbase/core/SdkError;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/SdkResult$Failure;
+public final class io/github/thanhng224/sdkbase/core/result/SdkResult$Failure : io/github/thanhng224/sdkbase/core/result/SdkResult {
+	public fun <init> (Lio/github/thanhng224/sdkbase/core/error/SdkError;)V
+	public final fun component1 ()Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun copy (Lio/github/thanhng224/sdkbase/core/error/SdkError;)Lio/github/thanhng224/sdkbase/core/result/SdkResult$Failure;
+	public static synthetic fun copy$default (Lio/github/thanhng224/sdkbase/core/result/SdkResult$Failure;Lio/github/thanhng224/sdkbase/core/error/SdkError;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/result/SdkResult$Failure;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getError ()Lio/github/thanhng224/sdkbase/core/SdkError;
+	public final fun getError ()Lio/github/thanhng224/sdkbase/core/error/SdkError;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class io/github/thanhng224/sdkbase/core/SdkResult$Success : io/github/thanhng224/sdkbase/core/SdkResult {
+public final class io/github/thanhng224/sdkbase/core/result/SdkResult$Success : io/github/thanhng224/sdkbase/core/result/SdkResult {
 	public fun <init> (Ljava/lang/Object;)V
 	public final fun component1 ()Ljava/lang/Object;
-	public final fun copy (Ljava/lang/Object;)Lio/github/thanhng224/sdkbase/core/SdkResult$Success;
-	public static synthetic fun copy$default (Lio/github/thanhng224/sdkbase/core/SdkResult$Success;Ljava/lang/Object;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/SdkResult$Success;
+	public final fun copy (Ljava/lang/Object;)Lio/github/thanhng224/sdkbase/core/result/SdkResult$Success;
+	public static synthetic fun copy$default (Lio/github/thanhng224/sdkbase/core/result/SdkResult$Success;Ljava/lang/Object;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/result/SdkResult$Success;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getValue ()Ljava/lang/Object;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }
 
-public final class io/github/thanhng224/sdkbase/core/SdkResultKt {
-	public static final fun errorOrNull (Lio/github/thanhng224/sdkbase/core/SdkResult;)Lio/github/thanhng224/sdkbase/core/SdkError;
-	public static final fun getOrNull (Lio/github/thanhng224/sdkbase/core/SdkResult;)Ljava/lang/Object;
+public final class io/github/thanhng224/sdkbase/core/result/SdkResultKt {
+	public static final fun errorOrNull (Lio/github/thanhng224/sdkbase/core/result/SdkResult;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public static final fun getOrNull (Lio/github/thanhng224/sdkbase/core/result/SdkResult;)Ljava/lang/Object;
 }
 
-public abstract interface class io/github/thanhng224/sdkbase/core/gateway/CompletionCallback {
-	public abstract fun onFailure (Lio/github/thanhng224/sdkbase/core/SdkError;)V
-	public abstract fun onSuccess ()V
-}
-
-public abstract interface class io/github/thanhng224/sdkbase/core/gateway/GatewayCallback {
-	public abstract fun onFailure (Lio/github/thanhng224/sdkbase/core/SdkError;)V
-	public abstract fun onSuccess (Ljava/lang/Object;)V
-}
-
-public abstract interface class io/github/thanhng224/sdkbase/core/gateway/TelemetrySink {
+public abstract interface class io/github/thanhng224/sdkbase/core/telemetry/TelemetrySink {
 	public abstract fun onEvent (Ljava/lang/String;Ljava/util/Map;)V
 }
 

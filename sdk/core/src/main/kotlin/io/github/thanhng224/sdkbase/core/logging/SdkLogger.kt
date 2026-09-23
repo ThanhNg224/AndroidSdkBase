@@ -1,4 +1,4 @@
-package io.github.thanhng224.sdkbase.core
+package io.github.thanhng224.sdkbase.core.logging
 
 /**
  * Technical logging contract. The host (or the demo app's `LogcatSdkLogger`) supplies the sink; the

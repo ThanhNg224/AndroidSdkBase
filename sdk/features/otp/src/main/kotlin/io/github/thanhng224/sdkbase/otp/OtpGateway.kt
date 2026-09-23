@@ -1,6 +1,6 @@
 package io.github.thanhng224.sdkbase.otp
 
-import io.github.thanhng224.sdkbase.core.SdkResult
+import io.github.thanhng224.sdkbase.core.result.SdkResult
 
 /**
  * The host owns the network. The SDK declares what it needs and the host implements it with

@@ -1,9 +1,9 @@
 package io.github.thanhng224.sdkbase.otp
 
-import io.github.thanhng224.sdkbase.core.SdkErrors
-import io.github.thanhng224.sdkbase.core.SdkResult
+import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import io.github.thanhng224.sdkbase.core.gateway.CompletionCallback
 import io.github.thanhng224.sdkbase.core.gateway.GatewayCallback
+import io.github.thanhng224.sdkbase.core.result.SdkResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.test.runTest

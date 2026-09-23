@@ -77,6 +77,10 @@ extensions.configure<LibraryExtension> {
         abortOnError = true
         // Lint this module only; dependencies are linted where they live.
         checkDependencies = false
+        // `kotlinStdlibFloor` (docs/COMPATIBILITY.md) is deliberately pinned below the newest
+        // release so consumers on an older Kotlin keep working; this check assumes newer is
+        // always better and would fight that policy every time a new Kotlin ships.
+        disable += "GradleDependency"
     }
 }
 

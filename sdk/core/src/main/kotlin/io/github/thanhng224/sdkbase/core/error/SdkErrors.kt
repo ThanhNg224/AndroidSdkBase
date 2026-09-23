@@ -1,4 +1,4 @@
-package io.github.thanhng224.sdkbase.core
+package io.github.thanhng224.sdkbase.core.error
 
 /**
  * Error codes shared by every feature. Codes are append-only: never renumber a released code.

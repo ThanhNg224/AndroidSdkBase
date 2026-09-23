@@ -1,11 +1,11 @@
 package io.github.thanhng224.sdkbase.otp
 
-import io.github.thanhng224.sdkbase.core.SdkErrors
-import io.github.thanhng224.sdkbase.core.SdkResult
-import io.github.thanhng224.sdkbase.core.errorOrNull
+import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import io.github.thanhng224.sdkbase.core.gateway.CompletionCallback
 import io.github.thanhng224.sdkbase.core.gateway.GatewayCallback
-import io.github.thanhng224.sdkbase.core.getOrNull
+import io.github.thanhng224.sdkbase.core.result.SdkResult
+import io.github.thanhng224.sdkbase.core.result.errorOrNull
+import io.github.thanhng224.sdkbase.core.result.getOrNull
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue

@@ -1,7 +1,7 @@
 package io.github.thanhng224.sdkbase.demo
 
 import android.util.Log
-import io.github.thanhng224.sdkbase.core.SdkLogger
+import io.github.thanhng224.sdkbase.core.logging.SdkLogger
 
 /**
  * Logcat sink for [SdkLogger]. Debug logging is OFF unless the host opts in, because a published

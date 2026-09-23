@@ -1,8 +1,8 @@
 package io.github.thanhng224.consumer;
 
-import io.github.thanhng224.sdkbase.core.SdkResult;
 import io.github.thanhng224.sdkbase.core.gateway.CompletionCallback;
 import io.github.thanhng224.sdkbase.core.gateway.GatewayCallback;
+import io.github.thanhng224.sdkbase.core.result.SdkResult;
 import io.github.thanhng224.sdkbase.otp.OtpCallbackGateway;
 import io.github.thanhng224.sdkbase.otp.OtpChallenge;
 import io.github.thanhng224.sdkbase.otp.OtpGateway;

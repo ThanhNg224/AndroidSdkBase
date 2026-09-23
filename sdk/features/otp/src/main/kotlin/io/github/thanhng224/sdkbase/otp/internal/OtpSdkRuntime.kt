@@ -1,6 +1,7 @@
 package io.github.thanhng224.sdkbase.otp.internal
 
-import io.github.thanhng224.sdkbase.core.SdkResult
+import io.github.thanhng224.sdkbase.core.concurrency.AndroidDispatchers
+import io.github.thanhng224.sdkbase.core.result.SdkResult
 import io.github.thanhng224.sdkbase.otp.OtpCommand
 import io.github.thanhng224.sdkbase.otp.OtpSdkConfig
 import io.github.thanhng224.sdkbase.otp.OtpSession

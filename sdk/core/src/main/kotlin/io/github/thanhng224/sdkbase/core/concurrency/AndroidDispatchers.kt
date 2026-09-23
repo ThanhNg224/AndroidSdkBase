@@ -1,6 +1,5 @@
-package io.github.thanhng224.sdkbase.otp.internal
+package io.github.thanhng224.sdkbase.core.concurrency
 
-import io.github.thanhng224.sdkbase.core.DispatcherProvider
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 
@@ -8,7 +7,7 @@ import kotlinx.coroutines.Dispatchers
  * The real dispatchers, including `Dispatchers.Main` — which is why this lives in the Android module
  * and the [DispatcherProvider] contract does not.
  */
-internal object AndroidDispatchers : DispatcherProvider {
+public object AndroidDispatchers : DispatcherProvider {
     override val main: CoroutineDispatcher get() = Dispatchers.Main
     override val default: CoroutineDispatcher get() = Dispatchers.Default
     override val io: CoroutineDispatcher get() = Dispatchers.IO

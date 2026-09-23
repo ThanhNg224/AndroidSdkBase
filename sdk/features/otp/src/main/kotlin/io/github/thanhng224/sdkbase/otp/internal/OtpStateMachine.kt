@@ -1,7 +1,7 @@
 package io.github.thanhng224.sdkbase.otp.internal
 
-import io.github.thanhng224.sdkbase.core.SdkError
-import io.github.thanhng224.sdkbase.core.SdkErrors
+import io.github.thanhng224.sdkbase.core.error.SdkError
+import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import io.github.thanhng224.sdkbase.otp.OtpCommand
 import io.github.thanhng224.sdkbase.otp.OtpErrors
 import io.github.thanhng224.sdkbase.otp.OtpState

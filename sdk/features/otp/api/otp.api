@@ -73,10 +73,10 @@ public final class io/github/thanhng224/sdkbase/otp/OtpErrors {
 	public static final field OTP_INVALID I
 	public static final field OTP_RESEND_TOO_SOON I
 	public final fun all ()Ljava/util/List;
-	public final fun otpAttemptsExceeded ()Lio/github/thanhng224/sdkbase/core/SdkError;
-	public final fun otpExpired ()Lio/github/thanhng224/sdkbase/core/SdkError;
-	public final fun otpInvalid ()Lio/github/thanhng224/sdkbase/core/SdkError;
-	public final fun otpResendTooSoon (I)Lio/github/thanhng224/sdkbase/core/SdkError;
+	public final fun otpAttemptsExceeded ()Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun otpExpired ()Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun otpInvalid ()Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun otpResendTooSoon (I)Lio/github/thanhng224/sdkbase/core/error/SdkError;
 }
 
 public abstract interface class io/github/thanhng224/sdkbase/otp/OtpGateway {
@@ -93,19 +93,19 @@ public final class io/github/thanhng224/sdkbase/otp/OtpSdkConfig {
 	public final fun getDestination ()Ljava/lang/String;
 	public final fun getGateway ()Lio/github/thanhng224/sdkbase/otp/OtpGateway;
 	public final fun getGatewayTimeoutSeconds ()I
-	public final fun getLogger ()Lio/github/thanhng224/sdkbase/core/SdkLogger;
+	public final fun getLogger ()Lio/github/thanhng224/sdkbase/core/logging/SdkLogger;
 	public final fun getMaxAttempts ()I
-	public final fun getTelemetry ()Lio/github/thanhng224/sdkbase/core/gateway/TelemetrySink;
+	public final fun getTelemetry ()Lio/github/thanhng224/sdkbase/core/telemetry/TelemetrySink;
 }
 
 public final class io/github/thanhng224/sdkbase/otp/OtpSdkConfig$Builder {
 	public fun <init> (Ljava/lang/String;Lio/github/thanhng224/sdkbase/otp/OtpCallbackGateway;)V
 	public fun <init> (Ljava/lang/String;Lio/github/thanhng224/sdkbase/otp/OtpGateway;)V
-	public final fun build ()Lio/github/thanhng224/sdkbase/core/SdkResult;
+	public final fun build ()Lio/github/thanhng224/sdkbase/core/result/SdkResult;
 	public final fun gatewayTimeoutSeconds (I)Lio/github/thanhng224/sdkbase/otp/OtpSdkConfig$Builder;
-	public final fun logger (Lio/github/thanhng224/sdkbase/core/SdkLogger;)Lio/github/thanhng224/sdkbase/otp/OtpSdkConfig$Builder;
+	public final fun logger (Lio/github/thanhng224/sdkbase/core/logging/SdkLogger;)Lio/github/thanhng224/sdkbase/otp/OtpSdkConfig$Builder;
 	public final fun maxAttempts (I)Lio/github/thanhng224/sdkbase/otp/OtpSdkConfig$Builder;
-	public final fun telemetry (Lio/github/thanhng224/sdkbase/core/gateway/TelemetrySink;)Lio/github/thanhng224/sdkbase/otp/OtpSdkConfig$Builder;
+	public final fun telemetry (Lio/github/thanhng224/sdkbase/core/telemetry/TelemetrySink;)Lio/github/thanhng224/sdkbase/otp/OtpSdkConfig$Builder;
 }
 
 public abstract interface class io/github/thanhng224/sdkbase/otp/OtpSession {
@@ -118,23 +118,23 @@ public abstract interface class io/github/thanhng224/sdkbase/otp/OtpSession {
 
 public final class io/github/thanhng224/sdkbase/otp/OtpState {
 	public static final field Companion Lio/github/thanhng224/sdkbase/otp/OtpState$Companion;
-	public fun <init> (Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;ILjava/lang/String;IIILio/github/thanhng224/sdkbase/core/SdkError;)V
+	public fun <init> (Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;ILjava/lang/String;IIILio/github/thanhng224/sdkbase/core/error/SdkError;)V
 	public final fun component1 ()Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;
 	public final fun component2 ()I
 	public final fun component3 ()Ljava/lang/String;
 	public final fun component4 ()I
 	public final fun component5 ()I
 	public final fun component6 ()I
-	public final fun component7 ()Lio/github/thanhng224/sdkbase/core/SdkError;
-	public final fun copy (Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;ILjava/lang/String;IIILio/github/thanhng224/sdkbase/core/SdkError;)Lio/github/thanhng224/sdkbase/otp/OtpState;
-	public static synthetic fun copy$default (Lio/github/thanhng224/sdkbase/otp/OtpState;Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;ILjava/lang/String;IIILio/github/thanhng224/sdkbase/core/SdkError;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/otp/OtpState;
+	public final fun component7 ()Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun copy (Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;ILjava/lang/String;IIILio/github/thanhng224/sdkbase/core/error/SdkError;)Lio/github/thanhng224/sdkbase/otp/OtpState;
+	public static synthetic fun copy$default (Lio/github/thanhng224/sdkbase/otp/OtpState;Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;ILjava/lang/String;IIILio/github/thanhng224/sdkbase/core/error/SdkError;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/otp/OtpState;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAttemptsRemaining ()I
 	public final fun getCanResend ()Z
 	public final fun getCanSubmit ()Z
 	public final fun getCodeLength ()I
 	public final fun getEnteredCode ()Ljava/lang/String;
-	public final fun getError ()Lio/github/thanhng224/sdkbase/core/SdkError;
+	public final fun getError ()Lio/github/thanhng224/sdkbase/core/error/SdkError;
 	public final fun getPhase ()Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;
 	public final fun getSecondsUntilExpiry ()I
 	public final fun getSecondsUntilResend ()I

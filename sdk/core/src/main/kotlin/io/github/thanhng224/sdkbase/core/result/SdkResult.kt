@@ -1,4 +1,6 @@
-package io.github.thanhng224.sdkbase.core
+package io.github.thanhng224.sdkbase.core.result
+
+import io.github.thanhng224.sdkbase.core.error.SdkError
 
 /**
  * The only type the SDK returns across its public boundary.

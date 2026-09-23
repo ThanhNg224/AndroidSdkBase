@@ -2,7 +2,7 @@ package io.github.thanhng224.sdkbase.demo
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.thanhng224.sdkbase.core.SdkResult
+import io.github.thanhng224.sdkbase.core.result.SdkResult
 import io.github.thanhng224.sdkbase.otp.OtpSdk
 import io.github.thanhng224.sdkbase.otp.OtpSdkConfig
 import io.github.thanhng224.sdkbase.otp.OtpSession

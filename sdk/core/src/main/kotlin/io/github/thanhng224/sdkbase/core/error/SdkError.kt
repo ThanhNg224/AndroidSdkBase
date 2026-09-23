@@ -1,4 +1,4 @@
-package io.github.thanhng224.sdkbase.core
+package io.github.thanhng224.sdkbase.core.error
 
 /**
  * Every failure the SDK surfaces. The [code] is the stable contract — the [reason] is diagnostic

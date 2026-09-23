@@ -1,7 +1,7 @@
 package io.github.thanhng224.sdkbase.otp
 
-import io.github.thanhng224.sdkbase.core.SdkError
-import io.github.thanhng224.sdkbase.core.SdkErrors
+import io.github.thanhng224.sdkbase.core.error.SdkError
+import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

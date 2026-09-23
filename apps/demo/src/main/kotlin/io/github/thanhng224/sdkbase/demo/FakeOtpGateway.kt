@@ -1,6 +1,6 @@
 package io.github.thanhng224.sdkbase.demo
 
-import io.github.thanhng224.sdkbase.core.SdkResult
+import io.github.thanhng224.sdkbase.core.result.SdkResult
 import io.github.thanhng224.sdkbase.otp.OtpChallenge
 import io.github.thanhng224.sdkbase.otp.OtpErrors
 import io.github.thanhng224.sdkbase.otp.OtpGateway
