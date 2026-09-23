@@ -109,25 +109,92 @@ public abstract interface class io/github/thanhng224/sdkbase/core/gateway/Gatewa
 	public abstract fun onSuccess (Ljava/lang/Object;)V
 }
 
-public abstract interface class io/github/thanhng224/sdkbase/core/logging/SdkLogger {
+public final class io/github/thanhng224/sdkbase/core/logging/DefaultRedactor : io/github/thanhng224/sdkbase/core/logging/Redactor {
+	public static final field Companion Lio/github/thanhng224/sdkbase/core/logging/DefaultRedactor$Companion;
+	public fun <init> ()V
+	public fun <init> (Ljava/util/Set;)V
+	public synthetic fun <init> (Ljava/util/Set;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun redact (Ljava/lang/String;)Ljava/lang/String;
+}
+
+public final class io/github/thanhng224/sdkbase/core/logging/DefaultRedactor$Companion {
+	public final fun mask (Ljava/lang/String;I)Ljava/lang/String;
+	public static synthetic fun mask$default (Lio/github/thanhng224/sdkbase/core/logging/DefaultRedactor$Companion;Ljava/lang/String;IILjava/lang/Object;)Ljava/lang/String;
+}
+
+public final class io/github/thanhng224/sdkbase/core/logging/LogLevel : java/lang/Enum {
+	public static final field DEBUG Lio/github/thanhng224/sdkbase/core/logging/LogLevel;
+	public static final field ERROR Lio/github/thanhng224/sdkbase/core/logging/LogLevel;
+	public static final field INFO Lio/github/thanhng224/sdkbase/core/logging/LogLevel;
+	public static final field VERBOSE Lio/github/thanhng224/sdkbase/core/logging/LogLevel;
+	public static final field WARN Lio/github/thanhng224/sdkbase/core/logging/LogLevel;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/thanhng224/sdkbase/core/logging/LogLevel;
+	public static fun values ()[Lio/github/thanhng224/sdkbase/core/logging/LogLevel;
+}
+
+public final class io/github/thanhng224/sdkbase/core/logging/LogRecord {
+	public fun <init> (Lio/github/thanhng224/sdkbase/core/logging/LogLevel;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;JLjava/lang/String;)V
+	public final fun getLevel ()Lio/github/thanhng224/sdkbase/core/logging/LogLevel;
+	public final fun getMessage ()Ljava/lang/String;
+	public final fun getSessionId ()Ljava/lang/String;
+	public final fun getTag ()Ljava/lang/String;
+	public final fun getThrowable ()Ljava/lang/Throwable;
+	public final fun getTimestampMillis ()J
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/core/logging/LogSink {
+	public abstract fun write (Lio/github/thanhng224/sdkbase/core/logging/LogRecord;)V
+}
+
+public final class io/github/thanhng224/sdkbase/core/logging/LogcatSink : io/github/thanhng224/sdkbase/core/logging/LogSink {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;)V
+	public synthetic fun <init> (Ljava/lang/String;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun write (Lio/github/thanhng224/sdkbase/core/logging/LogRecord;)V
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/core/logging/Redactor {
+	public static final field Companion Lio/github/thanhng224/sdkbase/core/logging/Redactor$Companion;
+	public abstract fun redact (Ljava/lang/String;)Ljava/lang/String;
+}
+
+public final class io/github/thanhng224/sdkbase/core/logging/Redactor$Companion {
+	public final fun getNone ()Lio/github/thanhng224/sdkbase/core/logging/Redactor;
+}
+
+public final class io/github/thanhng224/sdkbase/core/logging/SdkLogger {
 	public static final field Companion Lio/github/thanhng224/sdkbase/core/logging/SdkLogger$Companion;
-	public abstract fun debug (Ljava/lang/String;Ljava/lang/String;)V
-	public abstract fun error (Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;)V
-	public static synthetic fun error$default (Lio/github/thanhng224/sdkbase/core/logging/SdkLogger;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)V
-	public abstract fun info (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getMinLevel ()Lio/github/thanhng224/sdkbase/core/logging/LogLevel;
+	public final fun isLoggable (Lio/github/thanhng224/sdkbase/core/logging/LogLevel;)Z
+	public final fun tagged (Ljava/lang/String;)Lio/github/thanhng224/sdkbase/core/logging/TaggedLogger;
+	public final fun withSession (Ljava/lang/String;)Lio/github/thanhng224/sdkbase/core/logging/SdkLogger;
+}
+
+public final class io/github/thanhng224/sdkbase/core/logging/SdkLogger$Builder {
+	public fun <init> ()V
+	public final fun build ()Lio/github/thanhng224/sdkbase/core/logging/SdkLogger;
+	public final fun clock (Lio/github/thanhng224/sdkbase/core/time/Clock;)Lio/github/thanhng224/sdkbase/core/logging/SdkLogger$Builder;
+	public final fun minLevel (Lio/github/thanhng224/sdkbase/core/logging/LogLevel;)Lio/github/thanhng224/sdkbase/core/logging/SdkLogger$Builder;
+	public final fun redactor (Lio/github/thanhng224/sdkbase/core/logging/Redactor;)Lio/github/thanhng224/sdkbase/core/logging/SdkLogger$Builder;
+	public final fun sink (Lio/github/thanhng224/sdkbase/core/logging/LogSink;)Lio/github/thanhng224/sdkbase/core/logging/SdkLogger$Builder;
 }
 
 public final class io/github/thanhng224/sdkbase/core/logging/SdkLogger$Companion {
 	public final fun getNoOp ()Lio/github/thanhng224/sdkbase/core/logging/SdkLogger;
 }
 
-public final class io/github/thanhng224/sdkbase/core/logging/SdkLogger$DefaultImpls {
-	public static synthetic fun error$default (Lio/github/thanhng224/sdkbase/core/logging/SdkLogger;Ljava/lang/String;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)V
-}
-
-public final class io/github/thanhng224/sdkbase/core/logging/SdkLoggerKt {
-	public static final fun redact (Ljava/lang/String;I)Ljava/lang/String;
-	public static synthetic fun redact$default (Ljava/lang/String;IILjava/lang/Object;)Ljava/lang/String;
+public final class io/github/thanhng224/sdkbase/core/logging/TaggedLogger {
+	public final fun d (Lkotlin/jvm/functions/Function0;)V
+	public final fun e (Ljava/lang/Throwable;Lkotlin/jvm/functions/Function0;)V
+	public static synthetic fun e$default (Lio/github/thanhng224/sdkbase/core/logging/TaggedLogger;Ljava/lang/Throwable;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
+	public final fun i (Lkotlin/jvm/functions/Function0;)V
+	public final fun trace (Ljava/lang/String;Lkotlin/jvm/functions/Function0;)Ljava/lang/Object;
+	public final fun traceEnd (Ljava/lang/String;JLjava/lang/Throwable;)V
+	public final fun traceStart ()J
+	public final fun v (Lkotlin/jvm/functions/Function0;)V
+	public final fun w (Ljava/lang/Throwable;Lkotlin/jvm/functions/Function0;)V
+	public static synthetic fun w$default (Lio/github/thanhng224/sdkbase/core/logging/TaggedLogger;Ljava/lang/Throwable;Lkotlin/jvm/functions/Function0;ILjava/lang/Object;)V
 }
 
 public abstract interface class io/github/thanhng224/sdkbase/core/result/SdkResult {

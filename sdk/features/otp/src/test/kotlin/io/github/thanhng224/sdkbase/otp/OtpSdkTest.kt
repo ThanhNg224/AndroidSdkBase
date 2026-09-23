@@ -1,6 +1,7 @@
 package io.github.thanhng224.sdkbase.otp
 
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
+import io.github.thanhng224.sdkbase.core.logging.LogSink
 import io.github.thanhng224.sdkbase.core.logging.SdkLogger
 import io.github.thanhng224.sdkbase.core.result.SdkResult
 import io.github.thanhng224.sdkbase.core.result.errorOrNull
@@ -67,11 +68,9 @@ class OtpSdkTest {
 
     @Test
     fun `throwing logger cannot replace gateway failure or prevent fatal state`() = runTest {
-        val logger = object : SdkLogger {
-            override fun debug(tag: String, message: String): Unit = error("debug sink failed")
-            override fun info(tag: String, message: String): Unit = error("info sink failed")
-            override fun error(tag: String, message: String, throwable: Throwable?): Unit = error("error sink failed")
-        }
+        val logger = SdkLogger.Builder()
+            .sink(LogSink { error("sink failed") })
+            .build()
         val result = OtpSdk.start(
             configOf(
                 FakeGateway(requestResult = { SdkResult.Failure(SdkErrors.networkUnavailable()) }),

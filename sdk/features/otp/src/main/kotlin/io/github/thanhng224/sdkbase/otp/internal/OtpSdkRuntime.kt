@@ -19,12 +19,14 @@ internal class OtpSdkRuntime(
     private val config: OtpSdkConfig,
 ) : OtpSession {
 
+    private val log = config.logger.tagged(TAG)
+
     // dispatch() is non-suspending (a UI callback can't suspend), so it fires into this scope
     // instead. The handler matters: a SupervisorJob with none rethrows an uncaught exception to the
     // thread's default handler, which on Android kills the host process.
     private val scope = CoroutineScope(
         SupervisorJob() + AndroidDispatchers.default +
-            CoroutineExceptionHandler { _, t -> logErrorSafely("dispatch failed", t) },
+            CoroutineExceptionHandler { _, t -> log.e(t) { "dispatch failed" } },
     )
 
     override val state: StateFlow<OtpState> get() = engine.state
@@ -50,14 +52,6 @@ internal class OtpSdkRuntime(
             config.telemetry?.onEvent(name, attributes)
         } catch (_: Exception) {
             // Telemetry is ancillary and must not change the OTP result.
-        }
-    }
-
-    private fun logErrorSafely(message: String, throwable: Throwable) {
-        try {
-            config.logger.error(TAG, message, throwable)
-        } catch (_: Exception) {
-            // A failing logger must not escape from a coroutine exception handler.
         }
     }
 

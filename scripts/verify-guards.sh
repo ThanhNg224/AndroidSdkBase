@@ -113,10 +113,14 @@ run_case abi-delete-signature \
   "./gradlew :sdk:core:apiCheck -q" "$ABI_CORE"
 run_case abi-move-toplevel-function \
   "python3 - <<'EOF'
-d='$CORE/logging/'
-t=open(d+'SdkLogger.kt').read(); i=t.index('/**\n * Masks all')
-open(d+'SdkLogger.kt','w').write(t[:i]+'/** Added API. */\npublic fun noOpLogger(): SdkLogger = SdkLogger.NoOp\n')
-open(d+'Redact.kt','w').write('package io.github.thanhng224.sdkbase.core.logging\n\n'+t[i:])
+d='$CORE/result/'
+marker = 'public fun <T> SdkResult<T>.getOrNull(): T? = (this as? SdkResult.Success<T>)?.value\n\n'
+t = open(d+'SdkResult.kt').read()
+i = t.index(marker)
+open(d+'SdkResult.kt', 'w').write(t[:i] + t[i+len(marker):])
+open(d+'SdkResultGetOrNull.kt', 'w').write(
+    'package io.github.thanhng224.sdkbase.core.result\n\n' + marker
+)
 EOF" \
   "./gradlew :sdk:core:apiCheck -q" "$ABI_CORE"
 run_case abi-add-abstract-to-host-interface \
@@ -130,9 +134,10 @@ run_case abi-add-abstract-to-host-interface \
 }'" \
   "./gradlew :sdk:core:apiCheck -q" "$ABI_CORE"
 run_case abi-add-sealed-subtype \
-  "edit $CORE/result/SdkResult.kt '    public data class Failure' '    public data object Pending : SdkResult<Nothing>
+  "edit $CORE/error/SdkError.kt '    public class Lifecycle(' '    public class Security(code: Int, reason: String, cause: Throwable? = null) :
+        SdkError(code, reason, cause)
 
-    public data class Failure'" \
+    public class Lifecycle('" \
   "./gradlew :sdk:core:apiCheck -q" "$ABI_CORE"
 run_case abi-android-module-addition \
   "printf 'package io.github.thanhng224.sdkbase.otp\n\npublic fun OtpState.isTerminal(): Boolean = phase == OtpState.Phase.Verified\n' > $OTP/OtpStateExt.kt" \
