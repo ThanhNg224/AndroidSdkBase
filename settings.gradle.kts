@@ -30,4 +30,5 @@ rootProject.name = "AndroidSdkBase"
 include(":sdk:core")
 include(":sdk:features:otp")
 include(":sdk:features:otp-ui-compose")
+include(":sdk:bom")
 include(":apps:demo")

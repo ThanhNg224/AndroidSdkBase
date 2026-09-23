@@ -46,9 +46,10 @@ configurations.configureEach {
 }
 
 dependencies {
-    // Resolved as a real consumer would: by coordinate, from a repository. NOT by project(...).
-    implementation("io.github.thanhng224:otp:$sdkVersion")
-    implementation("io.github.thanhng224:otp-ui-compose:$sdkVersion")
+    // Resolved as a real host would: by coordinate, versions aligned by the SDK's BOM.
+    implementation(platform("io.github.thanhng224:bom:$sdkVersion"))
+    implementation("io.github.thanhng224:otp")
+    implementation("io.github.thanhng224:otp-ui-compose")
 
     implementation(platform("androidx.compose:compose-bom:2026.09.00"))
     implementation("androidx.compose.ui:ui")

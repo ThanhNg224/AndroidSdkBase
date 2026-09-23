@@ -5,6 +5,7 @@ extra["zones"] = mapOf(
         ":sdk:features:otp",
         ":sdk:features:otp-ui-compose",
     ),
+    "bom" to listOf(":sdk:bom"),
     "app" to listOf(":apps:demo"),
 )
 
@@ -12,4 +13,5 @@ extra["publishedArtifacts"] = listOf(
     ":sdk:core",
     ":sdk:features:otp",
     ":sdk:features:otp-ui-compose",
+    ":sdk:bom",
 )

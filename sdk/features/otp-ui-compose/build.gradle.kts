@@ -2,8 +2,10 @@ plugins {
     id("sdkbase.android.library")
     id("sdkbase.android.compose")
     id("sdkbase.abi")
-    id("sdkbase.android.publishing")
+    id("sdkbase.publishing")
 }
+
+description = "AndroidSdkBase Compose UI for the OTP feature"
 
 android {
     namespace = "io.github.thanhng224.sdkbase.otp.ui"
