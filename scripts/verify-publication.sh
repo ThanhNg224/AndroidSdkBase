@@ -52,12 +52,16 @@ EOF
   [ "$stdlib" = "$FLOOR" ] || fail "$name declares kotlin-stdlib $stdlib, expected $FLOOR"
 done < <(find "$REPO_DIR" -name '*.pom')
 
+MAPPING="verification/consumer/app/build/outputs/mapping/release/mapping.txt"
+rm -f "$MAPPING"
+
 echo "==> Building the external consumer (floor Kotlin, release, R8)"
 ( cd verification/consumer && ./gradlew assembleRelease -PsdkLocalRepo="$REPO_DIR" --no-daemon -q ) \
   || fail "the external consumer did not build"
 
-MAPPING="verification/consumer/app/build/outputs/mapping/release/mapping.txt"
-if [ -f "$MAPPING" ]; then
+if [ ! -f "$MAPPING" ]; then
+  fail "R8 mapping file is missing; release minification may be disabled"
+else
   echo "==> Checking R8 kept SDK code"
   for pkg in core otp otp.ui; do
     grep -Eq "^${NS//./\\.}\.${pkg//./\\.}\.[A-Za-z]" "$MAPPING" || fail "R8 kept no classes from $NS.$pkg"

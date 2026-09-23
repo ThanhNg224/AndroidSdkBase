@@ -30,6 +30,16 @@ open(path, "w").write(text[:i] + "\n    " + line + text[i:])
 EOF
 }
 
+add_constraint() { # FILE LINE — inserts LINE at the top of the last `constraints {` block in FILE
+  python3 - "$1" "$2" <<'EOF'
+import sys
+path, line = sys.argv[1], sys.argv[2]
+text = open(path).read()
+i = text.rindex("constraints {") + len("constraints {")
+open(path, "w").write(text[:i] + "\n    " + line + text[i:])
+EOF
+}
+
 edit() { # FILE OLD NEW — replaces the first OLD with NEW; fails if OLD is absent
   python3 - "$1" "$2" "$3" <<'EOF'
 import sys
@@ -87,6 +97,9 @@ run_case zone-published-depends-on-unpublished \
   "$ROGUE && edit $TOPO '\"feature\" to listOf(' '\"feature\" to listOf(\":sdk:features:rogue\", ' &&
    add_dep sdk/features/otp/build.gradle.kts 'implementation(project(\":sdk:features:rogue\"))'" \
   "./gradlew help -q" ":sdk:features:otp is published but depends on unpublished :sdk:features:rogue"
+run_case zone-bom-constraint-to-app \
+  "add_constraint sdk/bom/build.gradle.kts 'api(project(\":apps:demo\"))'" \
+  "./gradlew help -q" ":sdk:bom \\[bom\\] -> :apps:demo \\[app\\] is not allowed"
 run_case zone-registered-but-not-included \
   "edit $TOPO '\"feature\" to listOf(' '\"feature\" to listOf(\":sdk:features:ghost\", '" \
   "./gradlew help -q" ":sdk:features:ghost is registered but not included"
@@ -157,6 +170,9 @@ run_case floor-unpin-kotlin-jvm \
 run_case r8-canary-unreachable-sdk \
   "edit $ACT '/* SDK_CALLS_BEGIN */' '/* SDK_CALLS_BEGIN' && edit $ACT '/* SDK_CALLS_END */' 'SDK_CALLS_END */'" \
   "$PUB" "R8 kept no classes from"
+run_case r8-canary-minify-disabled \
+  "edit verification/consumer/app/build.gradle.kts 'isMinifyEnabled = true' 'isMinifyEnabled = false'" \
+  "$PUB" "R8 mapping file is missing"
 
 # --- Cases appended by later tasks go above this line ------------------------------------------
 

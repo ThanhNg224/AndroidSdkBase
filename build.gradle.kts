@@ -32,10 +32,10 @@ tasks.register<Delete>("clean") {
 
 // ---------------------------------------------------------------------------------------------
 // Zone guard: module boundaries are enforced here, at configuration time, not by review.
-// Rules: (1) every included module is registered; (2) edges only go to allowed zones, across every
-// non-test configuration (compileOnly, runtimeOnly and variant-specific ones included); (3) a
-// published module depends only on published modules; (4) a published module has an ABI check and a
-// local publication.
+// Rules: (1) every included module is registered; (2) dependency and constraint edges only go to
+// allowed zones, across every non-test configuration (compileOnly, runtimeOnly and variant-specific
+// ones included); (3) a published module depends only on published modules; (4) a published module
+// has an ABI check and a local publication.
 // ---------------------------------------------------------------------------------------------
 
 @Suppress("UNCHECKED_CAST")
@@ -56,12 +56,24 @@ val allowedTargets: Map<String, Set<String>> = mapOf(
 
 fun isTestConfiguration(name: String): Boolean = name.contains("test", ignoreCase = true)
 
-fun projectEdges(project: Project): Set<String> =
-    project.configurations
+fun projectEdges(project: Project): Set<String> {
+    val projectsByCoordinates = rootProject.subprojects.associateBy {
+        it.group.toString() to it.name
+    }
+    return project.configurations
         .filterNot { isTestConfiguration(it.name) }
-        .flatMap { it.dependencies.withType(ProjectDependency::class.java) }
-        .map { it.path }
+        .flatMap { configuration ->
+            val dependencyPaths = configuration.dependencies
+                .withType(ProjectDependency::class.java)
+                .map { it.path }
+            val constrainedProjectPaths = configuration.dependencyConstraints
+                .mapNotNull { constraint ->
+                    projectsByCoordinates[constraint.group to constraint.name]?.path
+                }
+            dependencyPaths + constrainedProjectPaths
+        }
         .toSet()
+}
 
 gradle.projectsEvaluated {
     val violations = mutableListOf<String>()
