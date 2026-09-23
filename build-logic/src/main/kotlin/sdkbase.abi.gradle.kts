@@ -1,53 +1,60 @@
-import org.gradle.api.tasks.PathSensitivity
-import sdkbase.abi.ApiCheckTask
-import sdkbase.abi.GenerateApiDumpTask
-import java.io.File
+import com.android.build.api.artifact.SingleArtifact
+import com.android.build.api.variant.LibraryAndroidComponentsExtension
+import org.gradle.accessors.dm.LibrariesForLibs
+import org.gradle.api.tasks.bundling.Jar
+import sdkbase.abi.CheckAbiTask
+import sdkbase.abi.DumpAbiTask
 
-// ---------------------------------------------------------------------------------------------
-// This plugin only wires plain values into two real task types (sdkbase.abi.GenerateApiDumpTask
-// and sdkbase.abi.ApiCheckTask, in build-logic/src/main/kotlin/sdkbase/abi/AbiTasks.kt).
-//
-// The actual dump/check logic does NOT live here as a `doLast { }` closure, and is NOT declared
-// as a class nested inside this `.gradle.kts` file either — both were tried while building this
-// plugin and both broke the configuration cache. See the KDoc on GenerateApiDumpTask for the two
-// verified failures. What remains here is safe: assigning to a task's `Property`/`Provider`
-// inputs at configuration time is plain, natively-supported Gradle API, never a stored closure.
-// ---------------------------------------------------------------------------------------------
+// apiDump / apiCheck for Android (release AAR) and JVM (jar) modules. Exact match: every change to
+// the public surface shows up as a reviewed diff of api/<name>.api.
+val libs = the<LibrariesForLibs>()
 
-val moduleNameValue = project.name
-val aarFileProvider = layout.buildDirectory.file("outputs/aar/$moduleNameValue-release.aar")
-val generatedApiFileProvider = layout.buildDirectory.file("api-compat/$moduleNameValue.api")
-val extractDirProvider = layout.buildDirectory.dir("api-compat/classes")
-val committedApiFile = layout.projectDirectory.file("api/$moduleNameValue.api")
-val javapExecutablePath = File(System.getProperty("java.home"), "bin/javap").absolutePath
+val abiTools = configurations.create("sdkbaseAbiTools") {
+    isCanBeConsumed = false
+    isCanBeResolved = true
+}
+dependencies { add(abiTools.name, libs.abi.tools) }
 
-val generateApiDump = tasks.register<GenerateApiDumpTask>("generateApiDump") {
-    description = "Writes the release ABI of $moduleNameValue to a build-local .api file."
-    group = "verification"
-    dependsOn("assembleRelease")
-    aarFile.set(aarFileProvider)
-    generatedApiFile.set(generatedApiFileProvider)
-    extractDir.set(extractDirProvider)
-    javapExecutable.set(javapExecutablePath)
-    moduleName.set(moduleNameValue)
+// Named apiFileName, not baselineName: CheckAbiTask has its own `baselineName` property, which
+// would otherwise shadow this local val inside the `tasks.register<CheckAbiTask>` lambda below and
+// turn `baselineName.set(baselineName)` into a circular self-reference ("Circular evaluation
+// detected... property 'baselineName' -> ... property 'baselineName'").
+val apiFileName = "${project.name}.api"
+val baselineFile = layout.projectDirectory.file("api/$apiFileName")
+
+val dumpAbi = tasks.register<DumpAbiTask>("dumpAbi") {
+    abiToolsClasspath.from(abiTools)
+    dumpFile.set(layout.buildDirectory.file("abi/$apiFileName"))
 }
 
 tasks.register<Copy>("apiDump") {
-    description = "Records the current release ABI of $moduleNameValue into api/$moduleNameValue.api."
     group = "verification"
-    from(generateApiDump)
-    into(committedApiFile.asFile.parentFile)
+    description = "Records the public ABI into api/$apiFileName."
+    from(dumpAbi.flatMap { it.dumpFile })
+    into(layout.projectDirectory.dir("api"))
 }
 
-val apiCheck = tasks.register<ApiCheckTask>("apiCheck") {
-    description = "Fails if a recorded public signature of $moduleNameValue was removed or changed."
+val apiCheck = tasks.register<CheckAbiTask>("apiCheck") {
     group = "verification"
-    currentFile.set(generatedApiFileProvider)
-    baselineFile.set(committedApiFile)
-    moduleName.set(moduleNameValue)
-    inputs.files(generateApiDump)
-    inputs.file(committedApiFile).withPathSensitivity(PathSensitivity.RELATIVE)
-    outputs.upToDateWhen { true }
+    description = "Fails if the public ABI differs from api/$apiFileName."
+    baseline.from(baselineFile)
+    current.set(dumpAbi.flatMap { it.dumpFile })
+    projectPath.set(project.path)
+    baselineName.set(apiFileName)
+    result.set(layout.buildDirectory.file("abi/apiCheck.ok"))
 }
 
 tasks.named("check") { dependsOn(apiCheck) }
+
+// AndroidComponentsExtension#onVariants only overloads on a VariantSelector, not a lambda
+// predicate: `.onVariants({ it.buildType == "release" })` does not compile against AGP 9.4.1.
+plugins.withId("com.android.library") {
+    val components = extensions.getByType(LibraryAndroidComponentsExtension::class.java)
+    components.onVariants(components.selector().withBuildType("release")) { variant ->
+        dumpAbi.configure { artifact.set(variant.artifacts.get(SingleArtifact.AAR)) }
+    }
+}
+
+plugins.withId("org.jetbrains.kotlin.jvm") {
+    dumpAbi.configure { artifact.set(tasks.named<Jar>("jar").flatMap { it.archiveFile }) }
+}

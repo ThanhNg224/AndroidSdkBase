@@ -11,22 +11,14 @@ dependencies {
     compileOnly(libs.agp.gradle.plugin)
     compileOnly(libs.kotlin.gradle.plugin)
 
-    // Unlike the two above, dokka and vanniktech maven-publish ARE actually applied (via
-    // `plugins { id(...) }`) inside precompiled script plugins — dokka and mavenpublish inside
-    // sdkbase.android.publishing.gradle.kts, and compose-compiler inside
-    // sdkbase.android.compose.gradle.kts — so all three must be on the runtime classpath, not
-    // merely compileOnly, the same reasoning documented for compose-compiler below.
+    // Dokka, maven-publish and compose-compiler are actually applied via `plugins { id(...) }` inside precompiled scripts, so they must be on the runtime classpath.
     implementation(libs.dokka.gradle.plugin)
     implementation(libs.mavenpublish.gradle.plugin)
     implementation(libs.compose.compiler.gradle.plugin)
 
-    // Reads kotlin.Metadata to recover real Kotlin visibility for the ABI dump (sdkbase.abi's
-    // KotlinVisibility.kt). Used at task execution time, so `implementation`, not `compileOnly`.
-    implementation(libs.kotlin.metadata.jvm)
+    // Only the API surface is needed to compile AbiTasks.kt; the real engine is resolved into a worker classloader at execution time.
+    compileOnly(libs.abi.tools.api)
 
-    // Gradle generates `LibrariesForLibs` for this project's own build script use of `libs.*`,
-    // but does not put that generated jar on the classpath used to compile the precompiled
-    // script plugins under src/main/kotlin. Without this, `the<LibrariesForLibs>()` in those
-    // plugins fails with "Unresolved reference 'accessors'". This is the documented workaround.
+    // Puts the generated `LibrariesForLibs` accessor jar on the classpath so precompiled scripts can use `libs.*`.
     implementation(files(libs.javaClass.superclass.protectionDomain.codeSource.location))
 }

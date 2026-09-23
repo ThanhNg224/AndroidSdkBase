@@ -4,7 +4,7 @@ import com.vanniktech.maven.publish.SourcesJar
 
 plugins {
     id("sdkbase.kotlin.jvm")
-    id("sdkbase.abi.jvm")
+    id("sdkbase.abi")
     alias(libs.plugins.maven.publish)
     alias(libs.plugins.dokka)
 }

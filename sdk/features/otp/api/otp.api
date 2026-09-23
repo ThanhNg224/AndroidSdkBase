@@ -1,161 +1,159 @@
-# Public ABI baseline for :otp — see docs/COMPATIBILITY.md.
-# Regenerate with ./gradlew :otp:apiDump after an ADDITIVE change.
-# Removing or changing a recorded signature is breaking and fails apiCheck.
-
-final class io.github.thanhng224.sdkbase.otp.OtpSdkConfig$Builder$Companion {
+public abstract interface class io/github/thanhng224/sdkbase/otp/OtpCallbackGateway {
+	public abstract fun requestOtp (Ljava/lang/String;Lio/github/thanhng224/sdkbase/core/gateway/GatewayCallback;)V
+	public abstract fun verifyOtp (Ljava/lang/String;Ljava/lang/String;Lio/github/thanhng224/sdkbase/core/gateway/GatewayCallback;)V
 }
 
-public final class io.github.thanhng224.sdkbase.otp.OtpCallbackGatewayKt {
-    public static final io.github.thanhng224.sdkbase.otp.OtpGateway asGateway(io.github.thanhng224.sdkbase.otp.OtpCallbackGateway);
+public final class io/github/thanhng224/sdkbase/otp/OtpCallbackGatewayKt {
+	public static final fun asGateway (Lio/github/thanhng224/sdkbase/otp/OtpCallbackGateway;)Lio/github/thanhng224/sdkbase/otp/OtpGateway;
 }
 
-public final class io.github.thanhng224.sdkbase.otp.OtpChallenge {
-    public boolean equals(java.lang.Object);
-    public final int component2();
-    public final int component3();
-    public final int component4();
-    public final int getCodeLength();
-    public final int getExpiresInSeconds();
-    public final int getResendAfterSeconds();
-    public final io.github.thanhng224.sdkbase.otp.OtpChallenge copy(java.lang.String, int, int, int);
-    public final java.lang.String component1();
-    public final java.lang.String getChallengeId();
-    public int hashCode();
-    public io.github.thanhng224.sdkbase.otp.OtpChallenge(java.lang.String, int, int, int);
-    public java.lang.String toString();
+public final class io/github/thanhng224/sdkbase/otp/OtpChallenge {
+	public fun <init> (Ljava/lang/String;III)V
+	public final fun component1 ()Ljava/lang/String;
+	public final fun component2 ()I
+	public final fun component3 ()I
+	public final fun component4 ()I
+	public final fun copy (Ljava/lang/String;III)Lio/github/thanhng224/sdkbase/otp/OtpChallenge;
+	public static synthetic fun copy$default (Lio/github/thanhng224/sdkbase/otp/OtpChallenge;Ljava/lang/String;IIIILjava/lang/Object;)Lio/github/thanhng224/sdkbase/otp/OtpChallenge;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getChallengeId ()Ljava/lang/String;
+	public final fun getCodeLength ()I
+	public final fun getExpiresInSeconds ()I
+	public final fun getResendAfterSeconds ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
-public final class io.github.thanhng224.sdkbase.otp.OtpCommand$AppendDigit implements io.github.thanhng224.sdkbase.otp.OtpCommand {
-    public boolean equals(java.lang.Object);
-    public final char component1();
-    public final char getDigit();
-    public final io.github.thanhng224.sdkbase.otp.OtpCommand$AppendDigit copy(char);
-    public int hashCode();
-    public io.github.thanhng224.sdkbase.otp.OtpCommand$AppendDigit(char);
-    public java.lang.String toString();
+public abstract interface class io/github/thanhng224/sdkbase/otp/OtpCommand {
 }
 
-public final class io.github.thanhng224.sdkbase.otp.OtpCommand$Cancel implements io.github.thanhng224.sdkbase.otp.OtpCommand {
-    public boolean equals(java.lang.Object);
-    public int hashCode();
-    public java.lang.String toString();
-    public static final io.github.thanhng224.sdkbase.otp.OtpCommand$Cancel INSTANCE;
+public final class io/github/thanhng224/sdkbase/otp/OtpCommand$AppendDigit : io/github/thanhng224/sdkbase/otp/OtpCommand {
+	public fun <init> (C)V
+	public final fun component1 ()C
+	public final fun copy (C)Lio/github/thanhng224/sdkbase/otp/OtpCommand$AppendDigit;
+	public static synthetic fun copy$default (Lio/github/thanhng224/sdkbase/otp/OtpCommand$AppendDigit;CILjava/lang/Object;)Lio/github/thanhng224/sdkbase/otp/OtpCommand$AppendDigit;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getDigit ()C
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
-public final class io.github.thanhng224.sdkbase.otp.OtpCommand$DeleteDigit implements io.github.thanhng224.sdkbase.otp.OtpCommand {
-    public boolean equals(java.lang.Object);
-    public int hashCode();
-    public java.lang.String toString();
-    public static final io.github.thanhng224.sdkbase.otp.OtpCommand$DeleteDigit INSTANCE;
+public final class io/github/thanhng224/sdkbase/otp/OtpCommand$Cancel : io/github/thanhng224/sdkbase/otp/OtpCommand {
+	public static final field INSTANCE Lio/github/thanhng224/sdkbase/otp/OtpCommand$Cancel;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
-public final class io.github.thanhng224.sdkbase.otp.OtpCommand$Resend implements io.github.thanhng224.sdkbase.otp.OtpCommand {
-    public boolean equals(java.lang.Object);
-    public int hashCode();
-    public java.lang.String toString();
-    public static final io.github.thanhng224.sdkbase.otp.OtpCommand$Resend INSTANCE;
+public final class io/github/thanhng224/sdkbase/otp/OtpCommand$DeleteDigit : io/github/thanhng224/sdkbase/otp/OtpCommand {
+	public static final field INSTANCE Lio/github/thanhng224/sdkbase/otp/OtpCommand$DeleteDigit;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
-public final class io.github.thanhng224.sdkbase.otp.OtpCommand$Submit implements io.github.thanhng224.sdkbase.otp.OtpCommand {
-    public boolean equals(java.lang.Object);
-    public int hashCode();
-    public java.lang.String toString();
-    public static final io.github.thanhng224.sdkbase.otp.OtpCommand$Submit INSTANCE;
+public final class io/github/thanhng224/sdkbase/otp/OtpCommand$Resend : io/github/thanhng224/sdkbase/otp/OtpCommand {
+	public static final field INSTANCE Lio/github/thanhng224/sdkbase/otp/OtpCommand$Resend;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
-public final class io.github.thanhng224.sdkbase.otp.OtpErrors {
-    public final io.github.thanhng224.sdkbase.core.SdkError otpAttemptsExceeded();
-    public final io.github.thanhng224.sdkbase.core.SdkError otpExpired();
-    public final io.github.thanhng224.sdkbase.core.SdkError otpInvalid();
-    public final io.github.thanhng224.sdkbase.core.SdkError otpResendTooSoon(int);
-    public final java.util.List<java.lang.Integer> all();
-    public static final int OTP_ATTEMPTS_EXCEEDED;
-    public static final int OTP_EXPIRED;
-    public static final int OTP_INVALID;
-    public static final int OTP_RESEND_TOO_SOON;
-    public static final io.github.thanhng224.sdkbase.otp.OtpErrors INSTANCE;
+public final class io/github/thanhng224/sdkbase/otp/OtpCommand$Submit : io/github/thanhng224/sdkbase/otp/OtpCommand {
+	public static final field INSTANCE Lio/github/thanhng224/sdkbase/otp/OtpCommand$Submit;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
-public final class io.github.thanhng224.sdkbase.otp.OtpSdk {
-    public final java.lang.Object start(io.github.thanhng224.sdkbase.otp.OtpSdkConfig, kotlin.coroutines.Continuation<? super io.github.thanhng224.sdkbase.core.SdkResult<? extends io.github.thanhng224.sdkbase.otp.OtpSession>>);
-    public static final io.github.thanhng224.sdkbase.otp.OtpSdk INSTANCE;
+public final class io/github/thanhng224/sdkbase/otp/OtpErrors {
+	public static final field INSTANCE Lio/github/thanhng224/sdkbase/otp/OtpErrors;
+	public static final field OTP_ATTEMPTS_EXCEEDED I
+	public static final field OTP_EXPIRED I
+	public static final field OTP_INVALID I
+	public static final field OTP_RESEND_TOO_SOON I
+	public final fun all ()Ljava/util/List;
+	public final fun otpAttemptsExceeded ()Lio/github/thanhng224/sdkbase/core/SdkError;
+	public final fun otpExpired ()Lio/github/thanhng224/sdkbase/core/SdkError;
+	public final fun otpInvalid ()Lio/github/thanhng224/sdkbase/core/SdkError;
+	public final fun otpResendTooSoon (I)Lio/github/thanhng224/sdkbase/core/SdkError;
 }
 
-public final class io.github.thanhng224.sdkbase.otp.OtpSdkConfig {
-    public final int getMaxAttempts();
-    public final io.github.thanhng224.sdkbase.core.SdkLogger getLogger();
-    public final io.github.thanhng224.sdkbase.core.gateway.TelemetrySink getTelemetry();
-    public final io.github.thanhng224.sdkbase.otp.OtpGateway getGateway();
-    public final java.lang.String getDestination();
+public abstract interface class io/github/thanhng224/sdkbase/otp/OtpGateway {
+	public abstract fun requestOtp (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun verifyOtp (Ljava/lang/String;Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public final class io.github.thanhng224.sdkbase.otp.OtpSdkConfig$Builder {
-    public final io.github.thanhng224.sdkbase.core.SdkResult<io.github.thanhng224.sdkbase.otp.OtpSdkConfig> build();
-    public final io.github.thanhng224.sdkbase.otp.OtpSdkConfig$Builder logger(io.github.thanhng224.sdkbase.core.SdkLogger);
-    public final io.github.thanhng224.sdkbase.otp.OtpSdkConfig$Builder maxAttempts(int);
-    public final io.github.thanhng224.sdkbase.otp.OtpSdkConfig$Builder telemetry(io.github.thanhng224.sdkbase.core.gateway.TelemetrySink);
-    public io.github.thanhng224.sdkbase.otp.OtpSdkConfig$Builder(java.lang.String, io.github.thanhng224.sdkbase.otp.OtpCallbackGateway);
-    public io.github.thanhng224.sdkbase.otp.OtpSdkConfig$Builder(java.lang.String, io.github.thanhng224.sdkbase.otp.OtpGateway);
+public final class io/github/thanhng224/sdkbase/otp/OtpSdk {
+	public static final field INSTANCE Lio/github/thanhng224/sdkbase/otp/OtpSdk;
+	public final fun start (Lio/github/thanhng224/sdkbase/otp/OtpSdkConfig;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public final class io.github.thanhng224.sdkbase.otp.OtpState {
-    public boolean equals(java.lang.Object);
-    public final boolean getCanResend();
-    public final boolean getCanSubmit();
-    public final int component2();
-    public final int component4();
-    public final int component5();
-    public final int component6();
-    public final int getAttemptsRemaining();
-    public final int getCodeLength();
-    public final int getSecondsUntilExpiry();
-    public final int getSecondsUntilResend();
-    public final io.github.thanhng224.sdkbase.core.SdkError component7();
-    public final io.github.thanhng224.sdkbase.core.SdkError getError();
-    public final io.github.thanhng224.sdkbase.otp.OtpState copy(io.github.thanhng224.sdkbase.otp.OtpState$Phase, int, java.lang.String, int, int, int, io.github.thanhng224.sdkbase.core.SdkError);
-    public final io.github.thanhng224.sdkbase.otp.OtpState$Phase component1();
-    public final io.github.thanhng224.sdkbase.otp.OtpState$Phase getPhase();
-    public final java.lang.String component3();
-    public final java.lang.String getEnteredCode();
-    public int hashCode();
-    public io.github.thanhng224.sdkbase.otp.OtpState(io.github.thanhng224.sdkbase.otp.OtpState$Phase, int, java.lang.String, int, int, int, io.github.thanhng224.sdkbase.core.SdkError);
-    public java.lang.String toString();
-    public static final io.github.thanhng224.sdkbase.otp.OtpState$Companion Companion;
+public final class io/github/thanhng224/sdkbase/otp/OtpSdkConfig {
+	public final fun getDestination ()Ljava/lang/String;
+	public final fun getGateway ()Lio/github/thanhng224/sdkbase/otp/OtpGateway;
+	public final fun getLogger ()Lio/github/thanhng224/sdkbase/core/SdkLogger;
+	public final fun getMaxAttempts ()I
+	public final fun getTelemetry ()Lio/github/thanhng224/sdkbase/core/gateway/TelemetrySink;
 }
 
-public final class io.github.thanhng224.sdkbase.otp.OtpState$Companion {
-    public final io.github.thanhng224.sdkbase.otp.OtpState initial(int);
+public final class io/github/thanhng224/sdkbase/otp/OtpSdkConfig$Builder {
+	public fun <init> (Ljava/lang/String;Lio/github/thanhng224/sdkbase/otp/OtpCallbackGateway;)V
+	public fun <init> (Ljava/lang/String;Lio/github/thanhng224/sdkbase/otp/OtpGateway;)V
+	public final fun build ()Lio/github/thanhng224/sdkbase/core/SdkResult;
+	public final fun logger (Lio/github/thanhng224/sdkbase/core/SdkLogger;)Lio/github/thanhng224/sdkbase/otp/OtpSdkConfig$Builder;
+	public final fun maxAttempts (I)Lio/github/thanhng224/sdkbase/otp/OtpSdkConfig$Builder;
+	public final fun telemetry (Lio/github/thanhng224/sdkbase/core/gateway/TelemetrySink;)Lio/github/thanhng224/sdkbase/otp/OtpSdkConfig$Builder;
 }
 
-public final class io.github.thanhng224.sdkbase.otp.OtpState$Phase extends java.lang.Enum<io.github.thanhng224.sdkbase.otp.OtpState$Phase> {
-    public static final io.github.thanhng224.sdkbase.otp.OtpState$Phase AwaitingCode;
-    public static final io.github.thanhng224.sdkbase.otp.OtpState$Phase Failed;
-    public static final io.github.thanhng224.sdkbase.otp.OtpState$Phase Idle;
-    public static final io.github.thanhng224.sdkbase.otp.OtpState$Phase Requesting;
-    public static final io.github.thanhng224.sdkbase.otp.OtpState$Phase Verified;
-    public static final io.github.thanhng224.sdkbase.otp.OtpState$Phase Verifying;
-    public static io.github.thanhng224.sdkbase.otp.OtpState$Phase valueOf(java.lang.String);
-    public static io.github.thanhng224.sdkbase.otp.OtpState$Phase[] values();
-    public static kotlin.enums.EnumEntries<io.github.thanhng224.sdkbase.otp.OtpState$Phase> getEntries();
+public abstract interface class io/github/thanhng224/sdkbase/otp/OtpSession {
+	public abstract fun close ()V
+	public abstract fun dispatch (Lio/github/thanhng224/sdkbase/otp/OtpCommand;)V
+	public abstract fun getState ()Lkotlinx/coroutines/flow/StateFlow;
+	public abstract fun resend (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun submit (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public interface io.github.thanhng224.sdkbase.otp.OtpCallbackGateway {
-    public abstract void requestOtp(java.lang.String, io.github.thanhng224.sdkbase.core.gateway.GatewayCallback<io.github.thanhng224.sdkbase.otp.OtpChallenge>);
-    public abstract void verifyOtp(java.lang.String, java.lang.String, io.github.thanhng224.sdkbase.core.gateway.GatewayCallback<kotlin.Unit>);
+public final class io/github/thanhng224/sdkbase/otp/OtpState {
+	public static final field Companion Lio/github/thanhng224/sdkbase/otp/OtpState$Companion;
+	public fun <init> (Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;ILjava/lang/String;IIILio/github/thanhng224/sdkbase/core/SdkError;)V
+	public final fun component1 ()Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;
+	public final fun component2 ()I
+	public final fun component3 ()Ljava/lang/String;
+	public final fun component4 ()I
+	public final fun component5 ()I
+	public final fun component6 ()I
+	public final fun component7 ()Lio/github/thanhng224/sdkbase/core/SdkError;
+	public final fun copy (Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;ILjava/lang/String;IIILio/github/thanhng224/sdkbase/core/SdkError;)Lio/github/thanhng224/sdkbase/otp/OtpState;
+	public static synthetic fun copy$default (Lio/github/thanhng224/sdkbase/otp/OtpState;Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;ILjava/lang/String;IIILio/github/thanhng224/sdkbase/core/SdkError;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/otp/OtpState;
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getAttemptsRemaining ()I
+	public final fun getCanResend ()Z
+	public final fun getCanSubmit ()Z
+	public final fun getCodeLength ()I
+	public final fun getEnteredCode ()Ljava/lang/String;
+	public final fun getError ()Lio/github/thanhng224/sdkbase/core/SdkError;
+	public final fun getPhase ()Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;
+	public final fun getSecondsUntilExpiry ()I
+	public final fun getSecondsUntilResend ()I
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
 }
 
-public interface io.github.thanhng224.sdkbase.otp.OtpCommand {
+public final class io/github/thanhng224/sdkbase/otp/OtpState$Companion {
+	public final fun initial (I)Lio/github/thanhng224/sdkbase/otp/OtpState;
+	public static synthetic fun initial$default (Lio/github/thanhng224/sdkbase/otp/OtpState$Companion;IILjava/lang/Object;)Lio/github/thanhng224/sdkbase/otp/OtpState;
 }
 
-public interface io.github.thanhng224.sdkbase.otp.OtpGateway {
-    public abstract java.lang.Object requestOtp(java.lang.String, kotlin.coroutines.Continuation<? super io.github.thanhng224.sdkbase.core.SdkResult<io.github.thanhng224.sdkbase.otp.OtpChallenge>>);
-    public abstract java.lang.Object verifyOtp(java.lang.String, java.lang.String, kotlin.coroutines.Continuation<? super io.github.thanhng224.sdkbase.core.SdkResult<kotlin.Unit>>);
+public final class io/github/thanhng224/sdkbase/otp/OtpState$Phase : java/lang/Enum {
+	public static final field AwaitingCode Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;
+	public static final field Failed Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;
+	public static final field Idle Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;
+	public static final field Requesting Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;
+	public static final field Verified Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;
+	public static final field Verifying Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;
+	public static fun values ()[Lio/github/thanhng224/sdkbase/otp/OtpState$Phase;
 }
 
-public interface io.github.thanhng224.sdkbase.otp.OtpSession {
-    public abstract java.lang.Object resend(kotlin.coroutines.Continuation<? super io.github.thanhng224.sdkbase.core.SdkResult<kotlin.Unit>>);
-    public abstract java.lang.Object submit(java.lang.String, kotlin.coroutines.Continuation<? super io.github.thanhng224.sdkbase.core.SdkResult<kotlin.Unit>>);
-    public abstract kotlinx.coroutines.flow.StateFlow<io.github.thanhng224.sdkbase.otp.OtpState> getState();
-    public abstract void close();
-    public abstract void dispatch(io.github.thanhng224.sdkbase.otp.OtpCommand);
-}

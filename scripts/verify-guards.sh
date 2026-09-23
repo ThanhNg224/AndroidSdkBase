@@ -91,6 +91,46 @@ run_case zone-registered-but-not-included \
   "edit $TOPO '\"feature\" to listOf(' '\"feature\" to listOf(\":sdk:features:ghost\", '" \
   "./gradlew help -q" ":sdk:features:ghost is registered but not included"
 
+# --- ABI (exact match: any change to the public surface fails until the dump is regenerated) ----
+CORE=sdk/core/src/main/kotlin/io/github/thanhng224/sdkbase/core
+OTP=sdk/features/otp/src/main/kotlin/io/github/thanhng224/sdkbase/otp
+ABI_CORE='Public ABI of :sdk:core differs'
+run_case abi-delete-signature \
+  "edit $CORE/SdkErrors.kt 'public fun notStarted(): SdkError =' 'internal fun notStarted(): SdkError ='" \
+  "./gradlew :sdk:core:apiCheck -q" "$ABI_CORE"
+run_case abi-move-toplevel-function \
+  "python3 - <<'EOF'
+d='$CORE/'
+t=open(d+'SdkLogger.kt').read(); i=t.index('/**\n * Masks all')
+open(d+'SdkLogger.kt','w').write(t[:i]+'/** Added API. */\npublic fun noOpLogger(): SdkLogger = SdkLogger.NoOp\n')
+open(d+'Redact.kt','w').write('package io.github.thanhng224.sdkbase.core\n\n'+t[i:])
+EOF" \
+  "./gradlew :sdk:core:apiCheck -q" "$ABI_CORE"
+run_case abi-add-abstract-to-host-interface \
+  "edit $CORE/SdkLogger.kt '    public fun info(tag: String, message: String)
+' '    public fun info(tag: String, message: String)
+
+    public fun warn(tag: String, message: String)
+' && edit $CORE/SdkLogger.kt '            override fun info(tag: String, message: String): Unit = Unit
+' '            override fun info(tag: String, message: String): Unit = Unit
+            override fun warn(tag: String, message: String): Unit = Unit
+'" \
+  "./gradlew :sdk:core:apiCheck -q" "$ABI_CORE"
+run_case abi-add-sealed-subtype \
+  "edit $CORE/SdkResult.kt '    public data class Failure' '    public data object Pending : SdkResult<Nothing>
+
+    public data class Failure'" \
+  "./gradlew :sdk:core:apiCheck -q" "$ABI_CORE"
+run_case abi-android-module-addition \
+  "printf 'package io.github.thanhng224.sdkbase.otp\n\npublic fun OtpState.isTerminal(): Boolean = phase == OtpState.Phase.Verified\n' > $OTP/OtpStateExt.kt" \
+  "./gradlew :sdk:features:otp:apiCheck -q" "Public ABI of :sdk:features:otp differs"
+run_case abi-garbage-in-baseline \
+  "printf 'garbage line\n' >> sdk/features/otp/api/otp.api" \
+  "./gradlew :sdk:features:otp:apiCheck -q" "Public ABI of :sdk:features:otp differs"
+run_case abi-missing-baseline \
+  "rm sdk/features/otp-ui-compose/api/otp-ui-compose.api" \
+  "./gradlew :sdk:features:otp-ui-compose:apiCheck -q" "Missing ABI baseline"
+
 # --- Cases appended by later tasks go above this line ------------------------------------------
 
 if [ "$failures" -gt 0 ]; then
