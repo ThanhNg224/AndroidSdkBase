@@ -2,13 +2,13 @@
 # --- Toolchain floor. Raising any of these is a compatibility decision: see docs/COMPATIBILITY.md.
 agp = "9.4.1"
 kotlin = "2.4.20"
-# Kotlin metadata emitted to consumers. Compiling on newer Kotlin while emitting an older
-# metadata version is what lets hosts on older Kotlin consume these AARs.
-kotlinMetadataFloor = "2.2"
 javaToolchain = "17"
 compileSdk = "37"
 minSdk = "24"
 targetSdk = "37"
+# The Kotlin floor for consumers: the kotlin-stdlib version every artifact publishes, and (major.minor)
+# the languageVersion/apiVersion. Raising it is a compatibility decision: see docs/COMPATIBILITY.md.
+kotlinStdlibFloor = "2.2.21"
 
 # --- Runtime libraries
 coroutines = "1.11.0"
@@ -17,6 +17,10 @@ androidxAnnotation = "1.10.0"
 androidxLifecycle = "2.11.0"
 activityCompose = "1.13.0"
 composeBom = "2026.09.00"
+# Resolved by BOM 2026.09.00 (`./gradlew :sdk:features:otp-ui-compose:dependencies
+# --configuration releaseRuntimeClasspath`); pinned explicitly so a UI module never exports a BOM.
+composeUi = "1.12.1"
+composeMaterial3 = "1.4.0"
 
 # --- Test
 junit = "4.13.2"
@@ -42,6 +46,16 @@ compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 compose-tooling = { module = "androidx.compose.ui:ui-tooling" }
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
+
+# Explicit versions for the published UI module (see sdkbase.android.compose): it must not export
+# a BOM that upgrades every Compose artifact in the host. Apps still use the unversioned entries above.
+compose-ui-versioned = { module = "androidx.compose.ui:ui", version.ref = "composeUi" }
+compose-ui-graphics-versioned = { module = "androidx.compose.ui:ui-graphics", version.ref = "composeUi" }
+compose-tooling-preview-versioned = { module = "androidx.compose.ui:ui-tooling-preview", version.ref = "composeUi" }
+compose-tooling-versioned = { module = "androidx.compose.ui:ui-tooling", version.ref = "composeUi" }
+compose-material3-versioned = { module = "androidx.compose.material3:material3", version.ref = "composeMaterial3" }
+
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlinStdlibFloor" }
 
 junit = { module = "junit:junit", version.ref = "junit" }
 androidx-junit = { module = "androidx.test.ext:junit", version.ref = "androidxJunit" }

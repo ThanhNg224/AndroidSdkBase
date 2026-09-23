@@ -20,6 +20,11 @@
     {
       "matchPackagePrefixes": ["org.jetbrains.kotlinx:"],
       "groupName": "kotlinx"
+    },
+    {
+      "description": "kotlin-stdlib is pinned to the consumer floor, not the toolchain. Never bump it automatically.",
+      "matchPackageNames": ["org.jetbrains.kotlin:kotlin-stdlib"],
+      "enabled": false
     }
   ],
   "ignorePaths": ["verification/**"]

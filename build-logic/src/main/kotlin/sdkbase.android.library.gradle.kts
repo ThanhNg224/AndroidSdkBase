@@ -10,9 +10,6 @@ plugins {
 // Precompiled script plugins cannot use the generated `libs` accessor directly.
 val libs = the<LibrariesForLibs>()
 
-fun kotlinVersionOf(raw: String): KotlinVersion =
-    KotlinVersion.fromVersion(raw)
-
 kotlin {
     // Strict: a declaration without a visibility modifier is a compile ERROR, not a warning.
     explicitApi()
@@ -24,7 +21,7 @@ kotlin {
         freeCompilerArgs.add("-jvm-default=enable")
 
         // Emit metadata a host on older Kotlin can still read. See docs/COMPATIBILITY.md.
-        val floor = kotlinVersionOf(libs.versions.kotlinMetadataFloor.get())
+        val floor = KotlinVersion.fromVersion(libs.versions.kotlinStdlibFloor.get().substringBeforeLast('.'))
         languageVersion.set(floor)
         apiVersion.set(floor)
 
@@ -42,12 +39,6 @@ extensions.configure<LibraryExtension> {
         minSdk = libs.versions.minSdk.get().toInt()
         consumerProguardFiles("consumer-rules.pro")
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-
-        // Refuse to be consumed by a build too old to honour this AAR's contract.
-        aarMetadata {
-            minCompileSdk = libs.versions.compileSdk.get().toInt()
-            minAgpVersion = libs.versions.agp.get()
-        }
     }
 
     // Every module prefixes its resources so it can never collide with a host's resources.
@@ -84,12 +75,13 @@ extensions.configure<LibraryExtension> {
     lint {
         warningsAsErrors = true
         abortOnError = true
-        // A published library must be clean for every consumer, not just this repo's demo app.
+        // Lint this module only; dependencies are linted where they live.
         checkDependencies = false
     }
 }
 
 dependencies {
+    "api"(libs.kotlin.stdlib)
     "implementation"(libs.androidx.annotation)
     "testImplementation"(libs.junit)
     "testImplementation"(libs.coroutines.test)

@@ -131,6 +131,33 @@ run_case abi-missing-baseline \
   "rm sdk/features/otp-ui-compose/api/otp-ui-compose.api" \
   "./gradlew :sdk:features:otp-ui-compose:apiCheck -q" "Missing ABI baseline"
 
+# --- Kotlin floor and R8 canary (slow: each runs the whole publication gate) --------------------
+PUB='./scripts/verify-publication.sh'
+ACT=verification/consumer/app/src/main/kotlin/io/github/thanhng224/consumer/ConsumerActivity.kt
+# Flipping the property ALONE is not a real violation: every convention also declares an explicit
+# `"api"(libs.kotlin.stdlib)`, and that pin wins regardless of the property (verified: toggling the
+# property with the pin left in place changes nothing in any POM). The real protection is the pin,
+# so the mutation removes it too — with the property back on, that is what actually lets AGP's
+# built-in Kotlin and KGP fall back to the toolchain's own (unpinned) kotlin-stdlib.
+run_case floor-stdlib-unpinned \
+  "edit gradle.properties 'kotlin.stdlib.default.dependency=false' 'kotlin.stdlib.default.dependency=true' &&
+   edit build-logic/src/main/kotlin/sdkbase.android.library.gradle.kts '\"api\"(libs.kotlin.stdlib)
+    ' '' &&
+   edit build-logic/src/main/kotlin/sdkbase.kotlin.jvm.gradle.kts '\"api\"(libs.kotlin.stdlib)
+    ' ''" \
+  "$PUB" "declares kotlin-stdlib"
+run_case floor-unpin-android-library \
+  "edit build-logic/src/main/kotlin/sdkbase.android.library.gradle.kts 'languageVersion.set(floor)' '' &&
+   edit build-logic/src/main/kotlin/sdkbase.android.library.gradle.kts 'apiVersion.set(floor)' ''" \
+  "$PUB" "compiled with an incompatible version of Kotlin"
+run_case floor-unpin-kotlin-jvm \
+  "edit build-logic/src/main/kotlin/sdkbase.kotlin.jvm.gradle.kts 'languageVersion.set(floor)' '' &&
+   edit build-logic/src/main/kotlin/sdkbase.kotlin.jvm.gradle.kts 'apiVersion.set(floor)' ''" \
+  "$PUB" "compiled with an incompatible version of Kotlin"
+run_case r8-canary-unreachable-sdk \
+  "edit $ACT '/* SDK_CALLS_BEGIN */' '/* SDK_CALLS_BEGIN' && edit $ACT '/* SDK_CALLS_END */' 'SDK_CALLS_END */'" \
+  "$PUB" "R8 kept no classes from"
+
 # --- Cases appended by later tasks go above this line ------------------------------------------
 
 if [ "$failures" -gt 0 ]; then

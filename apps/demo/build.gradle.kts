@@ -40,6 +40,8 @@ kotlin {
 }
 
 dependencies {
+    // The app is not published; it compiles at the toolchain's own API level, not the floor.
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:${libs.versions.kotlin.get()}")
     implementation(project(":sdk:features:otp"))
     implementation(project(":sdk:features:otp-ui-compose"))
     implementation(platform(libs.compose.bom))

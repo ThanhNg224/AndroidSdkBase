@@ -12,7 +12,7 @@ kotlin {
     jvmToolchain(libs.versions.javaToolchain.get().toInt())
     compilerOptions {
         freeCompilerArgs.add("-jvm-default=enable")
-        val floor = KotlinVersion.fromVersion(libs.versions.kotlinMetadataFloor.get())
+        val floor = KotlinVersion.fromVersion(libs.versions.kotlinStdlibFloor.get().substringBeforeLast('.'))
         languageVersion.set(floor)
         apiVersion.set(floor)
 
@@ -24,6 +24,7 @@ kotlin {
 }
 
 dependencies {
+    "api"(libs.kotlin.stdlib)
     "testImplementation"(libs.junit)
     "testImplementation"(libs.coroutines.test)
 }

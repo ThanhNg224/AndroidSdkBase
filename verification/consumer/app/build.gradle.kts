@@ -1,7 +1,5 @@
 plugins {
     id("com.android.application")
-    // Required since Kotlin 2.0 for any module with `buildFeatures.compose = true` — see the root
-    // build.gradle.kts override note.
     id("org.jetbrains.kotlin.plugin.compose")
 }
 
@@ -39,6 +37,12 @@ android {
 
 kotlin {
     jvmToolchain(17)
+}
+
+// The SDK under test is the same SNAPSHOT republished on every run: never serve it from Gradle's
+// cache, or the gate would test a previous build.
+configurations.configureEach {
+    resolutionStrategy.cacheChangingModulesFor(0, "seconds")
 }
 
 dependencies {

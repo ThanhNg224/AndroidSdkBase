@@ -31,10 +31,11 @@ extensions.configure<LibraryExtension> {
 }
 
 dependencies {
-    "implementation"(platform(libs.compose.bom))
-    "api"(libs.compose.ui)
-    "api"(libs.compose.material3)
-    "implementation"(libs.compose.ui.graphics)
-    "implementation"(libs.compose.tooling.preview)
-    "debugImplementation"(libs.compose.tooling)
+    // Explicit versions, not platform(compose-bom): a library must not export a BOM that upgrades
+    // every Compose artifact in the host.
+    "api"(libs.compose.ui.versioned)
+    "api"(libs.compose.material3.versioned)
+    "implementation"(libs.compose.ui.graphics.versioned)
+    "implementation"(libs.compose.tooling.preview.versioned)
+    "debugImplementation"(libs.compose.tooling.versioned)
 }
