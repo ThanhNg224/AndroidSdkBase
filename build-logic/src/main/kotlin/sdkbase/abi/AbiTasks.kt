@@ -59,13 +59,18 @@ public interface DumpAbiParameters : WorkParameters {
     public val scratchDir: DirectoryProperty
 }
 
+// Compose's ComposableSingletons hold lambdas named by source hash: not host-callable, and they would
+// churn the baseline on every UI edit. Nested classes are written Outer.Inner in abi-tools filters.
+private val EXCLUDE_COMPILER_SYNTHETICS =
+    AbiFilters(emptySet(), setOf("**.ComposableSingletons.*"), emptySet(), emptySet())
+
 public abstract class DumpAbiAction : WorkAction<DumpAbiParameters> {
     override fun execute() {
         val input = parameters.artifact.get().asFile
         val classes = if (input.extension == "aar") extractClassesJar(input) else input
         val tools = ServiceLoader.load(AbiToolsFactory::class.java, javaClass.classLoader).first().get()
         val dump = StringBuilder()
-        tools.printJvmDump(dump, listOf(classes), AbiFilters(emptySet(), emptySet(), emptySet(), emptySet()))
+        tools.printJvmDump(dump, listOf(classes), EXCLUDE_COMPILER_SYNTHETICS)
         if (dump.isBlank()) throw GradleException("abi-tools found no public API in ${input.name}")
         parameters.dumpFile.get().asFile.apply { parentFile.mkdirs() }.writeText(dump.toString())
     }
