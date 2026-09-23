@@ -43,7 +43,7 @@ kotlin {
 
 dependencies {
     // Resolved as a real consumer would: by coordinate, from a repository. NOT by project(...).
-    implementation("io.github.thanhng224:otp-sdk:$sdkVersion")
+    implementation("io.github.thanhng224:otp:$sdkVersion")
     implementation("io.github.thanhng224:otp-ui-compose:$sdkVersion")
 
     implementation(platform("androidx.compose:compose-bom:2026.09.00"))

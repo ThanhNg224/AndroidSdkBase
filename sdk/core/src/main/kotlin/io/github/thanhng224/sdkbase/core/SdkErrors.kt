@@ -1,10 +1,10 @@
 package io.github.thanhng224.sdkbase.core
 
 /**
- * The catalog. Every error the SDK can emit is created here and nowhere else, so
- * `docs/ERROR_CODES.md` can be generated from one file and a host can enumerate the whole surface.
+ * Error codes shared by every feature. Codes are append-only: never renumber a released code.
  *
- * Codes are append-only: never renumber a released code.
+ * Families: 1xxx common, 2xxx system/transport, 3xxx business (owned by each feature, e.g.
+ * `OtpErrors`), 4xxx lifecycle. Hosts branch on [SdkError.code], never on [SdkError.reason].
  */
 public object SdkErrors {
 
@@ -17,12 +17,6 @@ public object SdkErrors {
     public const val NETWORK_UNAVAILABLE: Int = 2000
     public const val GATEWAY_FAILURE: Int = 2001
     public const val TIMEOUT: Int = 2002
-
-    // --- 3xxx business
-    public const val OTP_INVALID: Int = 3000
-    public const val OTP_EXPIRED: Int = 3001
-    public const val OTP_ATTEMPTS_EXCEEDED: Int = 3002
-    public const val OTP_RESEND_TOO_SOON: Int = 3003
 
     // --- 4xxx lifecycle
     public const val NOT_STARTED: Int = 4000
@@ -46,18 +40,6 @@ public object SdkErrors {
     public fun timeout(reason: String): SdkError =
         SdkError.System(TIMEOUT, "Timed out: $reason")
 
-    public fun otpInvalid(): SdkError =
-        SdkError.Business(OTP_INVALID, "The submitted code is not correct")
-
-    public fun otpExpired(): SdkError =
-        SdkError.Business(OTP_EXPIRED, "The challenge has expired")
-
-    public fun otpAttemptsExceeded(): SdkError =
-        SdkError.Business(OTP_ATTEMPTS_EXCEEDED, "Too many incorrect attempts")
-
-    public fun otpResendTooSoon(retryAfterSeconds: Int): SdkError =
-        SdkError.Business(OTP_RESEND_TOO_SOON, "Resend allowed in $retryAfterSeconds seconds")
-
     public fun notStarted(): SdkError =
         SdkError.Lifecycle(NOT_STARTED, "The SDK has not been started")
 
@@ -68,7 +50,6 @@ public object SdkErrors {
     public fun all(): List<Int> = listOf(
         UNKNOWN, INVALID_CONFIG, CANCELLED_BY_USER,
         NETWORK_UNAVAILABLE, GATEWAY_FAILURE, TIMEOUT,
-        OTP_INVALID, OTP_EXPIRED, OTP_ATTEMPTS_EXCEEDED, OTP_RESEND_TOO_SOON,
         NOT_STARTED, ALREADY_RUNNING,
     )
 }

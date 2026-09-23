@@ -1,0 +1,161 @@
+# Public ABI baseline for :otp — see docs/COMPATIBILITY.md.
+# Regenerate with ./gradlew :otp:apiDump after an ADDITIVE change.
+# Removing or changing a recorded signature is breaking and fails apiCheck.
+
+final class io.github.thanhng224.sdkbase.otp.OtpSdkConfig$Builder$Companion {
+}
+
+public final class io.github.thanhng224.sdkbase.otp.OtpCallbackGatewayKt {
+    public static final io.github.thanhng224.sdkbase.otp.OtpGateway asGateway(io.github.thanhng224.sdkbase.otp.OtpCallbackGateway);
+}
+
+public final class io.github.thanhng224.sdkbase.otp.OtpChallenge {
+    public boolean equals(java.lang.Object);
+    public final int component2();
+    public final int component3();
+    public final int component4();
+    public final int getCodeLength();
+    public final int getExpiresInSeconds();
+    public final int getResendAfterSeconds();
+    public final io.github.thanhng224.sdkbase.otp.OtpChallenge copy(java.lang.String, int, int, int);
+    public final java.lang.String component1();
+    public final java.lang.String getChallengeId();
+    public int hashCode();
+    public io.github.thanhng224.sdkbase.otp.OtpChallenge(java.lang.String, int, int, int);
+    public java.lang.String toString();
+}
+
+public final class io.github.thanhng224.sdkbase.otp.OtpCommand$AppendDigit implements io.github.thanhng224.sdkbase.otp.OtpCommand {
+    public boolean equals(java.lang.Object);
+    public final char component1();
+    public final char getDigit();
+    public final io.github.thanhng224.sdkbase.otp.OtpCommand$AppendDigit copy(char);
+    public int hashCode();
+    public io.github.thanhng224.sdkbase.otp.OtpCommand$AppendDigit(char);
+    public java.lang.String toString();
+}
+
+public final class io.github.thanhng224.sdkbase.otp.OtpCommand$Cancel implements io.github.thanhng224.sdkbase.otp.OtpCommand {
+    public boolean equals(java.lang.Object);
+    public int hashCode();
+    public java.lang.String toString();
+    public static final io.github.thanhng224.sdkbase.otp.OtpCommand$Cancel INSTANCE;
+}
+
+public final class io.github.thanhng224.sdkbase.otp.OtpCommand$DeleteDigit implements io.github.thanhng224.sdkbase.otp.OtpCommand {
+    public boolean equals(java.lang.Object);
+    public int hashCode();
+    public java.lang.String toString();
+    public static final io.github.thanhng224.sdkbase.otp.OtpCommand$DeleteDigit INSTANCE;
+}
+
+public final class io.github.thanhng224.sdkbase.otp.OtpCommand$Resend implements io.github.thanhng224.sdkbase.otp.OtpCommand {
+    public boolean equals(java.lang.Object);
+    public int hashCode();
+    public java.lang.String toString();
+    public static final io.github.thanhng224.sdkbase.otp.OtpCommand$Resend INSTANCE;
+}
+
+public final class io.github.thanhng224.sdkbase.otp.OtpCommand$Submit implements io.github.thanhng224.sdkbase.otp.OtpCommand {
+    public boolean equals(java.lang.Object);
+    public int hashCode();
+    public java.lang.String toString();
+    public static final io.github.thanhng224.sdkbase.otp.OtpCommand$Submit INSTANCE;
+}
+
+public final class io.github.thanhng224.sdkbase.otp.OtpErrors {
+    public final io.github.thanhng224.sdkbase.core.SdkError otpAttemptsExceeded();
+    public final io.github.thanhng224.sdkbase.core.SdkError otpExpired();
+    public final io.github.thanhng224.sdkbase.core.SdkError otpInvalid();
+    public final io.github.thanhng224.sdkbase.core.SdkError otpResendTooSoon(int);
+    public final java.util.List<java.lang.Integer> all();
+    public static final int OTP_ATTEMPTS_EXCEEDED;
+    public static final int OTP_EXPIRED;
+    public static final int OTP_INVALID;
+    public static final int OTP_RESEND_TOO_SOON;
+    public static final io.github.thanhng224.sdkbase.otp.OtpErrors INSTANCE;
+}
+
+public final class io.github.thanhng224.sdkbase.otp.OtpSdk {
+    public final java.lang.Object start(io.github.thanhng224.sdkbase.otp.OtpSdkConfig, kotlin.coroutines.Continuation<? super io.github.thanhng224.sdkbase.core.SdkResult<? extends io.github.thanhng224.sdkbase.otp.OtpSession>>);
+    public static final io.github.thanhng224.sdkbase.otp.OtpSdk INSTANCE;
+}
+
+public final class io.github.thanhng224.sdkbase.otp.OtpSdkConfig {
+    public final int getMaxAttempts();
+    public final io.github.thanhng224.sdkbase.core.SdkLogger getLogger();
+    public final io.github.thanhng224.sdkbase.core.gateway.TelemetrySink getTelemetry();
+    public final io.github.thanhng224.sdkbase.otp.OtpGateway getGateway();
+    public final java.lang.String getDestination();
+}
+
+public final class io.github.thanhng224.sdkbase.otp.OtpSdkConfig$Builder {
+    public final io.github.thanhng224.sdkbase.core.SdkResult<io.github.thanhng224.sdkbase.otp.OtpSdkConfig> build();
+    public final io.github.thanhng224.sdkbase.otp.OtpSdkConfig$Builder logger(io.github.thanhng224.sdkbase.core.SdkLogger);
+    public final io.github.thanhng224.sdkbase.otp.OtpSdkConfig$Builder maxAttempts(int);
+    public final io.github.thanhng224.sdkbase.otp.OtpSdkConfig$Builder telemetry(io.github.thanhng224.sdkbase.core.gateway.TelemetrySink);
+    public io.github.thanhng224.sdkbase.otp.OtpSdkConfig$Builder(java.lang.String, io.github.thanhng224.sdkbase.otp.OtpCallbackGateway);
+    public io.github.thanhng224.sdkbase.otp.OtpSdkConfig$Builder(java.lang.String, io.github.thanhng224.sdkbase.otp.OtpGateway);
+}
+
+public final class io.github.thanhng224.sdkbase.otp.OtpState {
+    public boolean equals(java.lang.Object);
+    public final boolean getCanResend();
+    public final boolean getCanSubmit();
+    public final int component2();
+    public final int component4();
+    public final int component5();
+    public final int component6();
+    public final int getAttemptsRemaining();
+    public final int getCodeLength();
+    public final int getSecondsUntilExpiry();
+    public final int getSecondsUntilResend();
+    public final io.github.thanhng224.sdkbase.core.SdkError component7();
+    public final io.github.thanhng224.sdkbase.core.SdkError getError();
+    public final io.github.thanhng224.sdkbase.otp.OtpState copy(io.github.thanhng224.sdkbase.otp.OtpState$Phase, int, java.lang.String, int, int, int, io.github.thanhng224.sdkbase.core.SdkError);
+    public final io.github.thanhng224.sdkbase.otp.OtpState$Phase component1();
+    public final io.github.thanhng224.sdkbase.otp.OtpState$Phase getPhase();
+    public final java.lang.String component3();
+    public final java.lang.String getEnteredCode();
+    public int hashCode();
+    public io.github.thanhng224.sdkbase.otp.OtpState(io.github.thanhng224.sdkbase.otp.OtpState$Phase, int, java.lang.String, int, int, int, io.github.thanhng224.sdkbase.core.SdkError);
+    public java.lang.String toString();
+    public static final io.github.thanhng224.sdkbase.otp.OtpState$Companion Companion;
+}
+
+public final class io.github.thanhng224.sdkbase.otp.OtpState$Companion {
+    public final io.github.thanhng224.sdkbase.otp.OtpState initial(int);
+}
+
+public final class io.github.thanhng224.sdkbase.otp.OtpState$Phase extends java.lang.Enum<io.github.thanhng224.sdkbase.otp.OtpState$Phase> {
+    public static final io.github.thanhng224.sdkbase.otp.OtpState$Phase AwaitingCode;
+    public static final io.github.thanhng224.sdkbase.otp.OtpState$Phase Failed;
+    public static final io.github.thanhng224.sdkbase.otp.OtpState$Phase Idle;
+    public static final io.github.thanhng224.sdkbase.otp.OtpState$Phase Requesting;
+    public static final io.github.thanhng224.sdkbase.otp.OtpState$Phase Verified;
+    public static final io.github.thanhng224.sdkbase.otp.OtpState$Phase Verifying;
+    public static io.github.thanhng224.sdkbase.otp.OtpState$Phase valueOf(java.lang.String);
+    public static io.github.thanhng224.sdkbase.otp.OtpState$Phase[] values();
+    public static kotlin.enums.EnumEntries<io.github.thanhng224.sdkbase.otp.OtpState$Phase> getEntries();
+}
+
+public interface io.github.thanhng224.sdkbase.otp.OtpCallbackGateway {
+    public abstract void requestOtp(java.lang.String, io.github.thanhng224.sdkbase.core.gateway.GatewayCallback<io.github.thanhng224.sdkbase.otp.OtpChallenge>);
+    public abstract void verifyOtp(java.lang.String, java.lang.String, io.github.thanhng224.sdkbase.core.gateway.GatewayCallback<kotlin.Unit>);
+}
+
+public interface io.github.thanhng224.sdkbase.otp.OtpCommand {
+}
+
+public interface io.github.thanhng224.sdkbase.otp.OtpGateway {
+    public abstract java.lang.Object requestOtp(java.lang.String, kotlin.coroutines.Continuation<? super io.github.thanhng224.sdkbase.core.SdkResult<io.github.thanhng224.sdkbase.otp.OtpChallenge>>);
+    public abstract java.lang.Object verifyOtp(java.lang.String, java.lang.String, kotlin.coroutines.Continuation<? super io.github.thanhng224.sdkbase.core.SdkResult<kotlin.Unit>>);
+}
+
+public interface io.github.thanhng224.sdkbase.otp.OtpSession {
+    public abstract java.lang.Object resend(kotlin.coroutines.Continuation<? super io.github.thanhng224.sdkbase.core.SdkResult<kotlin.Unit>>);
+    public abstract java.lang.Object submit(java.lang.String, kotlin.coroutines.Continuation<? super io.github.thanhng224.sdkbase.core.SdkResult<kotlin.Unit>>);
+    public abstract kotlinx.coroutines.flow.StateFlow<io.github.thanhng224.sdkbase.otp.OtpState> getState();
+    public abstract void close();
+    public abstract void dispatch(io.github.thanhng224.sdkbase.otp.OtpCommand);
+}

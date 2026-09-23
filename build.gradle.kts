@@ -52,10 +52,8 @@ val zoneByPath: Map<String, String> =
 // What each zone is allowed to reach. `core` reaches nothing: it is the bottom.
 val allowedTargets: Map<String, Set<String>> = mapOf(
     "core" to emptySet(),
-    "platform" to setOf("core"),
-    "capability" to setOf("core", "platform", "capability"),
-    "facade" to setOf("core", "platform", "capability"),
-    "app" to setOf("core", "platform", "capability", "facade", "app"),
+    "feature" to setOf("core", "feature"),
+    "app" to setOf("core", "feature", "app"),
 )
 
 // A published AAR must never reach one of these.

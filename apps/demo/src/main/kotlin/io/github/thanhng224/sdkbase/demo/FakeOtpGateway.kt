@@ -1,9 +1,9 @@
 package io.github.thanhng224.sdkbase.demo
 
-import io.github.thanhng224.sdkbase.core.SdkErrors
 import io.github.thanhng224.sdkbase.core.SdkResult
-import io.github.thanhng224.sdkbase.core.gateway.OtpChallenge
-import io.github.thanhng224.sdkbase.core.gateway.OtpGateway
+import io.github.thanhng224.sdkbase.otp.OtpChallenge
+import io.github.thanhng224.sdkbase.otp.OtpErrors
+import io.github.thanhng224.sdkbase.otp.OtpGateway
 import kotlinx.coroutines.delay
 
 /**
@@ -31,7 +31,7 @@ internal class FakeOtpGateway : OtpGateway {
         return if (code == "123456") {
             SdkResult.Success(Unit)
         } else {
-            SdkResult.Failure(SdkErrors.otpInvalid())
+            SdkResult.Failure(OtpErrors.otpInvalid())
         }
     }
 }

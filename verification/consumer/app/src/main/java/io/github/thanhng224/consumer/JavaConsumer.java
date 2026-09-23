@@ -2,10 +2,10 @@ package io.github.thanhng224.consumer;
 
 import io.github.thanhng224.sdkbase.core.SdkResult;
 import io.github.thanhng224.sdkbase.core.gateway.GatewayCallback;
-import io.github.thanhng224.sdkbase.core.gateway.OtpCallbackGateway;
-import io.github.thanhng224.sdkbase.core.gateway.OtpChallenge;
-import io.github.thanhng224.sdkbase.core.gateway.OtpGateway;
-import io.github.thanhng224.sdkbase.otpsdk.OtpSdkConfig;
+import io.github.thanhng224.sdkbase.otp.OtpCallbackGateway;
+import io.github.thanhng224.sdkbase.otp.OtpChallenge;
+import io.github.thanhng224.sdkbase.otp.OtpGateway;
+import io.github.thanhng224.sdkbase.otp.OtpSdkConfig;
 
 import kotlin.coroutines.Continuation;
 import org.jetbrains.annotations.NotNull;
@@ -16,8 +16,8 @@ import org.jetbrains.annotations.Nullable;
  * surface — a default argument, an inline class, a `suspend` function with no Java-friendly
  * alternative — this file stops compiling, which is exactly the signal we want.
  *
- * Confirmed against the real compiled bytecode of the published `otp-sdk`/`core` AARs with:
- *   javap -p io/github/thanhng224/sdkbase/core/gateway/OtpGateway.class
+ * Confirmed against the real compiled bytecode of the published `otp`/`core` AARs with:
+ *   javap -p io/github/thanhng224/sdkbase/otp/OtpGateway.class
  * The `OtpGateway` methods erase to `Object requestOtp(String, Continuation)` and
  * `Object verifyOtp(String, String, Continuation)` — Kotlin's suspend-function calling convention.
  * A Java implementation CAN satisfy this interface, but only by hand-writing the Continuation

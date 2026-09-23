@@ -14,7 +14,7 @@ import io.github.thanhng224.sdkbase.otp.ui.OtpTheme
 
 /**
  * The SDK's first customer: it supplies its own [FakeOtpGateway], owns nothing of the engine's
- * internals, and only ever talks to the published [io.github.thanhng224.sdkbase.otpsdk.OtpSdk]
+ * internals, and only ever talks to the published [io.github.thanhng224.sdkbase.otp.OtpSdk]
  * facade and the optional Compose UI artifact.
  */
 internal class DemoActivity : ComponentActivity() {

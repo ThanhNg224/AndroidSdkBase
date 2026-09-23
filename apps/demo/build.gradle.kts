@@ -40,11 +40,8 @@ kotlin {
 }
 
 dependencies {
-    implementation(project(":sdk:facades:otp-sdk"))
-    implementation(project(":sdk:capabilities:otp-ui-compose"))
-    // For AndroidSdkLogger, which the demo wires in as its SdkLogger — a real host's choice, not
-    // something the facade could default to without depending on :platform itself.
-    implementation(project(":sdk:platform"))
+    implementation(project(":sdk:features:otp"))
+    implementation(project(":sdk:features:otp-ui-compose"))
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
     implementation(libs.compose.material3)

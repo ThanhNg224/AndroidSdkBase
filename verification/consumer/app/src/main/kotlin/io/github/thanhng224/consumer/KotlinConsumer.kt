@@ -6,24 +6,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import io.github.thanhng224.sdkbase.core.SdkResult
 import io.github.thanhng224.sdkbase.core.getOrNull
-import io.github.thanhng224.sdkbase.core.gateway.OtpChallenge
-import io.github.thanhng224.sdkbase.core.gateway.OtpGateway
+import io.github.thanhng224.sdkbase.otp.OtpChallenge
 import io.github.thanhng224.sdkbase.otp.OtpCommand
+import io.github.thanhng224.sdkbase.otp.OtpGateway
+import io.github.thanhng224.sdkbase.otp.OtpSdk
+import io.github.thanhng224.sdkbase.otp.OtpSdkConfig
 import io.github.thanhng224.sdkbase.otp.OtpState
 import io.github.thanhng224.sdkbase.otp.ui.OtpScreen
 import io.github.thanhng224.sdkbase.otp.ui.OtpTheme
-import io.github.thanhng224.sdkbase.otpsdk.OtpSdk
-import io.github.thanhng224.sdkbase.otpsdk.OtpSdkConfig
 
 /**
  * Proves the Kotlin surface resolves from the published AAR, including the optional UI artifact and
  * the metadata floor — if the AAR emitted newer Kotlin metadata than this build's Kotlin can read,
  * this file fails with "was compiled with a newer Kotlin version".
- *
- * `OtpCommand`/`OtpState` (owned by `:sdk:capabilities:otp-engine`) are used here even though this
- * app depends only on `otp-sdk` and `otp-ui-compose` — never on `otp-engine` directly — which is the
- * proof that `otp-sdk`'s `api(project(":sdk:capabilities:otp-engine"))` edge really is `compile`
- * scope in the published POM, not just inside the source tree.
  */
 public object KotlinConsumer {
 

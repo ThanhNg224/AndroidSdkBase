@@ -3,10 +3,9 @@ package io.github.thanhng224.sdkbase.demo
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.thanhng224.sdkbase.core.SdkResult
-import io.github.thanhng224.sdkbase.otpsdk.OtpSdk
-import io.github.thanhng224.sdkbase.otpsdk.OtpSdkConfig
-import io.github.thanhng224.sdkbase.otpsdk.OtpSession
-import io.github.thanhng224.sdkbase.platform.AndroidSdkLogger
+import io.github.thanhng224.sdkbase.otp.OtpSdk
+import io.github.thanhng224.sdkbase.otp.OtpSdkConfig
+import io.github.thanhng224.sdkbase.otp.OtpSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -35,7 +34,7 @@ internal class DemoOtpViewModel : ViewModel() {
     init {
         viewModelScope.launch {
             val configResult = OtpSdkConfig.Builder(DEMO_DESTINATION, FakeOtpGateway())
-                .logger(AndroidSdkLogger(debugEnabled = true))
+                .logger(LogcatSdkLogger(debugEnabled = true))
                 .maxAttempts(3)
                 .build()
 

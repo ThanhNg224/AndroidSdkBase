@@ -28,8 +28,6 @@ dependencyResolutionManagement {
 rootProject.name = "AndroidSdkBase"
 
 include(":sdk:core")
-include(":sdk:platform")
-include(":sdk:capabilities:otp-engine")
-include(":sdk:capabilities:otp-ui-compose")
-include(":sdk:facades:otp-sdk")
+include(":sdk:features:otp")
+include(":sdk:features:otp-ui-compose")
 include(":apps:demo")
