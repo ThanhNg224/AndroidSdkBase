@@ -26,16 +26,22 @@ verification — exercises every layer end to end so you have something real to 
 ## Layout
 
 ```text
-sdk/core                         Android library contracts shared by every feature: results, errors, logging.
-sdk/features/<name>               one published artifact per feature; engine code is internal/.
-sdk/features/<name>-ui-compose    optional UI artifact; Compose never enters a non-UI module.
-sdk/bom                           lists every published module automatically.
-apps/demo                         manual testing only; never published.
-verification/consumer             separate build that uses the SDK only by Maven coordinate.
+sdk/core                          Android library toolkit shared by every feature: result/, error/,
+                                   call/ (safeCall, RetryPolicy), time/ (Clock, IdGenerator),
+                                   concurrency/, logging/, telemetry/, gateway/.
+sdk/features/<name>                one published artifact per feature; entry point at the package
+                                    root, public sub-packages (config/, gateway/, session/...),
+                                    engine code under internal/ and Kotlin `internal`.
+sdk/features/<name>-ui-compose     optional UI artifact; public surface at ui/, implementation
+                                    under ui/internal/. Compose never enters a non-UI module.
+sdk/bom                            lists every published module automatically.
+apps/demo                          manual testing only; never published.
+verification/consumer              separate build that uses the SDK only by Maven coordinate.
 ```
 
 `gradle/module-topology.gradle.kts` is the module registry; every included module must be listed
-there or the zone guard in root `build.gradle.kts` fails the build. See `docs/ARCHITECTURE.md`.
+there or the zone guard in root `build.gradle.kts` fails the build. See `docs/ARCHITECTURE.md` and
+AGENTS.md "Package rules" for the layout conventions inside each module.
 
 ## Start a new SDK
 
@@ -50,7 +56,8 @@ there or the zone guard in root `build.gradle.kts` fails the build. See `docs/AR
 ## Add a feature
 
 1. Create `sdk/features/<name>` applying `sdkbase.android.library`, `sdkbase.abi`, and
-   `sdkbase.publishing`.
+   `sdkbase.publishing`. Put the entry point at the package root, other public types in named
+   sub-packages, and engine code under `internal/` — see AGENTS.md "Package rules".
 2. Register it in both lists in `gradle/module-topology.gradle.kts` — `zones` and, if it ships,
    `publishedArtifacts`.
 3. Run `./gradlew :sdk:features:<name>:apiDump` and commit the baseline with the code.

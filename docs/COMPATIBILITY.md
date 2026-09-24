@@ -11,8 +11,8 @@ Every published module carries a committed baseline at `api/<module>.api`. `apiC
 include:
 
 - Removing or changing a public signature.
-- Adding an abstract member to an interface a host implements (e.g. `SdkLogger`) — every existing
-  implementation stops compiling.
+- Adding an abstract member to an interface a host implements (e.g. `LogSink`, `Redactor`,
+  `OtpGateway`) — every existing implementation stops compiling.
 - Adding a subtype to a sealed type (e.g. a new `SdkError` subclass) — an exhaustive `when` on it in
   host code stops compiling.
 
@@ -37,6 +37,13 @@ compatibility decision, not a routine bump — it drops support for any consumer
 No library convention sets `aarMetadata.minCompileSdk` or `minAgpVersion`. The floor a consumer
 actually needs is whatever its own dependencies already require — adding a redundant, hand-picked
 floor on top only risks being wrong in one direction or the other.
+
+## Logging API and R8
+
+`SdkLogger.Builder`, `TaggedLogger`'s `v`/`d`/`i`/`w`/`e`/`trace`, and the `LogSink`/`Redactor`
+`fun interface`s are public ABI, tracked by `api/core.api` like everything else in `:sdk:core`.
+`sdk/core/consumer-rules.pro` ships an `-assumenosideeffects` rule so a consumer's own minified
+release build can strip `TaggedLogger.v`/`d` calls; `i`/`w`/`e` and every sink still run.
 
 ## Java interop
 

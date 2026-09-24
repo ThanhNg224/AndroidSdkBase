@@ -53,6 +53,28 @@ artifact so a host with its own UI toolkit never inherits the Compose runtime. V
 
 This must find nothing.
 
+## Core toolkit
+
+`:sdk:core` gives every feature the same building blocks instead of each reinventing them:
+
+- `result/` — `SdkResult` (`Success`/`Failure`) plus `map`/`flatMap`/`fold`/`onSuccess`/
+  `onFailure`/`getOrNull`/`errorOrNull`; the only type that crosses the public boundary.
+- `call/` — `safeCall(operation, timeoutMillis, mapper, block)` contains host code via its own
+  `withTimeoutOrNull` (an enclosing cancellation still propagates). `RetryPolicy` retries with
+  capped exponential backoff, stopping on success, `maxAttempts`, or when `retryOn` (default
+  `RetryPolicy.TransientErrors`) rejects.
+- `time/` — `Clock`/`IdGenerator`: injected "now"/id sources so backoff and log timestamps are
+  testable.
+- `logging/` — `SdkLogger` (built via `SdkLogger.Builder`, `NoOp` by default) hands out a
+  `TaggedLogger` (`v`/`d`/`i`/`w`/`e`/`trace`) per tag. A record is redacted by the logger's
+  `Redactor` (`DefaultRedactor` + `mask()`) once, before any `LogSink` sees it; a throwing sink is
+  contained. `LogcatSink` is the one place `android.util.Log` is allowed in `sdk/`.
+- `telemetry/`, `gateway/` — `TelemetrySink` and the Java-friendly `GatewayCallback`/
+  `CompletionCallback`; host-supplied and always called inside a try/catch.
+
+Package layout rules — entry point at the package root, named sub-packages, `internal/` for
+implementation, no `utils/misc/helpers` — live in AGENTS.md "Package rules".
+
 ## Error codes
 
 `SdkErrors` (`:sdk:core`) owns 1xxx common, 2xxx system/transport, and 4xxx lifecycle codes. Each
@@ -63,5 +85,5 @@ append-only: never renumber a released code. Hosts branch on `SdkError.code`, ne
 
 `OtpEngine` serializes every state transition through one `Mutex`, so a UI-driven `dispatch()` and a
 host-driven `submitCode()`/`resend()` can never interleave. Every call into the host's gateway goes
-through a single `withTimeout` wrapper that maps a timeout, `IOException`, or any other exception to
-an `SdkError` — nothing the host throws or hangs on ever reaches the engine's caller.
+through core's `safeCall`, which maps a timeout, `IOException`, or any other exception to an
+`SdkError` — nothing the host throws or hangs on ever reaches the engine's caller.
