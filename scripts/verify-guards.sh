@@ -140,7 +140,7 @@ run_case abi-add-sealed-subtype \
     public class Lifecycle('" \
   "./gradlew :sdk:core:apiCheck -q" "$ABI_CORE"
 run_case abi-android-module-addition \
-  "printf 'package io.github.thanhng224.sdkbase.otp\n\npublic fun OtpState.isTerminal(): Boolean = phase == OtpState.Phase.Verified\n' > $OTP/OtpStateExt.kt" \
+  "printf 'package io.github.thanhng224.sdkbase.otp.session\n\npublic fun OtpState.isTerminal(): Boolean = phase == OtpState.Phase.Verified\n' > $OTP/session/OtpStateExt.kt" \
   "./gradlew :sdk:features:otp:apiCheck -q" "Public ABI of :sdk:features:otp differs"
 run_case abi-garbage-in-baseline \
   "printf 'garbage line\n' >> sdk/features/otp/api/otp.api" \

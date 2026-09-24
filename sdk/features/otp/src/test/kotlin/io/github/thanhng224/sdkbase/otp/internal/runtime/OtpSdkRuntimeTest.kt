@@ -1,12 +1,14 @@
-package io.github.thanhng224.sdkbase.otp.internal
+package io.github.thanhng224.sdkbase.otp.internal.runtime
 
 import io.github.thanhng224.sdkbase.core.concurrency.DispatcherProvider
+import io.github.thanhng224.sdkbase.core.logging.SdkLogger
 import io.github.thanhng224.sdkbase.core.result.SdkResult
 import io.github.thanhng224.sdkbase.core.result.getOrNull
-import io.github.thanhng224.sdkbase.otp.OtpChallenge
-import io.github.thanhng224.sdkbase.otp.OtpCommand
-import io.github.thanhng224.sdkbase.otp.OtpGateway
-import io.github.thanhng224.sdkbase.otp.OtpSdkConfig
+import io.github.thanhng224.sdkbase.otp.config.OtpSdkConfig
+import io.github.thanhng224.sdkbase.otp.gateway.OtpChallenge
+import io.github.thanhng224.sdkbase.otp.gateway.OtpGateway
+import io.github.thanhng224.sdkbase.otp.internal.engine.OtpEngine
+import io.github.thanhng224.sdkbase.otp.session.OtpCommand
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -56,7 +58,7 @@ class OtpSdkRuntimeTest {
         engine.dispatch(OtpCommand.AppendDigit('9'))
         engine.dispatch(OtpCommand.AppendDigit('9'))
 
-        val runtime = OtpSdkRuntime(engine, config)
+        val runtime = OtpSdkRuntime(engine, config, SdkLogger.NoOp)
         runtime.submit("123456")
 
         assertEquals("123456", gateway.lastSubmittedCode)

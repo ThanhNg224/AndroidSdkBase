@@ -14,7 +14,11 @@ public class ConsumerActivity : ComponentActivity() {
         /* SDK_CALLS_BEGIN */
         setContent { ConsumerScreen() }
         lifecycleScope.launch { Log.i(TAG, KotlinConsumer.run()) }
-        Log.i(TAG, "java: ${JavaConsumer.buildConfig()} / ${JavaConsumer.buildConfigFromCallbackGateway()}")
+        Log.i(
+            TAG,
+            "java: ${JavaConsumer.buildConfig()} / ${JavaConsumer.buildConfigFromCallbackGateway()}" +
+                " / ${JavaConsumer.buildConfigWithLogger()}",
+        )
         /* SDK_CALLS_END */
     }
 

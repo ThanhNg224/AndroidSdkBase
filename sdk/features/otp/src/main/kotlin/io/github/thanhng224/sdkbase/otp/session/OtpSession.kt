@@ -1,4 +1,4 @@
-package io.github.thanhng224.sdkbase.otp
+package io.github.thanhng224.sdkbase.otp.session
 
 import io.github.thanhng224.sdkbase.core.result.SdkResult
 import kotlinx.coroutines.flow.StateFlow

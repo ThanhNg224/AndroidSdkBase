@@ -1,4 +1,4 @@
-package io.github.thanhng224.sdkbase.otp.ui.internal
+package io.github.thanhng224.sdkbase.otp.ui.internal.theme
 
 import androidx.compose.runtime.staticCompositionLocalOf
 import io.github.thanhng224.sdkbase.otp.ui.OtpColors

@@ -3,8 +3,13 @@ package io.github.thanhng224.sdkbase.otp
 import io.github.thanhng224.sdkbase.core.concurrency.AndroidDispatchers
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import io.github.thanhng224.sdkbase.core.result.SdkResult
-import io.github.thanhng224.sdkbase.otp.internal.OtpEngine
-import io.github.thanhng224.sdkbase.otp.internal.OtpSdkRuntime
+import io.github.thanhng224.sdkbase.core.time.IdGenerator
+import io.github.thanhng224.sdkbase.otp.config.OtpSdkConfig
+import io.github.thanhng224.sdkbase.otp.internal.emitSafely
+import io.github.thanhng224.sdkbase.otp.internal.engine.OtpEngine
+import io.github.thanhng224.sdkbase.otp.internal.runtime.OtpSdkRuntime
+import io.github.thanhng224.sdkbase.otp.session.OtpSession
+import io.github.thanhng224.sdkbase.otp.session.OtpState
 
 /**
  * The only class a host needs to know about. It validates, wires and delegates — and nothing else.
@@ -12,11 +17,15 @@ import io.github.thanhng224.sdkbase.otp.internal.OtpSdkRuntime
  */
 public object OtpSdk {
 
-    public suspend fun start(config: OtpSdkConfig): SdkResult<OtpSession> {
+    public suspend fun start(config: OtpSdkConfig): SdkResult<OtpSession> = start(config, IdGenerator.Uuid)
+
+    /** [idGenerator] is internal-only: it exists so tests can supply a deterministic session id. */
+    internal suspend fun start(config: OtpSdkConfig, idGenerator: IdGenerator): SdkResult<OtpSession> {
+        val sessionLogger = config.logger.withSession(idGenerator.newId())
         val engine = OtpEngine(
             gateway = config.gateway,
             dispatchers = AndroidDispatchers,
-            logger = config.logger,
+            logger = sessionLogger,
             maxAttempts = config.maxAttempts,
             gatewayTimeoutMillis = config.gatewayTimeoutSeconds * 1_000L,
         )
@@ -34,15 +43,7 @@ public object OtpSdk {
             return SdkResult.Failure(state.error ?: SdkErrors.unknown())
         }
 
-        emitTelemetry(config, "otp_started", mapOf("max_attempts" to config.maxAttempts.toString()))
-        return SdkResult.Success(OtpSdkRuntime(engine, config))
-    }
-
-    private fun emitTelemetry(config: OtpSdkConfig, name: String, attributes: Map<String, String>) {
-        try {
-            config.telemetry?.onEvent(name, attributes)
-        } catch (_: Exception) {
-            // Telemetry is ancillary and must not change the OTP result or leak the live engine.
-        }
+        config.telemetry.emitSafely("otp_started", mapOf("max_attempts" to config.maxAttempts.toString()))
+        return SdkResult.Success(OtpSdkRuntime(engine, config, sessionLogger))
     }
 }

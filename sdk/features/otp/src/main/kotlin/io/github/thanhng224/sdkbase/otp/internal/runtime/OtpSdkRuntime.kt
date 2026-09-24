@@ -1,11 +1,14 @@
-package io.github.thanhng224.sdkbase.otp.internal
+package io.github.thanhng224.sdkbase.otp.internal.runtime
 
 import io.github.thanhng224.sdkbase.core.concurrency.AndroidDispatchers
+import io.github.thanhng224.sdkbase.core.logging.SdkLogger
 import io.github.thanhng224.sdkbase.core.result.SdkResult
-import io.github.thanhng224.sdkbase.otp.OtpCommand
-import io.github.thanhng224.sdkbase.otp.OtpSdkConfig
-import io.github.thanhng224.sdkbase.otp.OtpSession
-import io.github.thanhng224.sdkbase.otp.OtpState
+import io.github.thanhng224.sdkbase.otp.config.OtpSdkConfig
+import io.github.thanhng224.sdkbase.otp.internal.emitSafely
+import io.github.thanhng224.sdkbase.otp.internal.engine.OtpEngine
+import io.github.thanhng224.sdkbase.otp.session.OtpCommand
+import io.github.thanhng224.sdkbase.otp.session.OtpSession
+import io.github.thanhng224.sdkbase.otp.session.OtpState
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
@@ -17,9 +20,10 @@ import kotlinx.coroutines.launch
 internal class OtpSdkRuntime(
     private val engine: OtpEngine,
     private val config: OtpSdkConfig,
+    logger: SdkLogger,
 ) : OtpSession {
 
-    private val log = config.logger.tagged(TAG)
+    private val log = logger.tagged(TAG)
 
     // dispatch() is non-suspending (a UI callback can't suspend), so it fires into this scope
     // instead. The handler matters: a SupervisorJob with none rethrows an uncaught exception to the
@@ -33,7 +37,7 @@ internal class OtpSdkRuntime(
 
     override suspend fun submit(code: String): SdkResult<Unit> =
         engine.submitCode(code).also { result ->
-            if (result is SdkResult.Success) emitTelemetry("otp_verified", emptyMap())
+            if (result is SdkResult.Success) config.telemetry.emitSafely("otp_verified")
         }
 
     override suspend fun resend(): SdkResult<Unit> = engine.resend()
@@ -45,14 +49,6 @@ internal class OtpSdkRuntime(
     override fun close() {
         scope.cancel()
         engine.close()
-    }
-
-    private fun emitTelemetry(name: String, attributes: Map<String, String>) {
-        try {
-            config.telemetry?.onEvent(name, attributes)
-        } catch (_: Exception) {
-            // Telemetry is ancillary and must not change the OTP result.
-        }
     }
 
     private companion object {

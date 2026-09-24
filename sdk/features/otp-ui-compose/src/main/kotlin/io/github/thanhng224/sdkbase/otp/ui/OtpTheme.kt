@@ -5,7 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
-import io.github.thanhng224.sdkbase.otp.ui.internal.LocalOtpColors
+import io.github.thanhng224.sdkbase.otp.ui.internal.theme.LocalOtpColors
 
 /**
  * Every colour the SDK's UI can draw. There are NO hardcoded colour literals anywhere else in this

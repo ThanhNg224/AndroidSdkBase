@@ -1,7 +1,9 @@
-package io.github.thanhng224.sdkbase.otp
+package io.github.thanhng224.sdkbase.otp.internal.engine
 
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
-import io.github.thanhng224.sdkbase.otp.internal.OtpStateMachine
+import io.github.thanhng224.sdkbase.otp.OtpErrors
+import io.github.thanhng224.sdkbase.otp.session.OtpCommand
+import io.github.thanhng224.sdkbase.otp.session.OtpState
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue

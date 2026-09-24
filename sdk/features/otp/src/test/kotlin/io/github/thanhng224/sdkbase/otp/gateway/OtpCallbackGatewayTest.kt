@@ -1,4 +1,4 @@
-package io.github.thanhng224.sdkbase.otp
+package io.github.thanhng224.sdkbase.otp.gateway
 
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import io.github.thanhng224.sdkbase.core.gateway.CompletionCallback

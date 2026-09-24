@@ -1,9 +1,13 @@
-package io.github.thanhng224.sdkbase.otp
+package io.github.thanhng224.sdkbase.otp.internal.engine
 
 import io.github.thanhng224.sdkbase.core.concurrency.DispatcherProvider
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import io.github.thanhng224.sdkbase.core.result.SdkResult
-import io.github.thanhng224.sdkbase.otp.internal.OtpEngine
+import io.github.thanhng224.sdkbase.otp.OtpErrors
+import io.github.thanhng224.sdkbase.otp.gateway.OtpChallenge
+import io.github.thanhng224.sdkbase.otp.gateway.OtpGateway
+import io.github.thanhng224.sdkbase.otp.session.OtpCommand
+import io.github.thanhng224.sdkbase.otp.session.OtpState
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi

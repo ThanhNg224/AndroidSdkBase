@@ -1,20 +1,18 @@
-package io.github.thanhng224.sdkbase.otp.internal
+package io.github.thanhng224.sdkbase.otp.internal.engine
 
+import io.github.thanhng224.sdkbase.core.call.safeCall
 import io.github.thanhng224.sdkbase.core.concurrency.DispatcherProvider
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import io.github.thanhng224.sdkbase.core.logging.DefaultRedactor
 import io.github.thanhng224.sdkbase.core.logging.SdkLogger
 import io.github.thanhng224.sdkbase.core.result.SdkResult
-import io.github.thanhng224.sdkbase.otp.OtpCommand
 import io.github.thanhng224.sdkbase.otp.OtpErrors
-import io.github.thanhng224.sdkbase.otp.OtpGateway
-import io.github.thanhng224.sdkbase.otp.OtpState
-import java.io.IOException
-import kotlinx.coroutines.CancellationException
+import io.github.thanhng224.sdkbase.otp.gateway.OtpGateway
+import io.github.thanhng224.sdkbase.otp.session.OtpCommand
+import io.github.thanhng224.sdkbase.otp.session.OtpState
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,7 +20,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.withTimeout
 
 /**
  * Drives the OTP flow. Owns the effects (gateway calls, countdown); delegates every rule to
@@ -41,7 +38,7 @@ internal class OtpEngine(
 ) {
     // A SupervisorJob with no handler rethrows an uncaught exception to the thread's default
     // handler, which on Android kills the host process. The ticker runs in this scope, so it needs
-    // one; every gateway call that could throw goes through `callGateway` instead.
+    // one; every gateway call that could throw goes through core's `safeCall` instead.
     private val log = logger.tagged(TAG)
     private val scope = CoroutineScope(
         SupervisorJob() + dispatchers.default +
@@ -142,7 +139,9 @@ internal class OtpEngine(
 
     private suspend fun requestChallenge(destination: String) {
         lastDestination = destination
-        when (val result = callGateway("requestOtp") { gateway.requestOtp(destination) }) {
+        when (
+            val result = safeCall("requestOtp", gatewayTimeoutMillis) { gateway.requestOtp(destination) }
+        ) {
             is SdkResult.Success -> {
                 challengeId = result.value.challengeId
                 updateState {
@@ -172,27 +171,13 @@ internal class OtpEngine(
             updateState { OtpStateMachine.onFatal(it, SdkErrors.notStarted()) }
             return
         }
-        when (val result = callGateway("verifyOtp") { gateway.verifyOtp(id, code) }) {
+        when (val result = safeCall("verifyOtp", gatewayTimeoutMillis) { gateway.verifyOtp(id, code) }) {
             is SdkResult.Success -> updateState { OtpStateMachine.onVerified(it) }
             is SdkResult.Failure -> updateState {
                 OtpStateMachine.onVerificationFailed(it, result.error)
             }
         }
     }
-
-    /** Every host call goes through here: nothing the host throws or hangs on reaches the caller. */
-    private suspend fun <T> callGateway(operation: String, call: suspend () -> SdkResult<T>): SdkResult<T> =
-        try {
-            withTimeout(gatewayTimeoutMillis) { call() }
-        } catch (e: TimeoutCancellationException) {
-            SdkResult.Failure(SdkErrors.timeout(operation))
-        } catch (e: CancellationException) {
-            throw e
-        } catch (e: IOException) {
-            SdkResult.Failure(SdkErrors.networkUnavailable(e))
-        } catch (e: Exception) {
-            SdkResult.Failure(SdkErrors.gatewayFailure(operation, e))
-        }
 
     private companion object {
         const val TAG = "OtpEngine"

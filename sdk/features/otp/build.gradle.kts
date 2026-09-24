@@ -12,5 +12,4 @@ android {
 
 dependencies {
     api(project(":sdk:core"))
-    implementation(libs.coroutines.android)
 }

@@ -1,12 +1,19 @@
 package io.github.thanhng224.sdkbase.otp
 
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
+import io.github.thanhng224.sdkbase.core.logging.LogLevel
+import io.github.thanhng224.sdkbase.core.logging.LogRecord
 import io.github.thanhng224.sdkbase.core.logging.LogSink
 import io.github.thanhng224.sdkbase.core.logging.SdkLogger
 import io.github.thanhng224.sdkbase.core.result.SdkResult
 import io.github.thanhng224.sdkbase.core.result.errorOrNull
 import io.github.thanhng224.sdkbase.core.result.getOrNull
 import io.github.thanhng224.sdkbase.core.telemetry.TelemetrySink
+import io.github.thanhng224.sdkbase.core.time.IdGenerator
+import io.github.thanhng224.sdkbase.otp.config.OtpSdkConfig
+import io.github.thanhng224.sdkbase.otp.gateway.OtpChallenge
+import io.github.thanhng224.sdkbase.otp.gateway.OtpGateway
+import io.github.thanhng224.sdkbase.otp.session.OtpState
 import java.io.IOException
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest
@@ -191,6 +198,40 @@ class OtpSdkTest {
         val result = session.resend()
 
         assertTrue(result is SdkResult.Success)
+        session.close()
+    }
+
+    @Test
+    fun `each session gets its own session id, prefixed onto every record a sink sees`() = runTest {
+        val records = mutableListOf<LogRecord>()
+        val logger = SdkLogger.Builder()
+            .minLevel(LogLevel.DEBUG)
+            .sink(LogSink { records += it })
+            .build()
+
+        val session = OtpSdk.start(
+            configOf(FakeGateway(), logger = logger),
+            IdGenerator { "test-session-id" },
+        ).getOrNull()!!
+
+        assertTrue(records.isNotEmpty())
+        assertTrue(records.all { it.message.startsWith("session=test-session-id ") })
+        session.close()
+    }
+
+    @Test
+    fun `the destination never reaches a sink in full, even redacted by the logger's own default`() = runTest {
+        val records = mutableListOf<LogRecord>()
+        val logger = SdkLogger.Builder()
+            .minLevel(LogLevel.DEBUG)
+            .sink(LogSink { records += it })
+            .build()
+
+        // configOf builds every config with destination "0900000000" (see its own hardcoded value).
+        val session = OtpSdk.start(configOf(FakeGateway(), logger = logger)).getOrNull()!!
+
+        assertTrue(records.isNotEmpty())
+        assertTrue(records.none { it.message.contains("0900000000") })
         session.close()
     }
 }

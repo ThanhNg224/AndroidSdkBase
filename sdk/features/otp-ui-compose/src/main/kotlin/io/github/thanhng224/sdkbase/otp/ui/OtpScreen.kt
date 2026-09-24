@@ -1,11 +1,7 @@
 package io.github.thanhng224.sdkbase.otp.ui
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
@@ -15,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.windowInsetsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Text
@@ -23,13 +18,13 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import io.github.thanhng224.sdkbase.otp.OtpCommand
-import io.github.thanhng224.sdkbase.otp.OtpState
-import io.github.thanhng224.sdkbase.otp.ui.internal.LocalOtpColors
+import io.github.thanhng224.sdkbase.otp.session.OtpCommand
+import io.github.thanhng224.sdkbase.otp.session.OtpState
+import io.github.thanhng224.sdkbase.otp.ui.internal.component.CodeCells
+import io.github.thanhng224.sdkbase.otp.ui.internal.component.Keypad
+import io.github.thanhng224.sdkbase.otp.ui.internal.theme.LocalOtpColors
 
 /**
  * Stateless by construction: it receives an [OtpState] and emits [OtpCommand]s. It holds no state
@@ -109,53 +104,5 @@ public fun OtpScreen(
         Spacer(Modifier.size(8.dp))
 
         Keypad(onCommand = onCommand, enabled = state.phase == OtpState.Phase.AwaitingCode)
-    }
-}
-
-@Composable
-private fun CodeCells(state: OtpState, borderColor: Color, textColor: Color) {
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        repeat(state.codeLength) { index ->
-            Box(
-                modifier = Modifier
-                    .size(48.dp)
-                    .clip(RoundedCornerShape(8.dp))
-                    .border(1.dp, borderColor, RoundedCornerShape(8.dp)),
-                contentAlignment = Alignment.Center,
-            ) {
-                Text(text = state.enteredCode.getOrNull(index)?.toString() ?: "", color = textColor)
-            }
-        }
-    }
-}
-
-@Composable
-private fun Keypad(onCommand: (OtpCommand) -> Unit, enabled: Boolean) {
-    val rows = listOf(listOf('1', '2', '3'), listOf('4', '5', '6'), listOf('7', '8', '9'))
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        rows.forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                row.forEach { digit ->
-                    // 56.dp exceeds the 48.dp Material minimum touch target.
-                    TextButton(
-                        onClick = { onCommand(OtpCommand.AppendDigit(digit)) },
-                        enabled = enabled,
-                        modifier = Modifier.size(56.dp),
-                    ) { Text(digit.toString()) }
-                }
-            }
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(
-                onClick = { onCommand(OtpCommand.AppendDigit('0')) },
-                enabled = enabled,
-                modifier = Modifier.size(56.dp),
-            ) { Text("0") }
-            TextButton(
-                onClick = { onCommand(OtpCommand.DeleteDigit) },
-                enabled = enabled,
-                modifier = Modifier.size(56.dp),
-            ) { Text("⌫") }
-        }
     }
 }

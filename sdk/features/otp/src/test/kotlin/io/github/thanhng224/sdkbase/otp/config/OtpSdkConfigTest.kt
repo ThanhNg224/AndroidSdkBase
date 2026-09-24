@@ -1,4 +1,4 @@
-package io.github.thanhng224.sdkbase.otp
+package io.github.thanhng224.sdkbase.otp.config
 
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import io.github.thanhng224.sdkbase.core.gateway.CompletionCallback
@@ -6,6 +6,9 @@ import io.github.thanhng224.sdkbase.core.gateway.GatewayCallback
 import io.github.thanhng224.sdkbase.core.result.SdkResult
 import io.github.thanhng224.sdkbase.core.result.errorOrNull
 import io.github.thanhng224.sdkbase.core.result.getOrNull
+import io.github.thanhng224.sdkbase.otp.gateway.OtpCallbackGateway
+import io.github.thanhng224.sdkbase.otp.gateway.OtpChallenge
+import io.github.thanhng224.sdkbase.otp.gateway.OtpGateway
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue

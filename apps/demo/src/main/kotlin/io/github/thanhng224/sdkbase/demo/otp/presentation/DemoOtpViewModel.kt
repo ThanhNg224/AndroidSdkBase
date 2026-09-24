@@ -1,4 +1,4 @@
-package io.github.thanhng224.sdkbase.demo
+package io.github.thanhng224.sdkbase.demo.otp.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -6,9 +6,10 @@ import io.github.thanhng224.sdkbase.core.logging.LogLevel
 import io.github.thanhng224.sdkbase.core.logging.LogcatSink
 import io.github.thanhng224.sdkbase.core.logging.SdkLogger
 import io.github.thanhng224.sdkbase.core.result.SdkResult
+import io.github.thanhng224.sdkbase.demo.otp.integration.FakeOtpGateway
 import io.github.thanhng224.sdkbase.otp.OtpSdk
-import io.github.thanhng224.sdkbase.otp.OtpSdkConfig
-import io.github.thanhng224.sdkbase.otp.OtpSession
+import io.github.thanhng224.sdkbase.otp.config.OtpSdkConfig
+import io.github.thanhng224.sdkbase.otp.session.OtpSession
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

@@ -2,11 +2,13 @@ package io.github.thanhng224.consumer;
 
 import io.github.thanhng224.sdkbase.core.gateway.CompletionCallback;
 import io.github.thanhng224.sdkbase.core.gateway.GatewayCallback;
+import io.github.thanhng224.sdkbase.core.logging.LogLevel;
+import io.github.thanhng224.sdkbase.core.logging.SdkLogger;
 import io.github.thanhng224.sdkbase.core.result.SdkResult;
-import io.github.thanhng224.sdkbase.otp.OtpCallbackGateway;
-import io.github.thanhng224.sdkbase.otp.OtpChallenge;
-import io.github.thanhng224.sdkbase.otp.OtpGateway;
-import io.github.thanhng224.sdkbase.otp.OtpSdkConfig;
+import io.github.thanhng224.sdkbase.otp.config.OtpSdkConfig;
+import io.github.thanhng224.sdkbase.otp.gateway.OtpCallbackGateway;
+import io.github.thanhng224.sdkbase.otp.gateway.OtpChallenge;
+import io.github.thanhng224.sdkbase.otp.gateway.OtpGateway;
 
 import kotlin.coroutines.Continuation;
 import org.jetbrains.annotations.NotNull;
@@ -74,6 +76,25 @@ public final class JavaConsumer {
     public static SdkResult<OtpSdkConfig> buildConfigFromCallbackGateway() {
         return new OtpSdkConfig.Builder("0900000000", new JavaCallbackGateway())
                 .maxAttempts(3)
+                .build();
+    }
+
+    /**
+     * Builds an {@link SdkLogger} entirely from Java: no Kotlin default argument, and the sink is a
+     * plain Java lambda ({@link io.github.thanhng224.sdkbase.core.logging.LogSink} is a
+     * {@code fun interface}, so it is SAM-convertible from Java too).
+     */
+    public static SdkLogger buildLogger() {
+        return new SdkLogger.Builder()
+                .minLevel(LogLevel.DEBUG)
+                .sink(record -> { })
+                .build();
+    }
+
+    /** Proves the config builder accepts a Java-built logger with no Kotlin-only entry point. */
+    public static SdkResult<OtpSdkConfig> buildConfigWithLogger() {
+        return new OtpSdkConfig.Builder("0900000000", new JavaGateway())
+                .logger(buildLogger())
                 .build();
     }
 

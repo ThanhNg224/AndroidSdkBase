@@ -1,10 +1,10 @@
-package io.github.thanhng224.sdkbase.otp.internal
+package io.github.thanhng224.sdkbase.otp.internal.engine
 
 import io.github.thanhng224.sdkbase.core.error.SdkError
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
-import io.github.thanhng224.sdkbase.otp.OtpCommand
 import io.github.thanhng224.sdkbase.otp.OtpErrors
-import io.github.thanhng224.sdkbase.otp.OtpState
+import io.github.thanhng224.sdkbase.otp.session.OtpCommand
+import io.github.thanhng224.sdkbase.otp.session.OtpState
 
 /**
  * Pure, synchronous, side-effect-free. Every branch of the OTP flow is decided here so it can be

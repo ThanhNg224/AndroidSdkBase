@@ -10,7 +10,7 @@
         tools:ignore="MissingApplicationIcon">
 
         <activity
-            android:name=".DemoActivity"
+            android:name=".otp.presentation.DemoActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

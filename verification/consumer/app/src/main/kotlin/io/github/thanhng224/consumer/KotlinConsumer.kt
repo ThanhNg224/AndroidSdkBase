@@ -4,14 +4,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import io.github.thanhng224.sdkbase.core.logging.LogLevel
+import io.github.thanhng224.sdkbase.core.logging.LogRecord
+import io.github.thanhng224.sdkbase.core.logging.LogSink
+import io.github.thanhng224.sdkbase.core.logging.SdkLogger
 import io.github.thanhng224.sdkbase.core.result.SdkResult
 import io.github.thanhng224.sdkbase.core.result.getOrNull
-import io.github.thanhng224.sdkbase.otp.OtpChallenge
-import io.github.thanhng224.sdkbase.otp.OtpCommand
-import io.github.thanhng224.sdkbase.otp.OtpGateway
 import io.github.thanhng224.sdkbase.otp.OtpSdk
-import io.github.thanhng224.sdkbase.otp.OtpSdkConfig
-import io.github.thanhng224.sdkbase.otp.OtpState
+import io.github.thanhng224.sdkbase.otp.config.OtpSdkConfig
+import io.github.thanhng224.sdkbase.otp.gateway.OtpChallenge
+import io.github.thanhng224.sdkbase.otp.gateway.OtpGateway
+import io.github.thanhng224.sdkbase.otp.session.OtpCommand
+import io.github.thanhng224.sdkbase.otp.session.OtpState
 import io.github.thanhng224.sdkbase.otp.ui.OtpScreen
 import io.github.thanhng224.sdkbase.otp.ui.OtpTheme
 
@@ -30,8 +34,15 @@ public object KotlinConsumer {
             SdkResult.Success(Unit)
     }
 
+    /** A custom [LogSink] a Kotlin host can supply, proving the sink contract is consumable too. */
+    private val consumerLogRecords = mutableListOf<LogRecord>()
+    private val logger = SdkLogger.Builder()
+        .minLevel(LogLevel.DEBUG)
+        .sink(LogSink { consumerLogRecords += it })
+        .build()
+
     public suspend fun run(): String {
-        val config = OtpSdkConfig.Builder("0900000000", gateway).build().getOrNull()
+        val config = OtpSdkConfig.Builder("0900000000", gateway).logger(logger).build().getOrNull()
             ?: return "config rejected"
         val session = OtpSdk.start(config).getOrNull() ?: return "start failed"
         session.dispatch(OtpCommand.AppendDigit('1'))

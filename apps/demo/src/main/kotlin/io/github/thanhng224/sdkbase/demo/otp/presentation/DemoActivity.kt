@@ -1,4 +1,4 @@
-package io.github.thanhng224.sdkbase.demo
+package io.github.thanhng224.sdkbase.demo.otp.presentation
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity

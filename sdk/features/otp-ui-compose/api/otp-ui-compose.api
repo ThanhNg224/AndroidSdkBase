@@ -24,7 +24,7 @@ public final class io/github/thanhng224/sdkbase/otp/ui/OtpColors$Companion {
 }
 
 public final class io/github/thanhng224/sdkbase/otp/ui/OtpScreenKt {
-	public static final fun OtpScreen (Lio/github/thanhng224/sdkbase/otp/OtpState;Lkotlin/jvm/functions/Function1;Landroidx/compose/ui/Modifier;Landroidx/compose/runtime/Composer;II)V
+	public static final fun OtpScreen (Lio/github/thanhng224/sdkbase/otp/session/OtpState;Lkotlin/jvm/functions/Function1;Landroidx/compose/ui/Modifier;Landroidx/compose/runtime/Composer;II)V
 }
 
 public final class io/github/thanhng224/sdkbase/otp/ui/OtpThemeKt {

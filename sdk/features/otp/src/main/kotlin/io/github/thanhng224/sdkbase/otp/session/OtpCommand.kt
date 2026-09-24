@@ -1,4 +1,4 @@
-package io.github.thanhng224.sdkbase.otp
+package io.github.thanhng224.sdkbase.otp.session
 
 /** Everything a host or the bundled UI can ask the engine to do. */
 public sealed interface OtpCommand {

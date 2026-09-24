@@ -1,9 +1,9 @@
-package io.github.thanhng224.sdkbase.demo
+package io.github.thanhng224.sdkbase.demo.otp.integration
 
 import io.github.thanhng224.sdkbase.core.result.SdkResult
-import io.github.thanhng224.sdkbase.otp.OtpChallenge
 import io.github.thanhng224.sdkbase.otp.OtpErrors
-import io.github.thanhng224.sdkbase.otp.OtpGateway
+import io.github.thanhng224.sdkbase.otp.gateway.OtpChallenge
+import io.github.thanhng224.sdkbase.otp.gateway.OtpGateway
 import kotlinx.coroutines.delay
 
 /**
