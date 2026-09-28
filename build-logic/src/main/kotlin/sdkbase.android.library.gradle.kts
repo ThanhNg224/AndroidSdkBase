@@ -82,6 +82,10 @@ extensions.configure<LibraryExtension> {
         // release so consumers on an older Kotlin keep working; this check assumes newer is
         // always better and would fight that policy every time a new Kotlin ships.
         disable += "GradleDependency"
+        // "A newer version of Gradle/AGP is available" turns the gate red on the day upstream ships,
+        // with no change to this repo: a freshness check, not a correctness one. Renovate owns
+        // version bumps (renovate.json); the gate must give the same answer for the same commit.
+        disable += "AndroidGradlePluginVersion"
     }
 }
 
