@@ -12,18 +12,34 @@ Every included module is registered in exactly one zone:
 | Zone | Modules | May depend on |
 |---|---|---|
 | `core` | `:sdk:core` | *(nothing)* |
-| `feature` | `:sdk:features:otp`, `:sdk:features:otp-ui-compose` | `core`, `feature` |
-| `bom` | `:sdk:bom` | `core`, `feature` |
-| `app` | `:apps:demo` | `core`, `feature`, `app` |
+| `feature` | `:sdk:features:otp`, `:sdk:features:otp-ui-compose` | `core`; another `feature` only as its UI module |
+| `composition` | *(none yet)* | `core`, `feature` |
+| `adapter` | *(none yet)* | `core`, `feature` |
+| `bom` | `:sdk:bom` | `core`, `feature`, `composition`, `adapter` |
+| `app` | `:apps:demo` | everything |
 
-## The four rules the guard enforces
+- **feature** — one capability, headless, plus its optional `<name>-ui-<toolkit>` module.
+- **composition** — wires several features into one flow (e.g. `:sdk:composition:onboarding` =
+  OTP + KYC). The only SDK zone that sees more than one feature, so cross-feature orchestration has
+  exactly one home instead of growing a mesh of feature → feature edges.
+- **adapter** — optional bridge a host opts into: a gateway backed by a concrete HTTP client, a
+  vendor device SDK. The only SDK zone allowed an HTTP client or DI framework; no SDK zone may depend
+  on it, so it never rides along transitively.
+
+Empty zones are deliberate: the slot and its rules exist before the first module needs them.
+
+## The rules the guard enforces
 
 1. Every included module is registered in a zone.
 2. Edges only go to allowed zones, across every non-test configuration (`compileOnly`,
    `runtimeOnly`, and build-type-specific ones included — not just `implementation`/`api`).
-3. A published module (`publishedArtifacts` in the topology file) depends only on other published
+3. A feature depends on another feature only when it is that feature's UI module:
+   `otp-ui-compose -> otp` passes, `otp-extra -> otp` and `otp -> otp-ui-compose` fail. Two different
+   features meet only inside a composition module.
+4. A published module (`publishedArtifacts` in the topology file) depends only on other published
    modules — a consumer resolving by Maven coordinate must be able to resolve every edge.
-4. A published module has an `apiCheck` task (applies `sdkbase.abi`) and a `localTest` publication.
+5. A published module has an `apiCheck` task (applies `sdkbase.abi`) and a `localTest` publication.
+6. Every `core`/`feature`/`composition` module (`dependencyPolicedZones`) runs `checkDependencyPolicy`.
 
 ## The host-gateway rule
 
@@ -38,9 +54,16 @@ public interface OtpGateway {
 ```
 
 `:sdk:features:otp` depends on this interface, never on a concrete client; `apps/demo` supplies an
-implementation. No Retrofit, OkHttp, Ktor, Hilt, Koin, or Dagger appears in a published module: a
-bundled HTTP client or DI container forces its transitive graph, version, and size onto every
-consumer, and a version conflict with the host's own choice becomes the host's problem to resolve.
+implementation. No Retrofit, OkHttp, Ktor, Hilt, Koin, or Dagger appears in a `core`, `feature` or
+`composition` module: a bundled HTTP client or DI container forces its transitive graph, version, and
+size onto every consumer, and a version conflict with the host's own choice becomes the host's
+problem to resolve.
+
+`checkDependencyPolicy` (part of `check`) enforces this. It walks the whole resolved
+`releaseCompileClasspath` and `releaseRuntimeClasspath` — transitive edges included — and fails with
+the shortest path to the offender. The forbidden groups live in
+`build-logic/src/main/kotlin/sdkbase/dependencies/DependencyPolicy.kt`. A ready-made gateway on a
+specific client belongs in an `adapter` module (e.g. `:sdk:adapters:otp-okhttp`), which is exempt.
 
 ## Headless feature, optional UI
 

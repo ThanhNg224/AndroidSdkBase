@@ -34,8 +34,9 @@ tasks.register<Delete>("clean") {
 // Zone guard: module boundaries are enforced here, at configuration time, not by review.
 // Rules: (1) every included module is registered; (2) dependency and constraint edges only go to
 // allowed zones, across every non-test configuration (compileOnly, runtimeOnly and variant-specific
-// ones included); (3) a published module depends only on published modules; (4) a published module
-// has an ABI check and a local publication.
+// ones included); (3) a feature depends on another feature only as that feature's UI module;
+// (4) a published module depends only on published modules; (5) a published module has an ABI check
+// and a local publication; (6) every core/feature/composition module runs checkDependencyPolicy.
 // ---------------------------------------------------------------------------------------------
 
 @Suppress("UNCHECKED_CAST")
@@ -49,10 +50,21 @@ val zoneByPath: Map<String, String> =
 
 val allowedTargets: Map<String, Set<String>> = mapOf(
     "core" to emptySet(),
+    // feature -> feature is narrowed further by isOwnUiModule below.
     "feature" to setOf("core", "feature"),
-    "bom" to setOf("core", "feature"),
-    "app" to setOf("core", "feature", "app"),
+    "composition" to setOf("core", "feature"),
+    "adapter" to setOf("core", "feature"),
+    "bom" to setOf("core", "feature", "composition", "adapter"),
+    "app" to setOf("core", "feature", "composition", "adapter", "app"),
 )
+
+@Suppress("UNCHECKED_CAST")
+val policedZones = (rootProject.extra["dependencyPolicedZones"] as List<String>).toSet()
+
+// `otp-ui-compose` -> `otp` is the one allowed feature -> feature edge: a UI module on top of the
+// feature it renders. Two different features are wired together only in a composition module.
+fun isOwnUiModule(sourceName: String, targetName: String): Boolean =
+    Regex("${Regex.escape(targetName)}-ui(-[a-z0-9]+)*").matches(sourceName)
 
 fun isTestConfiguration(name: String): Boolean = name.contains("test", ignoreCase = true)
 
@@ -95,10 +107,19 @@ gradle.projectsEvaluated {
             val targetZone = zoneByPath[target] ?: "unregistered"
             if (targetZone !in allowed) {
                 violations += "${source.path} [$sourceZone] -> $target [$targetZone] is not allowed"
+            } else if (sourceZone == "feature" && targetZone == "feature" &&
+                !isOwnUiModule(source.name, target.substringAfterLast(':'))
+            ) {
+                violations += "${source.path} [feature] -> $target [feature] is not allowed: a feature " +
+                    "depends on another feature only as its UI module (<name>-ui-<toolkit> -> <name>); " +
+                    "wire different features together in a composition module"
             }
             if (published && target !in publishedArtifacts) {
                 violations += "${source.path} is published but depends on unpublished $target"
             }
+        }
+        if (sourceZone in policedZones && source.tasks.findByName("checkDependencyPolicy") == null) {
+            violations += "${source.path} [$sourceZone] has no checkDependencyPolicy (apply sdkbase.android.library)"
         }
         if (published) {
             if (sourceZone != "bom" && source.tasks.findByName("apiCheck") == null) {

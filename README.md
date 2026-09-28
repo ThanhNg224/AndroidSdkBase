@@ -8,7 +8,7 @@ verification — exercises every layer end to end so you have something real to 
 
 | Gate | What fails it | Command |
 |---|---|---|
-| `check` | A module crossing a zone boundary, a changed/removed public signature, a failing test, lint | `./gradlew check -Psdkbase.warningsAsErrors=true` |
+| `check` | A module crossing a zone boundary, a feature depending on another feature, an HTTP client or DI framework on an SDK classpath, a changed/removed public signature, a failing test, lint | `./gradlew check -Psdkbase.warningsAsErrors=true` |
 | `verify-publication.sh` | A broken POM, an unpinned `kotlin-stdlib`, the Kotlin-2.2.10 consumer failing to build, R8 stripping SDK code | `./scripts/verify-publication.sh` |
 | `verify-guards.sh` | A guard above that can no longer fail on a real violation | `./scripts/verify-guards.sh` |
 
@@ -34,6 +34,10 @@ sdk/features/<name>                one published artifact per feature; entry poi
                                     engine code under internal/ and Kotlin `internal`.
 sdk/features/<name>-ui-compose     optional UI artifact; public surface at ui/, implementation
                                     under ui/internal/. Compose never enters a non-UI module.
+sdk/composition/<flow>             (zone reserved) wires several features into one flow; the only
+                                    place two features meet.
+sdk/adapters/<feature>-<lib>       (zone reserved) optional host bridge, e.g. a gateway on OkHttp;
+                                    the only SDK zone allowed an HTTP client or DI framework.
 sdk/bom                            lists every published module automatically.
 apps/demo                          manual testing only; never published.
 verification/consumer              separate build that uses the SDK only by Maven coordinate.
@@ -59,7 +63,8 @@ AGENTS.md "Package rules" for the layout conventions inside each module.
    `sdkbase.publishing`. Put the entry point at the package root, other public types in named
    sub-packages, and engine code under `internal/` — see AGENTS.md "Package rules".
 2. Register it in both lists in `gradle/module-topology.gradle.kts` — `zones` and, if it ships,
-   `publishedArtifacts`.
+   `publishedArtifacts`. It may depend on `:sdk:core` only; if it needs another feature, the flow
+   that joins them is a `composition` module.
 3. Run `./gradlew :sdk:features:<name>:apiDump` and commit the baseline with the code.
 
 ## Remove the example

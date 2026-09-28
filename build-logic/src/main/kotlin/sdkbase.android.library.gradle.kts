@@ -5,6 +5,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 // AGP 9 supplies Kotlin itself. Applying `org.jetbrains.kotlin.android` here would fail the build.
 plugins {
     id("com.android.library")
+    id("sdkbase.dependency-policy")
 }
 
 // Precompiled script plugins cannot use the generated `libs` accessor directly.

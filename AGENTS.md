@@ -5,7 +5,7 @@ own feature. Published artifacts: `core`, `otp`, `otp-ui-compose`, `bom`.
 
 ## Gates — run before saying anything is done
 ```bash
-./gradlew check -Psdkbase.warningsAsErrors=true   # tests, lint, zone guard, apiCheck
+./gradlew check -Psdkbase.warningsAsErrors=true   # tests, lint, zone guard, apiCheck, dependency policy
 ./scripts/verify-publication.sh                   # local publish, POM checks, floor-Kotlin consumer under R8
 ./scripts/verify-guards.sh                        # only when you touch a guard: proves each can still fail
 ```
@@ -14,6 +14,8 @@ own feature. Published artifacts: `core`, `otp`, `otp-ui-compose`, `bom`.
 - `sdk/core` — Android library toolkit shared by every feature: `result/`, `error/`, `call/` (`safeCall`, `RetryPolicy`), `time/` (`Clock`, `IdGenerator`), `concurrency/`, `logging/` (`SdkLogger`, `TaggedLogger`), `telemetry/`, `gateway/`.
 - `sdk/features/<name>` — one published artifact per feature. Engine code lives in `internal/` and is Kotlin `internal`.
 - `sdk/features/<name>-ui-compose` — optional UI artifact. Compose never enters a non-UI module.
+- `sdk/composition/<flow>` — wires several features into one flow; the only place two features meet.
+- `sdk/adapters/<feature>-<lib>` — optional host bridge (e.g. a gateway on OkHttp); the only SDK zone allowed an HTTP client or DI framework, and nothing in the SDK depends on it.
 - `sdk/bom` — lists every published module automatically.
 - `apps/demo` — manual testing only; never published.
 - `verification/consumer` — separate build that uses the SDK only by Maven coordinate.
@@ -25,11 +27,12 @@ own feature. Published artifacts: `core`, `otp`, `otp-ui-compose`, `bom`.
 - No `utils/`, `misc/`, `helpers/` packages — name the concern instead.
 
 ## SDK rules (the build enforces the ones marked *)
-- * Dependencies flow `core → feature → app`; a published module depends only on published modules.
+- * Dependencies flow `core → feature → composition → app` (`adapter` sits beside composition); a published module depends only on published modules.
+- * A feature depends on another feature only as its UI module (`<name>-ui-<toolkit> → <name>`); two different features meet only in a composition module.
 - * Public API is frozen by `api/<module>.api` (exact match). Changing it means running `./gradlew :<module>:apiDump` and committing the diff with the code. Removing or changing a line, adding an abstract member to a host-implemented interface, or adding a sealed subtype is **breaking**.
 - * Consumers may be on Kotlin 2.2: never raise `kotlinStdlibFloor` or add a dependency built with newer Kotlin without asking.
 - `explicitApi()` is on: every public declaration is deliberate. Prefer `internal`.
-- The host owns networking: features declare a gateway interface; no HTTP client, no DI framework, no `GlobalScope` in `sdk/`. Call host code only through `safeCall` — it maps exceptions to `SdkError` and applies its own timeout.
+- * The host owns networking: features declare a gateway interface; no HTTP client or DI framework in a core/feature/composition classpath, transitively (`checkDependencyPolicy`). No `GlobalScope` in `sdk/`. Call host code only through `safeCall` — it maps exceptions to `SdkError` and applies its own timeout.
 - Nothing escapes to the host as an exception: return `SdkResult`; map host exceptions to `SdkError`. A host-supplied `LogSink`/`TelemetrySink` is always contained — a throw from one never reaches the caller.
 - Error codes are append-only: 1xxx common, 2xxx system, 3xxx feature business, 4xxx lifecycle.
 - Java hosts must be able to use every entry point: builders instead of default arguments, callback interfaces next to suspend ones.

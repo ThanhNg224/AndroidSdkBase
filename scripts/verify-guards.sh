@@ -73,10 +73,31 @@ sync_tree
   || { echo "ERROR the unmodified tree does not configure (see $LOGS/control.log)"; exit 1; }
 
 TOPO=gradle/module-topology.gradle.kts
-ROGUE='mkdir -p sdk/features/rogue/src/main/kotlin/rogue &&
-  printf "plugins { id(\"sdkbase.android.library\") }\nandroid { namespace = \"rogue\" }\n" > sdk/features/rogue/build.gradle.kts &&
-  printf "package rogue\n\npublic object Rogue\n" > sdk/features/rogue/src/main/kotlin/rogue/Rogue.kt &&
-  printf "\ninclude(\":sdk:features:rogue\")\n" >> settings.gradle.kts'
+
+new_module() { # DIR [PLUGIN] — a minimal library module at DIR (e.g. sdk/features/rogue), included in settings
+  local dir="$1" plugin="${2:-sdkbase.android.library}" name="${1##*/}"
+  local pkg="rogue.${name//-/_}" extra=""
+  # Without the convention plugin nothing sets compileSdk, and AGP refuses to configure the module.
+  [[ "$plugin" == sdkbase.* ]] || extra="; compileSdk = libs.versions.compileSdk.get().toInt()"
+  mkdir -p "$dir/src/main/kotlin/rogue"
+  printf 'plugins { id("%s") }\nandroid { namespace = "%s"%s }\ndependencies {\n}\n' "$plugin" "$pkg" "$extra" > "$dir/build.gradle.kts"
+  printf 'package %s\n\npublic object Rogue\n' "$pkg" > "$dir/src/main/kotlin/rogue/Rogue.kt"
+  printf '\ninclude(":%s")\n' "${dir//\//:}" >> settings.gradle.kts
+}
+
+register() { # ZONE PATH — adds PATH to ZONE in the module registry
+  python3 - "$TOPO" "$1" "$2" <<'PY'
+import re, sys
+path, zone, module = sys.argv[1:4]
+text = open(path).read()
+new, n = re.subn(r'("%s" to listOf(?:<String>)?\()' % re.escape(zone), r'\1"%s", ' % module, text, count=1)
+if n != 1:
+    sys.exit(f"register: zone {zone!r} not found in {path}")
+open(path, "w").write(new)
+PY
+}
+
+ROGUE='new_module sdk/features/rogue'
 
 # --- Zone guard ------------------------------------------------------------------------------
 run_case zone-core-to-feature-implementation \
@@ -94,15 +115,46 @@ run_case zone-feature-to-app-releaseImplementation \
 run_case zone-unregistered-leaf-module "$ROGUE" \
   "./gradlew help -q" ":sdk:features:rogue is not registered"
 run_case zone-published-depends-on-unpublished \
-  "$ROGUE && edit $TOPO '\"feature\" to listOf(' '\"feature\" to listOf(\":sdk:features:rogue\", ' &&
+  "$ROGUE && register feature :sdk:features:rogue &&
    add_dep sdk/features/otp/build.gradle.kts 'implementation(project(\":sdk:features:rogue\"))'" \
   "./gradlew help -q" ":sdk:features:otp is published but depends on unpublished :sdk:features:rogue"
 run_case zone-bom-constraint-to-app \
   "add_constraint sdk/bom/build.gradle.kts 'api(project(\":apps:demo\"))'" \
   "./gradlew help -q" ":sdk:bom \\[bom\\] -> :apps:demo \\[app\\] is not allowed"
 run_case zone-registered-but-not-included \
-  "edit $TOPO '\"feature\" to listOf(' '\"feature\" to listOf(\":sdk:features:ghost\", '" \
+  "register feature :sdk:features:ghost" \
   "./gradlew help -q" ":sdk:features:ghost is registered but not included"
+# `otp-extra` shares otp's name prefix but is not its UI module: a prefix match alone must not pass.
+run_case zone-feature-to-peer-feature \
+  "new_module sdk/features/otp-extra && register feature :sdk:features:otp-extra &&
+   add_dep sdk/features/otp-extra/build.gradle.kts 'implementation(project(\":sdk:features:otp\"))'" \
+  "./gradlew help -q" ":sdk:features:otp-extra \\[feature\\] -> :sdk:features:otp \\[feature\\] is not allowed: a feature"
+run_case zone-feature-to-own-ui-module \
+  "add_dep sdk/features/otp/build.gradle.kts 'implementation(project(\":sdk:features:otp-ui-compose\"))'" \
+  "./gradlew help -q" ":sdk:features:otp \\[feature\\] -> :sdk:features:otp-ui-compose \\[feature\\] is not allowed: a feature"
+run_case zone-feature-to-composition \
+  "new_module sdk/composition/rogue && register composition :sdk:composition:rogue &&
+   add_dep sdk/features/otp/build.gradle.kts 'implementation(project(\":sdk:composition:rogue\"))'" \
+  "./gradlew help -q" ":sdk:features:otp \\[feature\\] -> :sdk:composition:rogue \\[composition\\] is not allowed"
+run_case zone-feature-to-adapter \
+  "new_module sdk/adapters/rogue && register adapter :sdk:adapters:rogue &&
+   add_dep sdk/features/otp/build.gradle.kts 'implementation(project(\":sdk:adapters:rogue\"))'" \
+  "./gradlew help -q" ":sdk:features:otp \\[feature\\] -> :sdk:adapters:rogue \\[adapter\\] is not allowed"
+run_case zone-policed-module-without-dependency-policy \
+  "new_module sdk/composition/rogue com.android.library && register composition :sdk:composition:rogue" \
+  "./gradlew help -q" ":sdk:composition:rogue \\[composition\\] has no checkDependencyPolicy"
+
+# --- Dependency policy (resolves real coordinates: needs network or a warm Gradle cache) ----------
+run_case deps-http-client-in-feature \
+  "add_dep sdk/features/otp/build.gradle.kts 'implementation(\"com.squareup.okhttp3:okhttp:4.12.0\")'" \
+  "./gradlew :sdk:features:otp:checkDependencyPolicy -q" "releaseRuntimeClasspath: com.squareup.okhttp3:okhttp:4.12.0 \\(HTTP client\\)"
+run_case deps-di-compileOnly-in-core \
+  "add_dep sdk/core/build.gradle.kts 'compileOnly(\"com.google.dagger:dagger:2.51.1\")'" \
+  "./gradlew :sdk:core:checkDependencyPolicy -q" "releaseCompileClasspath: com.google.dagger:dagger:2.51.1 \\(DI framework\\)"
+# Reached only through another library: the whole graph is checked, not just declared edges.
+run_case deps-transitive-http-client \
+  "add_dep sdk/features/otp/build.gradle.kts 'implementation(\"com.squareup.picasso:picasso:2.8\")'" \
+  "./gradlew :sdk:features:otp:checkDependencyPolicy -q" "com.squareup.okhttp3:okhttp:[0-9.]+ \\(HTTP client\\) via .*picasso"
 
 # --- ABI (exact match: any change to the public surface fails until the dump is regenerated) ----
 CORE=sdk/core/src/main/kotlin/io/github/thanhng224/sdkbase/core
