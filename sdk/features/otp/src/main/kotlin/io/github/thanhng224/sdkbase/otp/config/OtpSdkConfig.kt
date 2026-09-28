@@ -1,7 +1,7 @@
 package io.github.thanhng224.sdkbase.otp.config
 
+import io.github.thanhng224.sdkbase.core.config.validateConfig
 import io.github.thanhng224.sdkbase.core.environment.SdkEnvironment
-import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import io.github.thanhng224.sdkbase.core.result.SdkResult
 import io.github.thanhng224.sdkbase.otp.gateway.OtpCallbackGateway
 import io.github.thanhng224.sdkbase.otp.gateway.OtpGateway
@@ -43,28 +43,20 @@ public class OtpSdkConfig private constructor(
 
         public fun gatewayTimeoutSeconds(value: Int): Builder = apply { gatewayTimeoutSeconds = value }
 
-        public fun build(): SdkResult<OtpSdkConfig> {
-            if (destination.isBlank()) {
-                return SdkResult.Failure(SdkErrors.invalidConfig("destination must not be blank"))
+        public fun build(): SdkResult<OtpSdkConfig> = validateConfig {
+            ensure(destination.isNotBlank()) { "destination must not be blank" }
+            ensure(maxAttempts in MIN_ATTEMPTS..MAX_ATTEMPTS) {
+                "maxAttempts must be in $MIN_ATTEMPTS..$MAX_ATTEMPTS"
             }
-            if (maxAttempts !in MIN_ATTEMPTS..MAX_ATTEMPTS) {
-                return SdkResult.Failure(
-                    SdkErrors.invalidConfig("maxAttempts must be in $MIN_ATTEMPTS..$MAX_ATTEMPTS")
-                )
+            ensure(gatewayTimeoutSeconds in 1..MAX_GATEWAY_TIMEOUT_SECONDS) {
+                "gatewayTimeoutSeconds must be in 1..$MAX_GATEWAY_TIMEOUT_SECONDS"
             }
-            if (gatewayTimeoutSeconds !in 1..MAX_GATEWAY_TIMEOUT_SECONDS) {
-                return SdkResult.Failure(
-                    SdkErrors.invalidConfig("gatewayTimeoutSeconds must be in 1..$MAX_GATEWAY_TIMEOUT_SECONDS")
-                )
-            }
-            return SdkResult.Success(
-                OtpSdkConfig(
-                    destination = destination,
-                    gateway = gateway,
-                    maxAttempts = maxAttempts,
-                    environment = environment,
-                    gatewayTimeoutSeconds = gatewayTimeoutSeconds,
-                )
+            OtpSdkConfig(
+                destination = destination,
+                gateway = gateway,
+                maxAttempts = maxAttempts,
+                environment = environment,
+                gatewayTimeoutSeconds = gatewayTimeoutSeconds,
             )
         }
 

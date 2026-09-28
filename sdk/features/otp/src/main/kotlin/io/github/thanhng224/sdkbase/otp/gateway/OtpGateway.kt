@@ -18,10 +18,34 @@ public interface OtpGateway {
     public suspend fun verifyOtp(challengeId: String, code: String): SdkResult<Unit>
 }
 
-/** What the backend tells the SDK about a freshly created challenge. */
-public data class OtpChallenge(
+/**
+ * What the backend tells the SDK about a freshly created challenge. A plain class, not a
+ * `data class` (ABI: `copy`/`componentN` would freeze the property list for every consumer).
+ */
+public class OtpChallenge(
     public val challengeId: String,
     public val codeLength: Int,
     public val expiresInSeconds: Int,
     public val resendAfterSeconds: Int,
-)
+) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is OtpChallenge) return false
+        return challengeId == other.challengeId &&
+            codeLength == other.codeLength &&
+            expiresInSeconds == other.expiresInSeconds &&
+            resendAfterSeconds == other.resendAfterSeconds
+    }
+
+    override fun hashCode(): Int {
+        var result = challengeId.hashCode()
+        result = 31 * result + codeLength
+        result = 31 * result + expiresInSeconds
+        result = 31 * result + resendAfterSeconds
+        return result
+    }
+
+    override fun toString(): String =
+        "OtpChallenge(challengeId=$challengeId, codeLength=$codeLength, " +
+            "expiresInSeconds=$expiresInSeconds, resendAfterSeconds=$resendAfterSeconds)"
+}

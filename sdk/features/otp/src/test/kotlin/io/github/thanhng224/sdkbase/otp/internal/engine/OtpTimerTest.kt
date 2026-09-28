@@ -1,6 +1,8 @@
 package io.github.thanhng224.sdkbase.otp.internal.engine
 
+import io.github.thanhng224.sdkbase.core.logging.SdkLogger
 import io.github.thanhng224.sdkbase.core.result.SdkResult
+import io.github.thanhng224.sdkbase.core.session.SessionScope
 import io.github.thanhng224.sdkbase.core.testing.TestDispatcherProvider
 import io.github.thanhng224.sdkbase.otp.OtpErrors
 import io.github.thanhng224.sdkbase.otp.gateway.OtpChallenge
@@ -26,9 +28,10 @@ class OtpTimerTest {
 
     @Test
     fun `the resend cooldown counts down in real time`() = runTest {
+        val scope = SessionScope(TestDispatcherProvider(StandardTestDispatcher(testScheduler)), SdkLogger.NoOp.tagged("Test"))
         val engine = OtpEngine(
             gateway = StubGateway(OtpChallenge("ch-1", 6, expiresInSeconds = 120, resendAfterSeconds = 3)),
-            dispatchers = TestDispatcherProvider(StandardTestDispatcher(testScheduler)),
+            scope = scope,
         )
         engine.start("0900000000")
         assertEquals(3, engine.state.value.secondsUntilResend)
@@ -37,14 +40,15 @@ class OtpTimerTest {
 
         assertEquals(0, engine.state.value.secondsUntilResend)
         assertTrue(engine.state.value.canResend)
-        engine.close()
+        scope.close()
     }
 
     @Test
     fun `reaching expiry fails the session without any host interaction`() = runTest {
+        val scope = SessionScope(TestDispatcherProvider(StandardTestDispatcher(testScheduler)), SdkLogger.NoOp.tagged("Test"))
         val engine = OtpEngine(
             gateway = StubGateway(OtpChallenge("ch-1", 6, expiresInSeconds = 2, resendAfterSeconds = 1)),
-            dispatchers = TestDispatcherProvider(StandardTestDispatcher(testScheduler)),
+            scope = scope,
         )
         engine.start("0900000000")
 
@@ -52,22 +56,23 @@ class OtpTimerTest {
 
         assertEquals(OtpState.Phase.Failed, engine.state.value.phase)
         assertEquals(OtpErrors.OTP_EXPIRED, engine.state.value.error?.code)
-        engine.close()
+        scope.close()
     }
 
     @Test
     // Proves the BEHAVIOUR (no ticking after close), not the mechanism: the ticker shares the
-    // engine's scope, so scope cancellation is what actually stops it. See OtpEngine.close().
+    // session's scope, so scope cancellation is what actually stops it. See SessionScope.close().
     fun `close stops the ticker`() = runTest {
+        val scope = SessionScope(TestDispatcherProvider(StandardTestDispatcher(testScheduler)), SdkLogger.NoOp.tagged("Test"))
         val engine = OtpEngine(
             gateway = StubGateway(OtpChallenge("ch-1", 6, expiresInSeconds = 120, resendAfterSeconds = 60)),
-            dispatchers = TestDispatcherProvider(StandardTestDispatcher(testScheduler)),
+            scope = scope,
         )
         engine.start("0900000000")
         advanceTimeBy(1_100)
         val afterOneTick = engine.state.value.secondsUntilResend
 
-        engine.close()
+        scope.close()
         advanceTimeBy(5_000)
 
         assertEquals(afterOneTick, engine.state.value.secondsUntilResend)

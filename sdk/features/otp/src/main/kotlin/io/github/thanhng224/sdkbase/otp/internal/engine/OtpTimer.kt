@@ -16,7 +16,9 @@ internal class OtpTimer(
 ) {
     private var job: Job? = null
 
-    fun start(onTick: () -> Unit) {
+    /** [onTick] is `suspend` so it can go through `StateStore.withLock`, waiting for the lock like
+     * any other caller rather than racing a transition already in flight. */
+    fun start(onTick: suspend () -> Unit) {
         stop()
         job = scope.launch {
             while (isActive) {

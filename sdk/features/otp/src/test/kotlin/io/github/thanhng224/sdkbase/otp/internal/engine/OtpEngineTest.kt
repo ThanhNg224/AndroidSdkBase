@@ -2,7 +2,9 @@ package io.github.thanhng224.sdkbase.otp.internal.engine
 
 import io.github.thanhng224.sdkbase.core.concurrency.DispatcherProvider
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
+import io.github.thanhng224.sdkbase.core.logging.SdkLogger
 import io.github.thanhng224.sdkbase.core.result.SdkResult
+import io.github.thanhng224.sdkbase.core.session.SessionScope
 import io.github.thanhng224.sdkbase.core.testing.TestDispatcherProvider
 import io.github.thanhng224.sdkbase.otp.OtpErrors
 import io.github.thanhng224.sdkbase.otp.gateway.OtpChallenge
@@ -43,23 +45,32 @@ class OtpEngineTest {
     /** All three dispatchers are the real `Dispatchers.Default`, for tests that need real threads. */
     private val realDispatchers: DispatcherProvider = TestDispatcherProvider(Dispatchers.Default)
 
+    /** A [SessionScope] a test can [SessionScope.close] itself - the engine's own teardown. */
+    private fun scopeWith(dispatchers: DispatcherProvider): SessionScope =
+        SessionScope(dispatchers, SdkLogger.NoOp.tagged("Test"))
+
+    private fun engineWith(gateway: OtpGateway, dispatchers: DispatcherProvider, maxAttempts: Int = 3): Pair<SessionScope, OtpEngine> {
+        val scope = scopeWith(dispatchers)
+        return scope to OtpEngine(gateway, scope, maxAttempts = maxAttempts)
+    }
+
     /** Builds an [OtpEngine] from bare request/verify lambdas, for tests that don't need [FakeGateway]'s counters. */
     private fun engineWith(
         requestOtp: suspend () -> SdkResult<OtpChallenge> = { SdkResult.Success(OtpChallenge("c", 6, 60, 30)) },
         verifyOtp: suspend () -> SdkResult<Unit> = { SdkResult.Success(Unit) },
         dispatchers: DispatcherProvider = TestDispatcherProvider(StandardTestDispatcher()),
-    ): OtpEngine {
+    ): Pair<SessionScope, OtpEngine> {
         val gateway = object : OtpGateway {
             override suspend fun requestOtp(destination: String): SdkResult<OtpChallenge> = requestOtp()
             override suspend fun verifyOtp(challengeId: String, code: String): SdkResult<Unit> = verifyOtp()
         }
-        return OtpEngine(gateway, dispatchers)
+        return engineWith(gateway, dispatchers)
     }
 
     @Test
     fun `start requests a challenge and moves to awaiting code`() = runTest {
         val gateway = FakeGateway()
-        val engine = OtpEngine(gateway, TestDispatcherProvider(StandardTestDispatcher(testScheduler)))
+        val (scope, engine) = engineWith(gateway, TestDispatcherProvider(StandardTestDispatcher(testScheduler)))
 
         engine.start("0900000000")
 
@@ -67,13 +78,13 @@ class OtpEngineTest {
         assertEquals(OtpState.Phase.AwaitingCode, engine.state.value.phase)
         assertEquals(6, engine.state.value.codeLength)
         assertEquals(3, engine.state.value.attemptsRemaining)
-        engine.close()
+        scope.close()
     }
 
     @Test
     fun `a correct code reaches Verified`() = runTest {
         val gateway = FakeGateway()
-        val engine = OtpEngine(gateway, TestDispatcherProvider(StandardTestDispatcher(testScheduler)))
+        val (scope, engine) = engineWith(gateway, TestDispatcherProvider(StandardTestDispatcher(testScheduler)))
         engine.start("0900000000")
 
         "123456".forEach { engine.dispatch(OtpCommand.AppendDigit(it)) }
@@ -81,13 +92,13 @@ class OtpEngineTest {
 
         assertEquals("123456", gateway.lastSubmittedCode)
         assertEquals(OtpState.Phase.Verified, engine.state.value.phase)
-        engine.close()
+        scope.close()
     }
 
     @Test
     fun `a wrong code returns to awaiting with one fewer attempt`() = runTest {
         val gateway = FakeGateway(verifyResult = { SdkResult.Failure(OtpErrors.otpInvalid()) })
-        val engine = OtpEngine(gateway, TestDispatcherProvider(StandardTestDispatcher(testScheduler)))
+        val (scope, engine) = engineWith(gateway, TestDispatcherProvider(StandardTestDispatcher(testScheduler)))
         engine.start("0900000000")
 
         "000000".forEach { engine.dispatch(OtpCommand.AppendDigit(it)) }
@@ -96,13 +107,13 @@ class OtpEngineTest {
         assertEquals(OtpState.Phase.AwaitingCode, engine.state.value.phase)
         assertEquals(2, engine.state.value.attemptsRemaining)
         assertEquals(OtpErrors.OTP_INVALID, engine.state.value.error?.code)
-        engine.close()
+        scope.close()
     }
 
     @Test
     fun `exhausting attempts ends the session`() = runTest {
         val gateway = FakeGateway(verifyResult = { SdkResult.Failure(OtpErrors.otpInvalid()) })
-        val engine = OtpEngine(gateway, TestDispatcherProvider(StandardTestDispatcher(testScheduler)), maxAttempts = 2)
+        val (scope, engine) = engineWith(gateway, TestDispatcherProvider(StandardTestDispatcher(testScheduler)), maxAttempts = 2)
         engine.start("0900000000")
 
         repeat(2) {
@@ -112,13 +123,13 @@ class OtpEngineTest {
 
         assertEquals(OtpState.Phase.Failed, engine.state.value.phase)
         assertEquals(OtpErrors.OTP_ATTEMPTS_EXCEEDED, engine.state.value.error?.code)
-        engine.close()
+        scope.close()
     }
 
     @Test
     fun `resend is refused while the cooldown is still running`() = runTest {
         val gateway = FakeGateway()
-        val engine = OtpEngine(gateway, TestDispatcherProvider(StandardTestDispatcher(testScheduler)))
+        val (scope, engine) = engineWith(gateway, TestDispatcherProvider(StandardTestDispatcher(testScheduler)))
         engine.start("0900000000")
 
         engine.dispatch(OtpCommand.Resend)
@@ -126,7 +137,7 @@ class OtpEngineTest {
         // Still exactly one request: the cooldown blocked the second one.
         assertEquals(1, gateway.requestCount)
         assertEquals(OtpErrors.OTP_RESEND_TOO_SOON, engine.state.value.error?.code)
-        engine.close()
+        scope.close()
     }
 
     @Test
@@ -137,31 +148,31 @@ class OtpEngineTest {
             override suspend fun verifyOtp(challengeId: String, code: String) =
                 SdkResult.Success(Unit)
         }
-        val engine = OtpEngine(gateway, TestDispatcherProvider(StandardTestDispatcher(testScheduler)))
+        val (scope, engine) = engineWith(gateway, TestDispatcherProvider(StandardTestDispatcher(testScheduler)))
 
         engine.start("0900000000")
 
         assertEquals(OtpState.Phase.Failed, engine.state.value.phase)
         assertEquals(SdkErrors.NETWORK_UNAVAILABLE, engine.state.value.error?.code)
-        engine.close()
+        scope.close()
     }
 
     @Test
     fun `start is honoured once`() = runTest {
         var requests = 0
-        val engine = engineWith(requestOtp = { requests++; SdkResult.Success(OtpChallenge("c", 6, 60, 30)) })
+        val (scope, engine) = engineWith(requestOtp = { requests++; SdkResult.Success(OtpChallenge("c", 6, 60, 30)) })
         engine.start("0900")
         engine.start("0900")
         assertEquals(1, requests)
         assertEquals(SdkErrors.ALREADY_RUNNING, engine.state.value.error?.code)
-        engine.close()
+        scope.close()
     }
 
     @Test
     fun `concurrent submits verify exactly once`() = runBlocking(Dispatchers.Default) {
         repeat(200) {
             val verifies = java.util.concurrent.atomic.AtomicInteger()
-            val engine = engineWith(
+            val (scope, engine) = engineWith(
                 requestOtp = { SdkResult.Success(OtpChallenge("c", 1, 60, 30)) },
                 verifyOtp = { verifies.incrementAndGet(); kotlinx.coroutines.yield(); SdkResult.Success(Unit) },
                 dispatchers = realDispatchers,
@@ -170,7 +181,7 @@ class OtpEngineTest {
             engine.dispatch(OtpCommand.AppendDigit('1'))
             (1..2).map { launch { engine.dispatch(OtpCommand.Submit) } }.joinAll()
             assertEquals(1, verifies.get())
-            engine.close()
+            scope.close()
         }
     }
 }

@@ -45,12 +45,6 @@ public final class io/github/thanhng224/sdkbase/otp/gateway/OtpCallbackGatewayKt
 
 public final class io/github/thanhng224/sdkbase/otp/gateway/OtpChallenge {
 	public fun <init> (Ljava/lang/String;III)V
-	public final fun component1 ()Ljava/lang/String;
-	public final fun component2 ()I
-	public final fun component3 ()I
-	public final fun component4 ()I
-	public final fun copy (Ljava/lang/String;III)Lio/github/thanhng224/sdkbase/otp/gateway/OtpChallenge;
-	public static synthetic fun copy$default (Lio/github/thanhng224/sdkbase/otp/gateway/OtpChallenge;Ljava/lang/String;IIIILjava/lang/Object;)Lio/github/thanhng224/sdkbase/otp/gateway/OtpChallenge;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getChallengeId ()Ljava/lang/String;
 	public final fun getCodeLength ()I
@@ -107,11 +101,8 @@ public final class io/github/thanhng224/sdkbase/otp/session/OtpCommand$Submit : 
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract interface class io/github/thanhng224/sdkbase/otp/session/OtpSession {
-	public abstract fun close ()V
+public abstract interface class io/github/thanhng224/sdkbase/otp/session/OtpSession : io/github/thanhng224/sdkbase/core/session/SdkSession {
 	public abstract fun dispatch (Lio/github/thanhng224/sdkbase/otp/session/OtpCommand;)V
-	public abstract fun getState ()Lkotlinx/coroutines/flow/StateFlow;
-	public abstract fun observeState (Lio/github/thanhng224/sdkbase/core/session/StateListener;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
 	public abstract fun resend (Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
 	public abstract fun resend (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 	public abstract fun submit (Ljava/lang/String;Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
@@ -121,15 +112,6 @@ public abstract interface class io/github/thanhng224/sdkbase/otp/session/OtpSess
 public final class io/github/thanhng224/sdkbase/otp/session/OtpState {
 	public static final field Companion Lio/github/thanhng224/sdkbase/otp/session/OtpState$Companion;
 	public fun <init> (Lio/github/thanhng224/sdkbase/otp/session/OtpState$Phase;ILjava/lang/String;IIILio/github/thanhng224/sdkbase/core/error/SdkError;)V
-	public final fun component1 ()Lio/github/thanhng224/sdkbase/otp/session/OtpState$Phase;
-	public final fun component2 ()I
-	public final fun component3 ()Ljava/lang/String;
-	public final fun component4 ()I
-	public final fun component5 ()I
-	public final fun component6 ()I
-	public final fun component7 ()Lio/github/thanhng224/sdkbase/core/error/SdkError;
-	public final fun copy (Lio/github/thanhng224/sdkbase/otp/session/OtpState$Phase;ILjava/lang/String;IIILio/github/thanhng224/sdkbase/core/error/SdkError;)Lio/github/thanhng224/sdkbase/otp/session/OtpState;
-	public static synthetic fun copy$default (Lio/github/thanhng224/sdkbase/otp/session/OtpState;Lio/github/thanhng224/sdkbase/otp/session/OtpState$Phase;ILjava/lang/String;IIILio/github/thanhng224/sdkbase/core/error/SdkError;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/otp/session/OtpState;
 	public fun equals (Ljava/lang/Object;)Z
 	public final fun getAttemptsRemaining ()I
 	public final fun getCanResend ()Z

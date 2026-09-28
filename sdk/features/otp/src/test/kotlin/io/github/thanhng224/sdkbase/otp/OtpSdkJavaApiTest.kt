@@ -200,6 +200,19 @@ class OtpSdkJavaApiTest {
     }
 
     @Test
+    fun javaSubmitAfterCloseDeliversSessionClosed() {
+        val session = startSession(FakeGateway())
+        session.close()
+        val callback = RecordingCallback<Unit>()
+
+        session.submit("123456", callback)
+
+        assertTrue(callback.latch.await(2, TimeUnit.SECONDS))
+        assertTrue(callback.successes.isEmpty())
+        assertEquals(SdkErrors.SESSION_CLOSED, callback.failures.single().code)
+    }
+
+    @Test
     fun `closeCancelsPendingCallbacks`() {
         val started = CountDownLatch(1)
         val proceed = CountDownLatch(1)
