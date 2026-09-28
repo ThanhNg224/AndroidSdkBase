@@ -123,6 +123,7 @@ public final class io/github/thanhng224/sdkbase/core/error/SdkErrors {
 	public static final field INVALID_CONFIG I
 	public static final field NETWORK_UNAVAILABLE I
 	public static final field NOT_STARTED I
+	public static final field SESSION_CLOSED I
 	public static final field TIMEOUT I
 	public static final field UNKNOWN I
 	public final fun all ()Ljava/util/List;
@@ -134,6 +135,7 @@ public final class io/github/thanhng224/sdkbase/core/error/SdkErrors {
 	public final fun networkUnavailable (Ljava/lang/Throwable;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
 	public static synthetic fun networkUnavailable$default (Lio/github/thanhng224/sdkbase/core/error/SdkErrors;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
 	public final fun notStarted ()Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun sessionClosed ()Lio/github/thanhng224/sdkbase/core/error/SdkError;
 	public final fun timeout (Ljava/lang/String;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
 	public final fun unknown (Ljava/lang/Throwable;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
 	public static synthetic fun unknown$default (Lio/github/thanhng224/sdkbase/core/error/SdkErrors;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
@@ -277,8 +279,48 @@ public final class io/github/thanhng224/sdkbase/core/session/ObserveStateKt {
 	public static synthetic fun observe$default (Lkotlinx/coroutines/flow/StateFlow;Lio/github/thanhng224/sdkbase/core/concurrency/DispatcherProvider;Lio/github/thanhng224/sdkbase/core/session/StateListener;Lkotlinx/coroutines/Job;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
 }
 
+public abstract interface class io/github/thanhng224/sdkbase/core/session/SdkSession {
+	public abstract fun close ()V
+	public abstract fun getState ()Lkotlinx/coroutines/flow/StateFlow;
+	public abstract fun observeState (Lio/github/thanhng224/sdkbase/core/session/StateListener;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+}
+
+public abstract class io/github/thanhng224/sdkbase/core/session/SdkSessionBase : io/github/thanhng224/sdkbase/core/session/SdkSession {
+	public fun <init> (Lio/github/thanhng224/sdkbase/core/session/SessionScope;Lio/github/thanhng224/sdkbase/core/session/StateStore;)V
+	public final fun close ()V
+	protected final fun getScope ()Lio/github/thanhng224/sdkbase/core/session/SessionScope;
+	public final fun getState ()Lkotlinx/coroutines/flow/StateFlow;
+	public final fun observeState (Lio/github/thanhng224/sdkbase/core/session/StateListener;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	protected fun onClose ()V
+}
+
+public final class io/github/thanhng224/sdkbase/core/session/SessionScope {
+	public fun <init> (Lio/github/thanhng224/sdkbase/core/concurrency/DispatcherProvider;Lio/github/thanhng224/sdkbase/core/logging/TaggedLogger;)V
+	public final fun call (Lio/github/thanhng224/sdkbase/core/call/ResultCallback;Lkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public final fun close ()Z
+	public final fun getCoroutineScope ()Lkotlinx/coroutines/CoroutineScope;
+	public final fun getDispatchers ()Lio/github/thanhng224/sdkbase/core/concurrency/DispatcherProvider;
+	public final fun ifOpen (Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun isClosed ()Z
+	public final fun launch (Lkotlin/jvm/functions/Function2;)V
+	public final fun observe (Lkotlinx/coroutines/flow/StateFlow;Lio/github/thanhng224/sdkbase/core/session/StateListener;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+}
+
 public abstract interface class io/github/thanhng224/sdkbase/core/session/StateListener {
 	public abstract fun onState (Ljava/lang/Object;)V
+}
+
+public final class io/github/thanhng224/sdkbase/core/session/StateStore {
+	public fun <init> (Ljava/lang/Object;)V
+	public fun <init> (Ljava/lang/Object;Lkotlin/jvm/functions/Function1;)V
+	public final fun getCurrent ()Ljava/lang/Object;
+	public final fun getState ()Lkotlinx/coroutines/flow/StateFlow;
+	public final fun withLock (Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/core/session/StateStore$Mutation {
+	public abstract fun getCurrent ()Ljava/lang/Object;
+	public abstract fun update (Lkotlin/jvm/functions/Function1;)V
 }
 
 public abstract interface class io/github/thanhng224/sdkbase/core/telemetry/TelemetrySink {

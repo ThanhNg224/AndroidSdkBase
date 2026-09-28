@@ -21,6 +21,7 @@ public object SdkErrors {
     // --- 4xxx lifecycle
     public const val NOT_STARTED: Int = 4000
     public const val ALREADY_RUNNING: Int = 4001
+    public const val SESSION_CLOSED: Int = 4002
 
     public fun unknown(cause: Throwable? = null): SdkError =
         SdkError.Common(UNKNOWN, "Unknown failure", cause)
@@ -46,10 +47,13 @@ public object SdkErrors {
     public fun alreadyRunning(): SdkError =
         SdkError.Lifecycle(ALREADY_RUNNING, "A session is already running")
 
+    public fun sessionClosed(): SdkError =
+        SdkError.Lifecycle(SESSION_CLOSED, "The session is closed")
+
     /** Every code in this catalog. */
     public fun all(): List<Int> = listOf(
         UNKNOWN, INVALID_CONFIG, CANCELLED_BY_USER,
         NETWORK_UNAVAILABLE, GATEWAY_FAILURE, TIMEOUT,
-        NOT_STARTED, ALREADY_RUNNING,
+        NOT_STARTED, ALREADY_RUNNING, SESSION_CLOSED,
     )
 }

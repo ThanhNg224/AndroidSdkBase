@@ -101,7 +101,18 @@ This must find nothing.
   directly; a host only ever sees the public callback entry points built on it.
 - `session/` — `StateFlow<S>.observe(dispatchers, listener, parent)` is `launchCallback`'s sibling
   for a `StateFlow`: delivers the current value then every change to a `StateListener` on
-  `dispatchers.main`, contained the same way, until cancelled.
+  `dispatchers.main`, contained the same way, until cancelled. `SdkSession<S>` is the public
+  contract every feature session extends (`state`, `observeState`, `close`). `SessionScope` is the
+  only owner of a session's coroutines: `launch` (fire-and-forget, no-op once closed), `ifOpen`
+  (suspend, `Failure(SdkErrors.sessionClosed())` once closed) and `call` (its Java-callable twin,
+  built on `launchCallback`) all route through it, and `close()` — atomic, idempotent, `true` only
+  for the first caller — cancels every one of them, in flight or not. `StateStore<S>` serializes
+  every state mutation through `withLock`, including timer ticks, so no two transitions can
+  interleave; a nested `withLock` on the same store is detected (via a coroutine-context element
+  keyed to that store) and fails fast with `IllegalStateException` instead of deadlocking, and its
+  `Mutation<S>.update` has no public implementation outside a held lock. `SdkSessionBase<S>`
+  implements `SdkSession`'s three members once on top of a `SessionScope`/`StateStore` pair; `close()`
+  is `final` and calls `onClose()` exactly once, on the call that actually closes the scope.
 - `annotation/` — `@SdkInternalApi` (`@RequiresOptIn`) marks a declaration (`launchCallback`,
   `observe`) meant only for SDK modules; `sdkbase.android.library` opts every SDK module in via
   `compilerOptions.optIn`, while `apps/demo` and `verification/consumer` are not opted in, so a host

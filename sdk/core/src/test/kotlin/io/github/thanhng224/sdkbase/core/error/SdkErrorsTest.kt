@@ -28,4 +28,17 @@ class SdkErrorsTest {
     fun `core owns no business codes`() {
         assertTrue(SdkErrors.all().none { it / 1000 == 3 })
     }
+
+    @Test
+    fun `sessionClosed is 4002 lifecycle`() {
+        val error = SdkErrors.sessionClosed()
+        assertTrue(error is SdkError.Lifecycle)
+        assertEquals(SdkErrors.SESSION_CLOSED, error.code)
+        assertEquals(4002, error.code)
+    }
+
+    @Test
+    fun `all contains 4002`() {
+        assertTrue(SdkErrors.all().contains(SdkErrors.SESSION_CLOSED))
+    }
 }
