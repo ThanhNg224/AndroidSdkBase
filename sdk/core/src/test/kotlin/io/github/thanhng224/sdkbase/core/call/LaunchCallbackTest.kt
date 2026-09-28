@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.awaitCancellation
@@ -89,6 +90,23 @@ class LaunchCallbackTest {
         assertTrue(blockThread.get().startsWith("default-thread"))
         assertEquals("ok", callback.successes.single())
         assertTrue(callback.threads.single().startsWith("main-thread"))
+    }
+
+    @Test
+    fun `unconfined dispatchers deliver before launchCallback returns`() {
+        // Unconfined (like Dispatchers.Main.immediate on the main thread) runs the coroutine inside
+        // launch() itself, before launchCallback has returned - so the delivery decision must not
+        // read anything the caller assigns after launch().
+        val unconfined = object : DispatcherProvider {
+            override val main: CoroutineDispatcher = Dispatchers.Unconfined
+            override val default: CoroutineDispatcher = Dispatchers.Unconfined
+            override val io: CoroutineDispatcher = Dispatchers.Unconfined
+        }
+        val callback = RecordingCallback<String>()
+
+        launchCallback(unconfined, callback) { SdkResult.Success("ok") }
+
+        assertEquals(listOf("ok"), callback.successes)
     }
 
     @Test

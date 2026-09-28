@@ -10,6 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.job
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -51,8 +52,10 @@ public fun <T> launchCallback(
     // own Job can no longer flip from active to cancelled underneath it.
     val claimed = AtomicBoolean(false)
 
-    lateinit var job: Job
-    job = scope.launch {
+    val job = scope.launch {
+        // Read from inside the coroutine, not from the `job` the caller holds: with an unconfined or
+        // immediate dispatcher this body runs inside launch(), before launch() has returned it.
+        val self = coroutineContext.job
         val result = try {
             block()
         } catch (e: CancellationException) {
@@ -67,7 +70,7 @@ public fun <T> launchCallback(
         // safely on `dispatchers.main`, whether a cancel()/parent-cancel already happened - closing
         // the race an immediate, worker-thread decision (the previous implementation) could not.
         withContext(dispatchers.main + NonCancellable) {
-            if (job.isActive && claimed.compareAndSet(false, true)) {
+            if (self.isActive && claimed.compareAndSet(false, true)) {
                 try {
                     when (result) {
                         is SdkResult.Success -> callback.onSuccess(result.value)
