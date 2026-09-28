@@ -15,4 +15,5 @@ dependencies {
     api(libs.coroutines.core)
     // The real (Android-backed) dispatchers now live here, alongside the DispatcherProvider contract.
     implementation(libs.coroutines.android)
+    testImplementation(project(":sdk:core-testing"))
 }

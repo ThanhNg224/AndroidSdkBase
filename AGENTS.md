@@ -12,6 +12,7 @@ own feature. Published artifacts: `core`, `otp`, `otp-ui-compose`, `bom`.
 
 ## Layout
 - `sdk/core` — Android library toolkit shared by every feature: `result/`, `error/`, `call/` (`safeCall`, `RetryPolicy`), `time/` (`Clock`, `IdGenerator`), `concurrency/`, `logging/` (`SdkLogger`, `TaggedLogger`), `telemetry/`, `gateway/`.
+- `sdk/core-testing` — published test kit: fakes (`FakeClock`, `SequentialIdGenerator`, `TestDispatcherProvider`), recording sinks (`RecordingLogSink`, `RecordingTelemetrySink`) and `SdkResult` assertions. Consumed via `testImplementation`; only `bom` and `app` may target it in a non-test configuration.
 - `sdk/features/<name>` — one published artifact per feature. Engine code lives in `internal/` and is Kotlin `internal`.
 - `sdk/features/<name>-ui-compose` — optional UI artifact. Compose never enters a non-UI module.
 - `sdk/composition/<flow>` — wires several features into one flow; the only place two features meet.

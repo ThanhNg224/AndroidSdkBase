@@ -143,6 +143,11 @@ run_case zone-feature-to-adapter \
 run_case zone-policed-module-without-dependency-policy \
   "new_module sdk/composition/rogue com.android.library && register composition :sdk:composition:rogue" \
   "./gradlew help -q" ":sdk:composition:rogue \\[composition\\] has no checkDependencyPolicy"
+# The published test kit is only for testImplementation; a main-configuration edge to it is a
+# zone violation like any other, even though `:sdk:core-testing` itself is published.
+run_case zone-feature-main-to-testing \
+  "add_dep sdk/features/otp/build.gradle.kts 'implementation(project(\":sdk:core-testing\"))'" \
+  "./gradlew help -q" ":sdk:features:otp \\[feature\\] -> :sdk:core-testing \\[testing\\] is not allowed"
 
 # --- Dependency policy (resolves real coordinates: needs network or a warm Gradle cache) ----------
 run_case deps-http-client-in-feature \

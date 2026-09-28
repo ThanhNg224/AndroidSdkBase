@@ -29,6 +29,8 @@ verification — exercises every layer end to end so you have something real to 
 sdk/core                          Android library toolkit shared by every feature: result/, error/,
                                    call/ (safeCall, RetryPolicy), time/ (Clock, IdGenerator),
                                    concurrency/, logging/, telemetry/, gateway/.
+sdk/core-testing                  published test kit: fakes, recording sinks and SdkResult
+                                   assertions; use via testImplementation.
 sdk/features/<name>                one published artifact per feature; entry point at the package
                                     root, public sub-packages (config/, gateway/, session/...),
                                     engine code under internal/ and Kotlin `internal`.

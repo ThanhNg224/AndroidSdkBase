@@ -36,7 +36,8 @@ tasks.register<Delete>("clean") {
 // allowed zones, across every non-test configuration (compileOnly, runtimeOnly and variant-specific
 // ones included); (3) a feature depends on another feature only as that feature's UI module;
 // (4) a published module depends only on published modules; (5) a published module has an ABI check
-// and a local publication; (6) every core/feature/composition module runs checkDependencyPolicy.
+// and a local publication; (6) every core/testing/feature/composition module runs
+// checkDependencyPolicy.
 // ---------------------------------------------------------------------------------------------
 
 @Suppress("UNCHECKED_CAST")
@@ -50,12 +51,13 @@ val zoneByPath: Map<String, String> =
 
 val allowedTargets: Map<String, Set<String>> = mapOf(
     "core" to emptySet(),
+    "testing" to setOf("core"),
     // feature -> feature is narrowed further by isOwnUiModule below.
     "feature" to setOf("core", "feature"),
     "composition" to setOf("core", "feature"),
     "adapter" to setOf("core", "feature"),
-    "bom" to setOf("core", "feature", "composition", "adapter"),
-    "app" to setOf("core", "feature", "composition", "adapter", "app"),
+    "bom" to setOf("core", "feature", "composition", "adapter", "testing"),
+    "app" to setOf("core", "feature", "composition", "adapter", "app", "testing"),
 )
 
 @Suppress("UNCHECKED_CAST")

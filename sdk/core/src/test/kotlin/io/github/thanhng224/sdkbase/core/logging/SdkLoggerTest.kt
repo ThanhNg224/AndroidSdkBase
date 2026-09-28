@@ -1,6 +1,7 @@
 package io.github.thanhng224.sdkbase.core.logging
 
-import io.github.thanhng224.sdkbase.core.time.Clock
+import io.github.thanhng224.sdkbase.core.testing.FakeClock
+import io.github.thanhng224.sdkbase.core.testing.RecordingLogSink
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
@@ -12,19 +13,8 @@ import org.junit.Test
  */
 class SdkLoggerTest {
 
-    private class RecordingSink : LogSink {
-        val records = mutableListOf<LogRecord>()
-        override fun write(record: LogRecord) {
-            records += record
-        }
-    }
-
     private class ThrowingSink : LogSink {
         override fun write(record: LogRecord): Nothing = error("sink exploded")
-    }
-
-    private class FixedClock(private val millis: Long) : Clock {
-        override fun nowMillis(): Long = millis
     }
 
     @Test
@@ -35,7 +25,7 @@ class SdkLoggerTest {
 
     @Test
     fun `not loggable below minLevel`() {
-        val logger = SdkLogger.Builder().minLevel(LogLevel.WARN).sink(RecordingSink()).build()
+        val logger = SdkLogger.Builder().minLevel(LogLevel.WARN).sink(RecordingLogSink()).build()
         assertFalse(logger.isLoggable(LogLevel.INFO))
         assertTrue(logger.isLoggable(LogLevel.WARN))
         assertTrue(logger.isLoggable(LogLevel.ERROR))
@@ -44,7 +34,7 @@ class SdkLoggerTest {
     @Test
     fun `the message lambda is never invoked below minLevel`() {
         var invoked = false
-        val logger = SdkLogger.Builder().minLevel(LogLevel.ERROR).sink(RecordingSink()).build()
+        val logger = SdkLogger.Builder().minLevel(LogLevel.ERROR).sink(RecordingLogSink()).build()
         logger.tagged("T").d { invoked = true; "message" }
         assertFalse(invoked)
     }
@@ -58,7 +48,7 @@ class SdkLoggerTest {
 
     @Test
     fun `redaction runs once before any sink sees the record`() {
-        val sink = RecordingSink()
+        val sink = RecordingLogSink()
         val redactor = Redactor { message -> message.replace("secret", "***") }
         val logger = SdkLogger.Builder().minLevel(LogLevel.VERBOSE).sink(sink).redactor(redactor).build()
 
@@ -71,7 +61,7 @@ class SdkLoggerTest {
 
     @Test
     fun `withSession prefixes every subsequent record and leaves the original logger untouched`() {
-        val sink = RecordingSink()
+        val sink = RecordingLogSink()
         val base = SdkLogger.Builder().minLevel(LogLevel.VERBOSE).sink(sink).redactor(Redactor.None).build()
         val scoped = base.withSession("abc-123")
 
@@ -87,7 +77,7 @@ class SdkLoggerTest {
 
     @Test
     fun `a throwing sink is contained and does not stop the remaining sinks`() {
-        val second = RecordingSink()
+        val second = RecordingLogSink()
         val logger = SdkLogger.Builder()
             .minLevel(LogLevel.VERBOSE)
             .sink(ThrowingSink())
@@ -104,13 +94,13 @@ class SdkLoggerTest {
 
     @Test
     fun `record carries level, tag, throwable and the clock's timestamp`() {
-        val sink = RecordingSink()
+        val sink = RecordingLogSink()
         val throwable = IllegalStateException("nope")
         val logger = SdkLogger.Builder()
             .minLevel(LogLevel.VERBOSE)
             .sink(sink)
             .redactor(Redactor.None)
-            .clock(FixedClock(42_000L))
+            .clock(FakeClock(42_000L))
             .build()
 
         logger.tagged("Tag1").w(throwable) { "careful" }

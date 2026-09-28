@@ -1,0 +1,45 @@
+public final class io/github/thanhng224/sdkbase/core/testing/FakeClock : io/github/thanhng224/sdkbase/core/time/Clock {
+	public fun <init> ()V
+	public fun <init> (J)V
+	public final fun advanceBy (J)V
+	public fun nowMillis ()J
+	public final fun set (J)V
+}
+
+public final class io/github/thanhng224/sdkbase/core/testing/RecordingLogSink : io/github/thanhng224/sdkbase/core/logging/LogSink {
+	public fun <init> ()V
+	public final fun clear ()V
+	public final fun getRecords ()Ljava/util/List;
+	public final fun messages ()Ljava/util/List;
+	public final fun messages (Lio/github/thanhng224/sdkbase/core/logging/LogLevel;)Ljava/util/List;
+	public fun write (Lio/github/thanhng224/sdkbase/core/logging/LogRecord;)V
+}
+
+public final class io/github/thanhng224/sdkbase/core/testing/RecordingTelemetrySink : io/github/thanhng224/sdkbase/core/telemetry/TelemetrySink {
+	public fun <init> ()V
+	public final fun clear ()V
+	public final fun getEvents ()Ljava/util/List;
+	public final fun names ()Ljava/util/List;
+	public fun onEvent (Ljava/lang/String;Ljava/util/Map;)V
+}
+
+public final class io/github/thanhng224/sdkbase/core/testing/SdkResultAssertionsKt {
+	public static final fun assertFailure (Lio/github/thanhng224/sdkbase/core/result/SdkResult;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public static final fun assertFailure (Lio/github/thanhng224/sdkbase/core/result/SdkResult;I)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public static final fun assertSuccess (Lio/github/thanhng224/sdkbase/core/result/SdkResult;)Ljava/lang/Object;
+}
+
+public final class io/github/thanhng224/sdkbase/core/testing/SequentialIdGenerator : io/github/thanhng224/sdkbase/core/time/IdGenerator {
+	public fun <init> ()V
+	public fun <init> (Ljava/lang/String;)V
+	public fun newId ()Ljava/lang/String;
+}
+
+public final class io/github/thanhng224/sdkbase/core/testing/TestDispatcherProvider : io/github/thanhng224/sdkbase/core/concurrency/DispatcherProvider {
+	public fun <init> (Lkotlinx/coroutines/CoroutineDispatcher;)V
+	public fun <init> (Lkotlinx/coroutines/CoroutineDispatcher;Lkotlinx/coroutines/CoroutineDispatcher;)V
+	public fun getDefault ()Lkotlinx/coroutines/CoroutineDispatcher;
+	public fun getIo ()Lkotlinx/coroutines/CoroutineDispatcher;
+	public fun getMain ()Lkotlinx/coroutines/CoroutineDispatcher;
+}
+

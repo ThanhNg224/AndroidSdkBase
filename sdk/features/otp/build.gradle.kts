@@ -12,4 +12,5 @@ android {
 
 dependencies {
     api(project(":sdk:core"))
+    testImplementation(project(":sdk:core-testing"))
 }

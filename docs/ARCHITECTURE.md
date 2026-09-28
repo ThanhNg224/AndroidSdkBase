@@ -12,12 +12,17 @@ Every included module is registered in exactly one zone:
 | Zone | Modules | May depend on |
 |---|---|---|
 | `core` | `:sdk:core` | *(nothing)* |
+| `testing` | `:sdk:core-testing` | `core` |
 | `feature` | `:sdk:features:otp`, `:sdk:features:otp-ui-compose` | `core`; another `feature` only as its UI module |
 | `composition` | *(none yet)* | `core`, `feature` |
 | `adapter` | *(none yet)* | `core`, `feature` |
-| `bom` | `:sdk:bom` | `core`, `feature`, `composition`, `adapter` |
+| `bom` | `:sdk:bom` | `core`, `feature`, `composition`, `adapter`, `testing` |
 | `app` | `:apps:demo` | everything |
 
+- **testing** — the published test kit (`:sdk:core-testing`): fakes and assertions for SDK and
+  host tests. Depends on `core` only. Only `bom` and `app` may target it in a non-test
+  configuration; a feature or composition consumes it via `testImplementation`, which the zone
+  guard ignores (see rule 2), so it never appears in `allowedTargets` for those zones.
 - **feature** — one capability, headless, plus its optional `<name>-ui-<toolkit>` module.
 - **composition** — wires several features into one flow (e.g. `:sdk:composition:onboarding` =
   OTP + KYC). The only SDK zone that sees more than one feature, so cross-feature orchestration has
@@ -39,7 +44,8 @@ Empty zones are deliberate: the slot and its rules exist before the first module
 4. A published module (`publishedArtifacts` in the topology file) depends only on other published
    modules — a consumer resolving by Maven coordinate must be able to resolve every edge.
 5. A published module has an `apiCheck` task (applies `sdkbase.abi`) and a `localTest` publication.
-6. Every `core`/`feature`/`composition` module (`dependencyPolicedZones`) runs `checkDependencyPolicy`.
+6. Every `core`/`testing`/`feature`/`composition` module (`dependencyPolicedZones`) runs
+   `checkDependencyPolicy`.
 
 ## The host-gateway rule
 

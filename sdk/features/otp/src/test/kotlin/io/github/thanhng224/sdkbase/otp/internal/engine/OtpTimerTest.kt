@@ -1,12 +1,11 @@
 package io.github.thanhng224.sdkbase.otp.internal.engine
 
-import io.github.thanhng224.sdkbase.core.concurrency.DispatcherProvider
 import io.github.thanhng224.sdkbase.core.result.SdkResult
+import io.github.thanhng224.sdkbase.core.testing.TestDispatcherProvider
 import io.github.thanhng224.sdkbase.otp.OtpErrors
 import io.github.thanhng224.sdkbase.otp.gateway.OtpChallenge
 import io.github.thanhng224.sdkbase.otp.gateway.OtpGateway
 import io.github.thanhng224.sdkbase.otp.session.OtpState
-import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceTimeBy
@@ -25,17 +24,11 @@ class OtpTimerTest {
             SdkResult.Success(Unit)
     }
 
-    private fun dispatchers(dispatcher: CoroutineDispatcher) = object : DispatcherProvider {
-        override val main: CoroutineDispatcher = dispatcher
-        override val default: CoroutineDispatcher = dispatcher
-        override val io: CoroutineDispatcher = dispatcher
-    }
-
     @Test
     fun `the resend cooldown counts down in real time`() = runTest {
         val engine = OtpEngine(
             gateway = StubGateway(OtpChallenge("ch-1", 6, expiresInSeconds = 120, resendAfterSeconds = 3)),
-            dispatchers = dispatchers(StandardTestDispatcher(testScheduler)),
+            dispatchers = TestDispatcherProvider(StandardTestDispatcher(testScheduler)),
         )
         engine.start("0900000000")
         assertEquals(3, engine.state.value.secondsUntilResend)
@@ -51,7 +44,7 @@ class OtpTimerTest {
     fun `reaching expiry fails the session without any host interaction`() = runTest {
         val engine = OtpEngine(
             gateway = StubGateway(OtpChallenge("ch-1", 6, expiresInSeconds = 2, resendAfterSeconds = 1)),
-            dispatchers = dispatchers(StandardTestDispatcher(testScheduler)),
+            dispatchers = TestDispatcherProvider(StandardTestDispatcher(testScheduler)),
         )
         engine.start("0900000000")
 
@@ -68,7 +61,7 @@ class OtpTimerTest {
     fun `close stops the ticker`() = runTest {
         val engine = OtpEngine(
             gateway = StubGateway(OtpChallenge("ch-1", 6, expiresInSeconds = 120, resendAfterSeconds = 60)),
-            dispatchers = dispatchers(StandardTestDispatcher(testScheduler)),
+            dispatchers = TestDispatcherProvider(StandardTestDispatcher(testScheduler)),
         )
         engine.start("0900000000")
         advanceTimeBy(1_100)

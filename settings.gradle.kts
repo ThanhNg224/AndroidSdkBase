@@ -28,6 +28,7 @@ dependencyResolutionManagement {
 rootProject.name = "AndroidSdkBase"
 
 include(":sdk:core")
+include(":sdk:core-testing")
 include(":sdk:features:otp")
 include(":sdk:features:otp-ui-compose")
 include(":sdk:bom")

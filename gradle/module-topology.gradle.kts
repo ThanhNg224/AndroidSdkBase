@@ -2,6 +2,10 @@
 // An empty zone is deliberate: it reserves the slot and its rules before the first module needs it.
 extra["zones"] = mapOf(
     "core" to listOf(":sdk:core"),
+    // The published test kit: fakes and assertions for SDK and host tests. Depends on `core`
+    // only; features/compositions consume it via `testImplementation` (the zone guard ignores
+    // test configurations), so only `bom` and `app` may target it in a non-test configuration.
+    "testing" to listOf(":sdk:core-testing"),
     "feature" to listOf(
         ":sdk:features:otp",
         ":sdk:features:otp-ui-compose",
@@ -17,10 +21,11 @@ extra["zones"] = mapOf(
 )
 
 // Zones whose modules must not resolve an HTTP client or DI framework (checkDependencyPolicy).
-extra["dependencyPolicedZones"] = listOf("core", "feature", "composition")
+extra["dependencyPolicedZones"] = listOf("core", "testing", "feature", "composition")
 
 extra["publishedArtifacts"] = listOf(
     ":sdk:core",
+    ":sdk:core-testing",
     ":sdk:features:otp",
     ":sdk:features:otp-ui-compose",
     ":sdk:bom",

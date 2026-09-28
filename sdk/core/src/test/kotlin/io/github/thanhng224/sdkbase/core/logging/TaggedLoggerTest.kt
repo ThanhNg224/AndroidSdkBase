@@ -1,5 +1,6 @@
 package io.github.thanhng224.sdkbase.core.logging
 
+import io.github.thanhng224.sdkbase.core.testing.RecordingLogSink
 import io.github.thanhng224.sdkbase.core.time.Clock
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -7,13 +8,6 @@ import org.junit.Assert.fail
 import org.junit.Test
 
 class TaggedLoggerTest {
-
-    private class RecordingSink : LogSink {
-        val records = mutableListOf<LogRecord>()
-        override fun write(record: LogRecord) {
-            records += record
-        }
-    }
 
     /** Advances by a fixed step every call, so start/end reads in `trace` are deterministic. */
     private class StepClock(private val stepMillis: Long) : Clock {
@@ -30,7 +24,7 @@ class TaggedLoggerTest {
 
     @Test
     fun `v d i w e each log at their own level with the bound tag`() {
-        val sink = RecordingSink()
+        val sink = RecordingLogSink()
         val tagged = loggerWith(sink).tagged("MyTag")
         val throwable = RuntimeException("x")
 
@@ -51,7 +45,7 @@ class TaggedLoggerTest {
 
     @Test
     fun `trace logs the duration at VERBOSE on success using the injected clock`() {
-        val sink = RecordingSink()
+        val sink = RecordingLogSink()
         val tagged = loggerWith(sink, StepClock(stepMillis = 7)).tagged("Op")
 
         val result = tagged.trace("doWork") { "value" }
@@ -65,7 +59,7 @@ class TaggedLoggerTest {
 
     @Test
     fun `trace logs ERROR with the throwable and rethrows`() {
-        val sink = RecordingSink()
+        val sink = RecordingLogSink()
         val tagged = loggerWith(sink, StepClock(stepMillis = 3)).tagged("Op")
         val boom = IllegalStateException("boom")
 
