@@ -8,9 +8,9 @@ import io.github.thanhng224.sdkbase.core.telemetry.TelemetrySink
  * engine, so every call site (`OtpSdk`, `OtpSdkRuntime`) goes through here instead of duplicating
  * the try/catch.
  */
-internal fun TelemetrySink?.emitSafely(name: String, attributes: Map<String, String> = emptyMap()) {
+internal fun TelemetrySink.emitSafely(name: String, attributes: Map<String, String> = emptyMap()) {
     try {
-        this?.onEvent(name, attributes)
+        onEvent(name, attributes)
     } catch (_: Exception) {
         // Telemetry is ancillary and must not change the OTP result or leak the live engine.
     }

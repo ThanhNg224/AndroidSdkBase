@@ -2,6 +2,7 @@ package io.github.thanhng224.sdkbase.demo.otp.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.thanhng224.sdkbase.core.environment.SdkEnvironment
 import io.github.thanhng224.sdkbase.core.logging.LogLevel
 import io.github.thanhng224.sdkbase.core.logging.LogcatSink
 import io.github.thanhng224.sdkbase.core.logging.SdkLogger
@@ -37,13 +38,16 @@ internal class DemoOtpViewModel : ViewModel() {
 
     init {
         viewModelScope.launch {
-            val configResult = OtpSdkConfig.Builder(DEMO_DESTINATION, FakeOtpGateway())
+            val environment = SdkEnvironment.Builder()
                 .logger(
                     SdkLogger.Builder()
                         .minLevel(LogLevel.DEBUG)
                         .sink(LogcatSink("SdkDemo"))
                         .build(),
                 )
+                .build()
+            val configResult = OtpSdkConfig.Builder(DEMO_DESTINATION, FakeOtpGateway())
+                .environment(environment)
                 .maxAttempts(3)
                 .build()
 

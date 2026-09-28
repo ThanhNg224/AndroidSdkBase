@@ -4,6 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import io.github.thanhng224.sdkbase.core.environment.SdkEnvironment
 import io.github.thanhng224.sdkbase.core.logging.LogLevel
 import io.github.thanhng224.sdkbase.core.logging.LogRecord
 import io.github.thanhng224.sdkbase.core.logging.LogSink
@@ -40,9 +41,10 @@ public object KotlinConsumer {
         .minLevel(LogLevel.DEBUG)
         .sink(LogSink { consumerLogRecords += it })
         .build()
+    private val environment = SdkEnvironment.Builder().logger(logger).build()
 
     public suspend fun run(): String {
-        val config = OtpSdkConfig.Builder("0900000000", gateway).logger(logger).build().getOrNull()
+        val config = OtpSdkConfig.Builder("0900000000", gateway).environment(environment).build().getOrNull()
             ?: return "config rejected"
         val session = OtpSdk.start(config).getOrNull() ?: return "start failed"
         session.dispatch(OtpCommand.AppendDigit('1'))

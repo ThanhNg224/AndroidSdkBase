@@ -1,5 +1,6 @@
 package io.github.thanhng224.sdkbase.otp.config
 
+import io.github.thanhng224.sdkbase.core.environment.SdkEnvironment
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import io.github.thanhng224.sdkbase.core.gateway.CompletionCallback
 import io.github.thanhng224.sdkbase.core.gateway.GatewayCallback
@@ -11,6 +12,7 @@ import io.github.thanhng224.sdkbase.otp.gateway.OtpChallenge
 import io.github.thanhng224.sdkbase.otp.gateway.OtpGateway
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertSame
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -60,10 +62,10 @@ class OtpSdkConfigTest {
     }
 
     @Test
-    fun `telemetry is optional`() {
-        val result = OtpSdkConfig.Builder("0900000000", gateway).telemetry(null).build()
+    fun `default environment is Default`() {
+        val result = OtpSdkConfig.Builder("0900000000", gateway).build()
         assertNotNull(result.getOrNull())
-        assertEquals(null, result.getOrNull()?.telemetry)
+        assertSame(SdkEnvironment.Default, result.getOrNull()?.environment)
     }
 
     @Test

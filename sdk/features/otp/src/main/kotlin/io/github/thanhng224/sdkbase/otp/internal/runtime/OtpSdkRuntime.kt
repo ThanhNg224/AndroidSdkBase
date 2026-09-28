@@ -1,6 +1,5 @@
 package io.github.thanhng224.sdkbase.otp.internal.runtime
 
-import io.github.thanhng224.sdkbase.core.concurrency.AndroidDispatchers
 import io.github.thanhng224.sdkbase.core.logging.SdkLogger
 import io.github.thanhng224.sdkbase.core.result.SdkResult
 import io.github.thanhng224.sdkbase.otp.config.OtpSdkConfig
@@ -29,7 +28,7 @@ internal class OtpSdkRuntime(
     // instead. The handler matters: a SupervisorJob with none rethrows an uncaught exception to the
     // thread's default handler, which on Android kills the host process.
     private val scope = CoroutineScope(
-        SupervisorJob() + AndroidDispatchers.default +
+        SupervisorJob() + config.environment.dispatchers.default +
             CoroutineExceptionHandler { _, t -> log.e(t) { "dispatch failed" } },
     )
 
@@ -37,7 +36,7 @@ internal class OtpSdkRuntime(
 
     override suspend fun submit(code: String): SdkResult<Unit> =
         engine.submitCode(code).also { result ->
-            if (result is SdkResult.Success) config.telemetry.emitSafely("otp_verified")
+            if (result is SdkResult.Success) config.environment.telemetry.emitSafely("otp_verified")
         }
 
     override suspend fun resend(): SdkResult<Unit> = engine.resend()

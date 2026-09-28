@@ -6,4 +6,9 @@ package io.github.thanhng224.sdkbase.core.telemetry
  */
 public fun interface TelemetrySink {
     public fun onEvent(name: String, attributes: Map<String, String>)
+
+    public companion object {
+        /** Emits nothing. The default for [io.github.thanhng224.sdkbase.core.environment.SdkEnvironment]. */
+        public val None: TelemetrySink = TelemetrySink { _, _ -> }
+    }
 }

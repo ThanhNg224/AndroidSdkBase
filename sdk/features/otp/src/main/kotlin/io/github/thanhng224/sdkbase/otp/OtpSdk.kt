@@ -1,9 +1,7 @@
 package io.github.thanhng224.sdkbase.otp
 
-import io.github.thanhng224.sdkbase.core.concurrency.AndroidDispatchers
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import io.github.thanhng224.sdkbase.core.result.SdkResult
-import io.github.thanhng224.sdkbase.core.time.IdGenerator
 import io.github.thanhng224.sdkbase.otp.config.OtpSdkConfig
 import io.github.thanhng224.sdkbase.otp.internal.emitSafely
 import io.github.thanhng224.sdkbase.otp.internal.engine.OtpEngine
@@ -17,14 +15,12 @@ import io.github.thanhng224.sdkbase.otp.session.OtpState
  */
 public object OtpSdk {
 
-    public suspend fun start(config: OtpSdkConfig): SdkResult<OtpSession> = start(config, IdGenerator.Uuid)
-
-    /** [idGenerator] is internal-only: it exists so tests can supply a deterministic session id. */
-    internal suspend fun start(config: OtpSdkConfig, idGenerator: IdGenerator): SdkResult<OtpSession> {
-        val sessionLogger = config.logger.withSession(idGenerator.newId())
+    public suspend fun start(config: OtpSdkConfig): SdkResult<OtpSession> {
+        val environment = config.environment
+        val sessionLogger = environment.logger.withSession(environment.idGenerator.newId())
         val engine = OtpEngine(
             gateway = config.gateway,
-            dispatchers = AndroidDispatchers,
+            dispatchers = environment.dispatchers,
             logger = sessionLogger,
             maxAttempts = config.maxAttempts,
             gatewayTimeoutMillis = config.gatewayTimeoutSeconds * 1_000L,
@@ -43,7 +39,7 @@ public object OtpSdk {
             return SdkResult.Failure(state.error ?: SdkErrors.unknown())
         }
 
-        config.telemetry.emitSafely("otp_started", mapOf("max_attempts" to config.maxAttempts.toString()))
+        environment.telemetry.emitSafely("otp_started", mapOf("max_attempts" to config.maxAttempts.toString()))
         return SdkResult.Success(OtpSdkRuntime(engine, config, sessionLogger))
     }
 }

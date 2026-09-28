@@ -1,5 +1,6 @@
 package io.github.thanhng224.sdkbase.otp
 
+import io.github.thanhng224.sdkbase.core.environment.SdkEnvironment
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import io.github.thanhng224.sdkbase.core.logging.LogLevel
 import io.github.thanhng224.sdkbase.core.logging.LogRecord
@@ -9,7 +10,9 @@ import io.github.thanhng224.sdkbase.core.result.SdkResult
 import io.github.thanhng224.sdkbase.core.result.errorOrNull
 import io.github.thanhng224.sdkbase.core.result.getOrNull
 import io.github.thanhng224.sdkbase.core.telemetry.TelemetrySink
-import io.github.thanhng224.sdkbase.core.time.IdGenerator
+import io.github.thanhng224.sdkbase.core.testing.RecordingLogSink
+import io.github.thanhng224.sdkbase.core.testing.RecordingTelemetrySink
+import io.github.thanhng224.sdkbase.core.testing.SequentialIdGenerator
 import io.github.thanhng224.sdkbase.otp.config.OtpSdkConfig
 import io.github.thanhng224.sdkbase.otp.gateway.OtpChallenge
 import io.github.thanhng224.sdkbase.otp.gateway.OtpGateway
@@ -48,11 +51,10 @@ class OtpSdkTest {
     private fun configOf(
         gateway: OtpGateway,
         logger: SdkLogger = SdkLogger.NoOp,
-        telemetry: TelemetrySink? = null,
+        telemetry: TelemetrySink = TelemetrySink.None,
     ): OtpSdkConfig =
         OtpSdkConfig.Builder("0900000000", gateway)
-            .logger(logger)
-            .telemetry(telemetry)
+            .environment(SdkEnvironment.Builder().logger(logger).telemetry(telemetry).build())
             .build()
             .getOrNull()!!
 
@@ -208,15 +210,75 @@ class OtpSdkTest {
             .minLevel(LogLevel.DEBUG)
             .sink(LogSink { records += it })
             .build()
+        val config = OtpSdkConfig.Builder("0900000000", FakeGateway())
+            .environment(
+                SdkEnvironment.Builder()
+                    .logger(logger)
+                    .idGenerator { "test-session-id" }
+                    .build(),
+            )
+            .build()
+            .getOrNull()!!
 
-        val session = OtpSdk.start(
-            configOf(FakeGateway(), logger = logger),
-            IdGenerator { "test-session-id" },
-        ).getOrNull()!!
+        val session = OtpSdk.start(config).getOrNull()!!
 
         assertTrue(records.isNotEmpty())
         assertTrue(records.all { it.message.startsWith("session=test-session-id ") })
         session.close()
+    }
+
+    @Test
+    fun `session id comes from the environment's id generator`() = runTest {
+        val sink = RecordingLogSink()
+        val logger = SdkLogger.Builder().minLevel(LogLevel.VERBOSE).sink(sink).build()
+        val config = OtpSdkConfig.Builder("0900000000", FakeGateway())
+            .environment(
+                SdkEnvironment.Builder()
+                    .logger(logger)
+                    .idGenerator(SequentialIdGenerator("s-"))
+                    .build(),
+            )
+            .build()
+            .getOrNull()!!
+
+        val session = OtpSdk.start(config).getOrNull()!!
+
+        assertTrue(sink.messages().any { it.contains("session=s-1") })
+        session.close()
+    }
+
+    @Test
+    fun `telemetry goes to the environment's sink`() = runTest {
+        val telemetry = RecordingTelemetrySink()
+        val config = OtpSdkConfig.Builder("0900000000", FakeGateway())
+            .environment(SdkEnvironment.Builder().telemetry(telemetry).build())
+            .build()
+            .getOrNull()!!
+
+        val session = OtpSdk.start(config).getOrNull()!!
+
+        assertTrue(telemetry.names().contains("otp_started"))
+        session.close()
+    }
+
+    @Test
+    fun `two sessions from one environment have distinct session ids`() = runTest {
+        val sink = RecordingLogSink()
+        val logger = SdkLogger.Builder().minLevel(LogLevel.VERBOSE).sink(sink).build()
+        val environment = SdkEnvironment.Builder()
+            .logger(logger)
+            .idGenerator(SequentialIdGenerator("s-"))
+            .build()
+        val config1 = OtpSdkConfig.Builder("0900000000", FakeGateway()).environment(environment).build().getOrNull()!!
+        val config2 = OtpSdkConfig.Builder("0900000000", FakeGateway()).environment(environment).build().getOrNull()!!
+
+        val session1 = OtpSdk.start(config1).getOrNull()!!
+        val session2 = OtpSdk.start(config2).getOrNull()!!
+
+        assertTrue(sink.messages().any { it.contains("session=s-1") })
+        assertTrue(sink.messages().any { it.contains("session=s-2") })
+        session1.close()
+        session2.close()
     }
 
     @Test

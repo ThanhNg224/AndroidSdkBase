@@ -1,5 +1,6 @@
 package io.github.thanhng224.consumer;
 
+import io.github.thanhng224.sdkbase.core.environment.SdkEnvironment;
 import io.github.thanhng224.sdkbase.core.gateway.CompletionCallback;
 import io.github.thanhng224.sdkbase.core.gateway.GatewayCallback;
 import io.github.thanhng224.sdkbase.core.logging.LogLevel;
@@ -91,10 +92,20 @@ public final class JavaConsumer {
                 .build();
     }
 
-    /** Proves the config builder accepts a Java-built logger with no Kotlin-only entry point. */
+    /**
+     * Builds an {@link SdkEnvironment} entirely from Java: no Kotlin default argument, and the
+     * logger is the same Java-built one {@link #buildLogger()} returns.
+     */
+    public static SdkEnvironment buildEnvironment() {
+        return new SdkEnvironment.Builder()
+                .logger(buildLogger())
+                .build();
+    }
+
+    /** Proves the config builder accepts a Java-built environment with no Kotlin-only entry point. */
     public static SdkResult<OtpSdkConfig> buildConfigWithLogger() {
         return new OtpSdkConfig.Builder("0900000000", new JavaGateway())
-                .logger(buildLogger())
+                .environment(buildEnvironment())
                 .build();
     }
 

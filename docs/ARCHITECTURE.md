@@ -98,8 +98,12 @@ This must find nothing.
   `TaggedLogger` (`v`/`d`/`i`/`w`/`e`/`trace`) per tag. A record is redacted by the logger's
   `Redactor` (`DefaultRedactor` + `mask()`) once, before any `LogSink` sees it; a throwing sink is
   contained. `LogcatSink` is the one place `android.util.Log` is allowed in `sdk/`.
-- `telemetry/`, `gateway/` — `TelemetrySink` and the Java-friendly `GatewayCallback`/
-  `CompletionCallback`; host-supplied and always called inside a try/catch.
+- `telemetry/`, `gateway/` — `TelemetrySink` (`None` by default) and the Java-friendly
+  `GatewayCallback`/`CompletionCallback`; host-supplied and always called inside a try/catch.
+- `environment/` — `SdkEnvironment` (built via `SdkEnvironment.Builder`, `Default` when every field
+  is left at its default) bundles `logger`, `telemetry`, `dispatchers`, `clock` and `idGenerator`
+  into the one instance every feature's config takes (e.g. `OtpSdkConfig.Builder.environment(...)`),
+  instead of each feature config growing its own copies of these builder methods.
 
 Package layout rules — entry point at the package root, named sub-packages, `internal/` for
 implementation, no `utils/misc/helpers` — live in AGENTS.md "Package rules".

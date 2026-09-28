@@ -1,9 +1,8 @@
 package io.github.thanhng224.sdkbase.otp.config
 
+import io.github.thanhng224.sdkbase.core.environment.SdkEnvironment
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
-import io.github.thanhng224.sdkbase.core.logging.SdkLogger
 import io.github.thanhng224.sdkbase.core.result.SdkResult
-import io.github.thanhng224.sdkbase.core.telemetry.TelemetrySink
 import io.github.thanhng224.sdkbase.otp.gateway.OtpCallbackGateway
 import io.github.thanhng224.sdkbase.otp.gateway.OtpGateway
 import io.github.thanhng224.sdkbase.otp.gateway.asGateway
@@ -19,8 +18,7 @@ public class OtpSdkConfig private constructor(
     public val destination: String,
     public val gateway: OtpGateway,
     public val maxAttempts: Int,
-    public val logger: SdkLogger,
-    public val telemetry: TelemetrySink?,
+    public val environment: SdkEnvironment,
     public val gatewayTimeoutSeconds: Int,
 ) {
     public class Builder(
@@ -36,15 +34,12 @@ public class OtpSdkConfig private constructor(
             this(destination, gateway.asGateway())
 
         private var maxAttempts: Int = DEFAULT_MAX_ATTEMPTS
-        private var logger: SdkLogger = SdkLogger.NoOp
-        private var telemetry: TelemetrySink? = null
+        private var environment: SdkEnvironment = SdkEnvironment.Default
         private var gatewayTimeoutSeconds: Int = DEFAULT_GATEWAY_TIMEOUT_SECONDS
 
         public fun maxAttempts(value: Int): Builder = apply { maxAttempts = value }
 
-        public fun logger(value: SdkLogger): Builder = apply { logger = value }
-
-        public fun telemetry(value: TelemetrySink?): Builder = apply { telemetry = value }
+        public fun environment(value: SdkEnvironment): Builder = apply { environment = value }
 
         public fun gatewayTimeoutSeconds(value: Int): Builder = apply { gatewayTimeoutSeconds = value }
 
@@ -67,8 +62,7 @@ public class OtpSdkConfig private constructor(
                     destination = destination,
                     gateway = gateway,
                     maxAttempts = maxAttempts,
-                    logger = logger,
-                    telemetry = telemetry,
+                    environment = environment,
                     gatewayTimeoutSeconds = gatewayTimeoutSeconds,
                 )
             )
