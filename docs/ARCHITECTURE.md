@@ -124,7 +124,18 @@ This must find nothing.
   `Redactor` (`DefaultRedactor` + `mask()`) once, before any `LogSink` sees it; a throwing sink is
   contained. `LogcatSink` is the one place `android.util.Log` is allowed in `sdk/`.
 - `telemetry/`, `gateway/` — `TelemetrySink` (`None` by default) and the Java-friendly
-  `GatewayCallback`/`CompletionCallback`; host-supplied and always called inside a try/catch.
+  `GatewayCallback`/`CompletionCallback`; host-supplied and always called inside a try/catch via
+  `TelemetrySink.emitSafely(name, attributes)` (`@SdkInternalApi`, catches `Exception`, never
+  `Error`). `gateway/` also has `awaitCallback`/`awaitCompletion` (`@SdkInternalApi`,
+  `suspendCancellableCoroutine`): the suspend side of a `GatewayCallback`/`CompletionCallback`
+  bridge — only the first terminal call resumes the coroutine, from any thread, and a callback that
+  arrives after the awaiting coroutine was cancelled is silently ignored rather than crash.
+- `config/` — `validateConfig(block)` (`@SdkInternalApi`) is the style every feature's
+  `Builder.build()` validates itself in: `block` runs against a `ConfigChecks` receiver whose
+  `ensure(condition, message)` stops validation at the first failing check (`message` is evaluated
+  only on failure, later checks never run) and becomes `Failure(SdkErrors.invalidConfig(message))`;
+  any other `Exception` out of `block` becomes `Failure(SdkErrors.unknown(cause))` instead of
+  crashing the host, and an `Error` is never caught.
 - `environment/` — `SdkEnvironment` (built via `SdkEnvironment.Builder`, `Default` when every field
   is left at its default) bundles `logger`, `telemetry`, `dispatchers`, `clock` and `idGenerator`
   into the one instance every feature's config takes (e.g. `OtpSdkConfig.Builder.environment(...)`),

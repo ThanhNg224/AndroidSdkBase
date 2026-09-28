@@ -55,6 +55,14 @@ public abstract interface class io/github/thanhng224/sdkbase/core/concurrency/Di
 	public abstract fun getMain ()Lkotlinx/coroutines/CoroutineDispatcher;
 }
 
+public final class io/github/thanhng224/sdkbase/core/config/ConfigChecks {
+	public final fun ensure (ZLkotlin/jvm/functions/Function0;)V
+}
+
+public final class io/github/thanhng224/sdkbase/core/config/ValidateConfigKt {
+	public static final fun validateConfig (Lkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+}
+
 public final class io/github/thanhng224/sdkbase/core/environment/SdkEnvironment {
 	public static final field Companion Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment$Companion;
 	public final fun getClock ()Lio/github/thanhng224/sdkbase/core/time/Clock;
@@ -139,6 +147,11 @@ public final class io/github/thanhng224/sdkbase/core/error/SdkErrors {
 	public final fun timeout (Ljava/lang/String;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
 	public final fun unknown (Ljava/lang/Throwable;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
 	public static synthetic fun unknown$default (Lio/github/thanhng224/sdkbase/core/error/SdkErrors;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+}
+
+public final class io/github/thanhng224/sdkbase/core/gateway/AwaitCallbackKt {
+	public static final fun awaitCallback (Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun awaitCompletion (Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public abstract interface class io/github/thanhng224/sdkbase/core/gateway/CompletionCallback {
@@ -321,6 +334,11 @@ public final class io/github/thanhng224/sdkbase/core/session/StateStore {
 public abstract interface class io/github/thanhng224/sdkbase/core/session/StateStore$Mutation {
 	public abstract fun getCurrent ()Ljava/lang/Object;
 	public abstract fun update (Lkotlin/jvm/functions/Function1;)V
+}
+
+public final class io/github/thanhng224/sdkbase/core/telemetry/EmitSafelyKt {
+	public static final fun emitSafely (Lio/github/thanhng224/sdkbase/core/telemetry/TelemetrySink;Ljava/lang/String;Ljava/util/Map;)V
+	public static synthetic fun emitSafely$default (Lio/github/thanhng224/sdkbase/core/telemetry/TelemetrySink;Ljava/lang/String;Ljava/util/Map;ILjava/lang/Object;)V
 }
 
 public abstract interface class io/github/thanhng224/sdkbase/core/telemetry/TelemetrySink {
