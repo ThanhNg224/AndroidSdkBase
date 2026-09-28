@@ -11,8 +11,13 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
+import java.util.concurrent.atomic.AtomicReference
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.launch
@@ -164,6 +169,104 @@ class SessionScopeTest {
         while (sink.records.isEmpty() && System.currentTimeMillis() < deadline) Thread.sleep(10)
 
         assertTrue(sink.messages().any { it.contains("uncaught failure in session") })
+    }
+
+    @Test
+    fun closeDuringIfOpenReturnsSessionClosedAndCancelsBlock() {
+        val session = scope()
+        val started = CountDownLatch(1)
+        val blockCancelled = AtomicBoolean(false)
+        val ranAfterGate = AtomicBoolean(false)
+        val resultRef = AtomicReference<SdkResult<String>>()
+        val done = CountDownLatch(1)
+
+        // ifOpen is suspend, so it needs its own caller coroutine, independent of the session's
+        // own coroutineScope - a plain background thread running runBlocking gives one.
+        Thread {
+            runBlocking {
+                val result = session.ifOpen {
+                    started.countDown()
+                    try {
+                        awaitCancellation()
+                    } finally {
+                        blockCancelled.set(true)
+                    }
+                    @Suppress("UNREACHABLE_CODE")
+                    ranAfterGate.set(true)
+                    @Suppress("UNREACHABLE_CODE")
+                    SdkResult.Success("ok")
+                }
+                resultRef.set(result)
+                done.countDown()
+            }
+        }.start()
+
+        assertTrue(started.await(2, TimeUnit.SECONDS))
+        session.close()
+
+        assertTrue(done.await(2, TimeUnit.SECONDS))
+        val failure = resultRef.get() as SdkResult.Failure
+        assertEquals(SdkErrors.SESSION_CLOSED, failure.error.code)
+        assertTrue(blockCancelled.get())
+        assertFalse(ranAfterGate.get())
+    }
+
+    @Test
+    fun callerCancellationPropagatesAndCancelsBlock() {
+        val session = scope()
+        val started = CountDownLatch(1)
+        val blockCancelled = CountDownLatch(1)
+        val callerSawCancellation = AtomicBoolean(false)
+        val callerJob = Job()
+        val callerScope = CoroutineScope(callerJob + defaultDispatcher)
+
+        callerScope.launch {
+            try {
+                session.ifOpen {
+                    started.countDown()
+                    try {
+                        awaitCancellation()
+                    } finally {
+                        blockCancelled.countDown()
+                    }
+                    @Suppress("UNREACHABLE_CODE")
+                    SdkResult.Success("ok")
+                }
+            } catch (e: CancellationException) {
+                callerSawCancellation.set(true)
+            }
+        }
+
+        assertTrue(started.await(2, TimeUnit.SECONDS))
+        callerJob.cancel()
+
+        assertTrue(blockCancelled.await(2, TimeUnit.SECONDS))
+        Thread.sleep(100)
+        assertTrue(callerSawCancellation.get())
+
+        // The session itself was never closed - a later ifOpen still runs.
+        val result = runBlocking { session.ifOpen { SdkResult.Success("still-open") } }
+        assertEquals(SdkResult.Success("still-open"), result)
+    }
+
+    @Test
+    fun blockThrowingIsReturnedAsUnknown() {
+        val sink = RecordingLogSink()
+        val session = scope(sink)
+        val boom = IllegalStateException("boom")
+
+        val result = runBlocking { session.ifOpen<String> { throw boom } }
+
+        val failure = result as SdkResult.Failure
+        assertEquals(SdkErrors.UNKNOWN, failure.error.code)
+        // Not `assertEquals(boom, failure.error.cause)`: crossing the `async`/`await()` boundary
+        // makes kotlinx-coroutines' debug-mode stack-trace recovery clone the exception (same type
+        // and message, a new instance) rather than hand back the identical object - the same reason
+        // LaunchCallbackTest never awaits across a coroutine boundary for its own equivalent check.
+        val cause = failure.error.cause
+        assertTrue(cause is IllegalStateException)
+        assertEquals("boom", cause?.message)
+        assertTrue(sink.messages().any { it.contains("session operation failed") })
     }
 
     @Test

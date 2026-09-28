@@ -9,9 +9,13 @@ import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import io.github.thanhng224.sdkbase.core.logging.TaggedLogger
 import io.github.thanhng224.sdkbase.core.result.SdkResult
 import java.util.concurrent.atomic.AtomicBoolean
+import kotlin.coroutines.coroutineContext
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.job
@@ -34,7 +38,7 @@ import kotlinx.coroutines.launch
 @SdkInternalApi
 public class SessionScope(
     public val dispatchers: DispatcherProvider,
-    logger: TaggedLogger,
+    private val logger: TaggedLogger,
 ) {
 
     private val closed = AtomicBoolean(false)
@@ -61,9 +65,41 @@ public class SessionScope(
         coroutineScope.launch(block = block)
     }
 
-    /** [block] while the session is open; `Failure(SdkErrors.sessionClosed())` once [isClosed]. */
-    public suspend fun <T> ifOpen(block: suspend () -> SdkResult<T>): SdkResult<T> =
-        if (isClosed) SdkResult.Failure(SdkErrors.sessionClosed()) else block()
+    /**
+     * Runs [block] as a child of the session rather than of the caller: `Failure(sessionClosed())`
+     * without running [block] once already [isClosed]; otherwise [block] runs on
+     * [DispatcherProvider.default] via `coroutineScope.async`, so a [close] that lands while it is
+     * still running cancels it too — closing the race a plain "check, then call" would leave open
+     * — and this suspend call itself returns `Failure(SdkErrors.sessionClosed())` rather than
+     * whatever [block] was doing.
+     *
+     * The caller's own cancellation is distinguished from the session's: if the calling coroutine
+     * is no longer active when [block] is interrupted, that is the caller being cancelled, not the
+     * session closing — [block] is cancelled and the [CancellationException] is rethrown so it
+     * propagates normally, instead of being reported as [SdkErrors.sessionClosed].
+     *
+     * A non-cancellation [Exception] from [block] never reaches the caller: it is logged and turned
+     * into `Failure(SdkErrors.unknown(cause))`, the same containment rule
+     * [io.github.thanhng224.sdkbase.core.call.launchCallback] follows for its own `block`. An
+     * [Error] is never caught.
+     */
+    public suspend fun <T> ifOpen(block: suspend () -> SdkResult<T>): SdkResult<T> {
+        if (isClosed) return SdkResult.Failure(SdkErrors.sessionClosed())
+
+        val deferred = coroutineScope.async { block() }
+        return try {
+            deferred.await()
+        } catch (e: CancellationException) {
+            if (coroutineContext[Job]?.isActive == false) {
+                deferred.cancel()
+                throw e
+            }
+            SdkResult.Failure(SdkErrors.sessionClosed())
+        } catch (e: Exception) {
+            logger.e(e) { "session operation failed" }
+            SdkResult.Failure(SdkErrors.unknown(cause = e))
+        }
+    }
 
     /**
      * [block]'s Java-callable twin: delivers to [callback] on [DispatcherProvider.main] via
