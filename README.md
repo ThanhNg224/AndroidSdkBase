@@ -61,13 +61,23 @@ AGENTS.md "Package rules" for the layout conventions inside each module.
 
 ## Add a feature
 
-1. Create `sdk/features/<name>` applying `sdkbase.android.library`, `sdkbase.abi`, and
-   `sdkbase.publishing`. Put the entry point at the package root, other public types in named
-   sub-packages, and engine code under `internal/` — see AGENTS.md "Package rules".
-2. Register it in both lists in `gradle/module-topology.gradle.kts` — `zones` and, if it ships,
-   `publishedArtifacts`. It may depend on `:sdk:core` only; if it needs another feature, the flow
-   that joins them is a `composition` module.
-3. Run `./gradlew :sdk:features:<name>:apiDump` and commit the baseline with the code.
+```bash
+./scripts/new-feature.sh face-match
+```
+
+Scaffolds `sdk/features/<name>` (entry point, config builder, gateway, business-error catalog,
+one test), registers it in both `settings.gradle.kts` and `gradle/module-topology.gradle.kts`, and
+records its initial ABI baseline — the module is green from the first commit. The name must be
+lowercase, dash-case (e.g. `face-match`), not already used, and not contain a `ui` segment (that
+naming is reserved for `<feature>-ui-<toolkit>` modules); it refuses with exit code 2 and leaves
+the tree untouched otherwise. Then:
+
+1. Implement the gateway with the calls this feature needs, and pick an unused 3xxx block in its
+   `*Errors.kt` for its business errors — see AGENTS.md "Package rules" for the layout conventions
+   (entry point at the package root, other public types in named sub-packages, engine code under
+   `internal/`) and `sdk/features/otp` as a worked example.
+2. Wire the gateway into `*Sdk.kt`, replacing its stub.
+3. Run `./gradlew :sdk:features:<name>:apiDump` again and commit the baseline diff with the code.
 
 ## Remove the example
 

@@ -232,6 +232,61 @@ run_case r8-canary-minify-disabled \
   "edit verification/consumer/app/build.gradle.kts 'isMinifyEnabled = true' 'isMinifyEnabled = false'" \
   "$PUB" "R8 mapping file is missing"
 
+# --- Scaffold (scripts/new-feature.sh) self-test ------------------------------------------------
+# Positive checks: the scaffold script and the gate it hands off to must SUCCEED — the opposite of
+# every case above, whose gate must FAIL on a real violation. Written by hand rather than through
+# run_case, which asserts the gate fails.
+
+if [[ "scaffold-new-feature-is-green" == "$FILTER"* ]]; then
+  name=scaffold-new-feature-is-green
+  log="$LOGS/$name.log"
+  sync_tree
+  # sync_tree excludes build/ and .gradle/, so a face-match left behind by an earlier run of this
+  # same case keeps its (now stale) build/ dir — rsync's --delete cannot remove a directory it is
+  # not allowed to empty — and a stale configuration-cache entry that assumes the convention
+  # plugin's generated consumer-rules.pro is still on disk. Clear both so the case is repeatable.
+  rm -rf "$WORK/sdk/features/face-match" "$WORK/.gradle/configuration-cache"
+  if ( cd "$WORK" && ./scripts/new-feature.sh face-match &&
+       ./gradlew check -Psdkbase.warningsAsErrors=true -q ) >"$log" 2>&1; then
+    echo "ok    $name"
+  else
+    echo "FAIL  $name — new-feature.sh face-match, then check, did not both succeed (see $log)"
+    failures=$((failures + 1))
+  fi
+fi
+
+if [[ "scaffold-rejects-bad-names" == "$FILTER"* ]]; then
+  name=scaffold-rejects-bad-names
+  log="$LOGS/$name.log"
+  sync_tree
+  ok=true
+  # Face_Match: not lowercase/dash-case. otp-ui-x: a "ui" segment, reserved for <feature>-ui-<toolkit>.
+  # otp: sdk/features/otp already exists. Each command sits in an `if`, not bare, so a refusal's
+  # non-zero exit (the expected outcome) does not trip this script's own `set -e`.
+  for bad in Face_Match otp-ui-x otp; do
+    if ( cd "$WORK" && ./scripts/new-feature.sh "$bad" ) >>"$log" 2>&1; then
+      echo "new-feature.sh '$bad' unexpectedly succeeded" >>"$log"
+      ok=false
+    else
+      status=$?
+      if [ "$status" -ne 2 ]; then
+        echo "new-feature.sh '$bad' exited $status, expected 2" >>"$log"
+        ok=false
+      fi
+    fi
+  done
+  if [ -n "$(cd "$WORK" && git status --porcelain -- settings.gradle.kts gradle/module-topology.gradle.kts)" ]; then
+    echo "settings.gradle.kts or module-topology.gradle.kts changed despite every name being refused" >>"$log"
+    ok=false
+  fi
+  if $ok; then
+    echo "ok    $name"
+  else
+    echo "FAIL  $name — see $log"
+    failures=$((failures + 1))
+  fi
+fi
+
 # --- Cases appended by later tasks go above this line ------------------------------------------
 
 if [ "$failures" -gt 0 ]; then
