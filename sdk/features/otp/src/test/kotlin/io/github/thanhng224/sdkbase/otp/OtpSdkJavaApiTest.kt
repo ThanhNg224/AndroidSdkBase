@@ -1,12 +1,15 @@
 package io.github.thanhng224.sdkbase.otp
 
 import io.github.thanhng224.sdkbase.core.call.ResultCallback
-import io.github.thanhng224.sdkbase.core.call.launchCallback
 import io.github.thanhng224.sdkbase.core.environment.SdkEnvironment
 import io.github.thanhng224.sdkbase.core.error.SdkError
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
+import io.github.thanhng224.sdkbase.core.logging.LogLevel
+import io.github.thanhng224.sdkbase.core.logging.SdkLogger
 import io.github.thanhng224.sdkbase.core.result.SdkResult
 import io.github.thanhng224.sdkbase.core.session.StateListener
+import io.github.thanhng224.sdkbase.core.telemetry.TelemetrySink
+import io.github.thanhng224.sdkbase.core.testing.RecordingLogSink
 import io.github.thanhng224.sdkbase.core.testing.TestDispatcherProvider
 import io.github.thanhng224.sdkbase.otp.config.OtpSdkConfig
 import io.github.thanhng224.sdkbase.otp.gateway.OtpChallenge
@@ -17,7 +20,6 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.ExecutorService
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
 import kotlinx.coroutines.asCoroutineDispatcher
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -105,33 +107,45 @@ class OtpSdkJavaApiTest {
 
     @Test
     fun `cancelBeforeDeliveryClosesTheSession`() {
-        val callback = RecordingCallback<OtpSession>()
-        val gateway = FakeGateway()
-        val config = configOf(gateway)
-
-        // Mirrors OtpSdk.start(config, callback)'s own wiring exactly (`onUndelivered = { it.close() }`),
-        // but with a local reference to the constructed session: OtpSession exposes nothing that
-        // would let a black-box caller observe its own closing, so proving "not leaked" needs a
-        // handle a purely black-box call to the public overload could never give us.
-        val sessionRef = AtomicReference<OtpSession>()
-        val startedSignal = CountDownLatch(1)
+        // Fully black-box: calls only the public OtpSdk.start(config, callback) overload. Proving
+        // the undelivered session got closed (not leaked) needs a signal OtpSession itself does not
+        // expose, so OtpSdkRuntime.close() logs a diagnostic DEBUG record - a legitimate log line,
+        // not a test-only hook - which a RecordingLogSink here can observe from the outside.
+        //
+        // The hang point is the environment's telemetry sink, not the gateway: OtpEngine wraps every
+        // gateway call in safeCall's withTimeoutOrNull, whose own completion bookkeeping resumes
+        // through the coroutine's (by-then-cancelled) Job and throws CancellationException even
+        // though the gateway call itself already produced a value - so cancelling while genuinely
+        // inside that call loses the session outright (nothing is ever built to close), rather than
+        // reproducing the "produced but undelivered" race this test targets. Telemetry is emitted
+        // after the engine has already finished (no gateway call, no withTimeoutOrNull in flight), so
+        // hanging there - still a blocking, non-suspending wait, per LaunchCallbackTest - lets the
+        // session actually get constructed before cancel() is observed, exactly like the race
+        // LaunchCallbackTest's `undeliveredSuccessIsReleased` proves for launchCallback in isolation.
+        val sink = RecordingLogSink()
+        val logger = SdkLogger.Builder().minLevel(LogLevel.VERBOSE).sink(sink).build()
+        val started = CountDownLatch(1)
         val proceed = CountDownLatch(1)
-
-        val cancellable = launchCallback(
-            dispatchers = dispatchers,
-            callback = callback,
-            onUndelivered = { it.close() },
-        ) {
-            val result = OtpSdk.start(config) as SdkResult.Success
-            sessionRef.set(result.value)
-            startedSignal.countDown()
-            // A blocking wait, not a suspension - see LaunchCallbackTest for why this is what
-            // reliably lets cancel() win the claim race against a block that has already finished.
+        val telemetry = TelemetrySink { _, _ ->
+            started.countDown()
             proceed.await(2, TimeUnit.SECONDS)
-            result
         }
+        val config = (
+            OtpSdkConfig.Builder("0900000000", FakeGateway())
+                .environment(
+                    SdkEnvironment.Builder()
+                        .dispatchers(dispatchers)
+                        .logger(logger)
+                        .telemetry(telemetry)
+                        .build(),
+                )
+                .build() as SdkResult.Success
+            ).value
+        val callback = RecordingCallback<OtpSession>()
 
-        assertTrue(startedSignal.await(2, TimeUnit.SECONDS))
+        val cancellable = OtpSdk.start(config, callback)
+
+        assertTrue(started.await(2, TimeUnit.SECONDS))
         cancellable.cancel()
         proceed.countDown()
 
@@ -139,12 +153,15 @@ class OtpSdkJavaApiTest {
         assertTrue(callback.successes.isEmpty())
         assertTrue(callback.failures.isEmpty())
 
-        // The session was constructed but never delivered: onUndelivered must have closed it,
-        // cancelling its own scope — so a further Java-callable call on it never fires either.
-        val session = sessionRef.get()
-        val submitCallback = RecordingCallback<Unit>()
-        session.submit("123456", submitCallback)
-        assertFalse(submitCallback.latch.await(300, TimeUnit.MILLISECONDS))
+        val deadline = System.currentTimeMillis() + 2_000
+        while (sink.messages().none { it.contains("session closed") } && System.currentTimeMillis() < deadline) {
+            Thread.sleep(10)
+        }
+        assertTrue(
+            "expected a \"session closed\" log record - the session OtpSdk.start built was never " +
+                "delivered, so onUndelivered must have closed it instead of leaking it",
+            sink.messages().any { it.contains("session closed") },
+        )
     }
 
     @Test

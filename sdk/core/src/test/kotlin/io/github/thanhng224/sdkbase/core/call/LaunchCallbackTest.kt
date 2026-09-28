@@ -257,4 +257,81 @@ class LaunchCallbackTest {
 
         assertFalse(callback.latch.await(200, TimeUnit.MILLISECONDS))
     }
+
+    @Test
+    fun `cancelOnMainAfterBlockFinishedNeverCallsBack`() {
+        val callback = RecordingCallback<String>()
+        val undelivered = mutableListOf<String>()
+        val mainBusy = CountDownLatch(1)
+        val blockReady = CountDownLatch(1)
+        val releaseBlock = CountDownLatch(1)
+
+        // Occupies the only main-executor thread, so neither the cancel task queued below nor a
+        // delivery hop that queues onto main later can run until it is released.
+        mainExecutor.execute { mainBusy.await(5, TimeUnit.SECONDS) }
+
+        val cancellable = launchCallback(dispatchers, callback, onUndelivered = { undelivered += it }) {
+            blockReady.countDown()
+            // A blocking wait, not a suspension: block has not returned yet, so nothing has queued
+            // a delivery hop onto main yet either - that only happens once this returns below.
+            releaseBlock.await(5, TimeUnit.SECONDS)
+            SdkResult.Success("ok")
+        }
+
+        assertTrue(blockReady.await(2, TimeUnit.SECONDS))
+
+        // Queued onto the SAME single-thread main executor while it is still busy: this is
+        // therefore guaranteed to sit ahead, in the queue, of any delivery hop - which cannot even
+        // be queued until `block` (still held open above) returns - reproducing "the host calls
+        // cancel() on main before the queued delivery runs".
+        val cancelRan = CountDownLatch(1)
+        mainExecutor.execute {
+            cancellable.cancel()
+            cancelRan.countDown()
+        }
+
+        releaseBlock.countDown()
+        mainBusy.countDown()
+        assertTrue(cancelRan.await(2, TimeUnit.SECONDS))
+
+        assertFalse(callback.latch.await(300, TimeUnit.MILLISECONDS))
+        assertTrue(callback.successes.isEmpty())
+        assertTrue(callback.failures.isEmpty())
+        assertEquals(listOf("ok"), undelivered)
+    }
+
+    @Test
+    fun `parentCancelledAfterBlockFinishedReleasesValue`() {
+        val callback = RecordingCallback<String>()
+        val undelivered = mutableListOf<String>()
+        val parent = Job()
+        val mainBusy = CountDownLatch(1)
+        val blockReady = CountDownLatch(1)
+        val releaseBlock = CountDownLatch(1)
+
+        mainExecutor.execute { mainBusy.await(5, TimeUnit.SECONDS) }
+
+        launchCallback(dispatchers, callback, parent = parent, onUndelivered = { undelivered += it }) {
+            blockReady.countDown()
+            releaseBlock.await(5, TimeUnit.SECONDS)
+            SdkResult.Success("ok")
+        }
+
+        assertTrue(blockReady.await(2, TimeUnit.SECONDS))
+
+        val cancelRan = CountDownLatch(1)
+        mainExecutor.execute {
+            parent.cancel()
+            cancelRan.countDown()
+        }
+
+        releaseBlock.countDown()
+        mainBusy.countDown()
+        assertTrue(cancelRan.await(2, TimeUnit.SECONDS))
+
+        assertFalse(callback.latch.await(300, TimeUnit.MILLISECONDS))
+        assertTrue(callback.successes.isEmpty())
+        assertTrue(callback.failures.isEmpty())
+        assertEquals(listOf("ok"), undelivered)
+    }
 }

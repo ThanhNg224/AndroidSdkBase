@@ -59,6 +59,11 @@ internal class OtpSdkRuntime(
     override fun close() {
         scope.cancel()
         engine.close()
+        // A legitimate diagnostic, not a workaround: lets a host (or a test) confirm a session
+        // actually got released instead of leaked, e.g. when `OtpSdk.start(config, callback)`
+        // releases one it could not deliver. close() has no other idempotency guard, so like
+        // scope.cancel()/engine.close() above, calling close() again logs again rather than once.
+        log.d { "session closed" }
     }
 
     override fun submit(code: String, callback: ResultCallback<Unit>): Cancellable =
