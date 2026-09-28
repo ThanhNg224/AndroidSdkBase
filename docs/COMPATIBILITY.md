@@ -51,3 +51,12 @@ Published modules set `-jvm-default=enable`, keeping the `DefaultImpls` bridge J
 against. Every public entry point is Java-usable: `OtpSdkConfig` is a builder (Java cannot use a
 Kotlin default argument), and `OtpCallbackGateway`/`CompletionCallback` give a callback-based host a
 form of every gateway that would otherwise require a `suspend fun`.
+
+The same is true in the other direction, for a `suspend` entry point the SDK calls the host *back*
+through: `OtpSdk.start(config, callback: ResultCallback<OtpSession>): Cancellable` and
+`OtpSession.submit`/`resend`/`observeState` each have a `Continuation`-free, callback-based twin,
+built on core's `launchCallback`/`observe`. Every one of these is `@JvmStatic` where it sits on an
+`object`, delivers on the environment's main dispatcher, and returns a `Cancellable` the host can
+call from any thread. `JavaConsumer.startFromJava` in `verification/consumer` is the proof: it never
+names `Continuation` anywhere, including inside the callbacks it passes back to `submit`/
+`observeState`.

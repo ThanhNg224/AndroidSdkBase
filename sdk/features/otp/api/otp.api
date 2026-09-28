@@ -13,7 +13,8 @@ public final class io/github/thanhng224/sdkbase/otp/OtpErrors {
 
 public final class io/github/thanhng224/sdkbase/otp/OtpSdk {
 	public static final field INSTANCE Lio/github/thanhng224/sdkbase/otp/OtpSdk;
-	public final fun start (Lio/github/thanhng224/sdkbase/otp/config/OtpSdkConfig;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun start (Lio/github/thanhng224/sdkbase/otp/config/OtpSdkConfig;Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public static final fun start (Lio/github/thanhng224/sdkbase/otp/config/OtpSdkConfig;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class io/github/thanhng224/sdkbase/otp/config/OtpSdkConfig {
@@ -110,7 +111,10 @@ public abstract interface class io/github/thanhng224/sdkbase/otp/session/OtpSess
 	public abstract fun close ()V
 	public abstract fun dispatch (Lio/github/thanhng224/sdkbase/otp/session/OtpCommand;)V
 	public abstract fun getState ()Lkotlinx/coroutines/flow/StateFlow;
+	public abstract fun observeState (Lio/github/thanhng224/sdkbase/core/session/StateListener;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public abstract fun resend (Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
 	public abstract fun resend (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun submit (Ljava/lang/String;Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
 	public abstract fun submit (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 

@@ -36,7 +36,7 @@ own feature. Published artifacts: `core`, `otp`, `otp-ui-compose`, `bom`.
 - * The host owns networking: features declare a gateway interface; no HTTP client or DI framework in a core/feature/composition classpath, transitively (`checkDependencyPolicy`). No `GlobalScope` in `sdk/`. Call host code only through `safeCall` — it maps exceptions to `SdkError` and applies its own timeout.
 - Nothing escapes to the host as an exception: return `SdkResult`; map host exceptions to `SdkError`. A host-supplied `LogSink`/`TelemetrySink` is always contained — a throw from one never reaches the caller.
 - Error codes are append-only: 1xxx common, 2xxx system, 3xxx feature business, 4xxx lifecycle.
-- Java hosts must be able to use every entry point: builders instead of default arguments, callback interfaces next to suspend ones.
+- Java hosts must be able to use every entry point: builders instead of default arguments, callback interfaces next to suspend ones. For an outbound call (the SDK calling the host back), build the callback-based twin on core's `launchCallback`/`observe` (`core/call/`, `core/session/`) rather than hand-rolling threading/cancellation — see `OtpSdk.start(config, callback)`.
 - Log only through `SdkLogger`/`TaggedLogger` — never `android.util.Log` in `sdk/` except inside `LogcatSink`. Every record is redacted before a sink sees it; mask an identifier yourself with `DefaultRedactor.mask()`.
 - Unit tests for business logic (state machines, engines, config validation). No tests for Compose layouts.
 

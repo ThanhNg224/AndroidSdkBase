@@ -30,6 +30,12 @@ kotlin {
         allWarningsAsErrors.set(
             providers.gradleProperty("sdkbase.warningsAsErrors").map(String::toBoolean).getOrElse(false)
         )
+
+        // Every SDK module (core, a feature, a composition) may use `@SdkInternalApi` declarations
+        // without an explicit `@OptIn` — it is a helper for `sdk/` itself, not for a host. Neither
+        // `apps/demo` nor `verification/consumer` applies this convention, so a host reaching for
+        // one gets a normal opt-in compile error.
+        optIn.add("io.github.thanhng224.sdkbase.core.annotation.SdkInternalApi")
     }
 }
 

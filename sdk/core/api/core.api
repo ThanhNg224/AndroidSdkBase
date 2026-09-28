@@ -1,3 +1,20 @@
+public abstract interface annotation class io/github/thanhng224/sdkbase/core/annotation/SdkInternalApi : java/lang/annotation/Annotation {
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/core/call/Cancellable {
+	public abstract fun cancel ()V
+}
+
+public final class io/github/thanhng224/sdkbase/core/call/LaunchCallbackKt {
+	public static final fun launchCallback (Lio/github/thanhng224/sdkbase/core/concurrency/DispatcherProvider;Lio/github/thanhng224/sdkbase/core/call/ResultCallback;Lkotlinx/coroutines/Job;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public static synthetic fun launchCallback$default (Lio/github/thanhng224/sdkbase/core/concurrency/DispatcherProvider;Lio/github/thanhng224/sdkbase/core/call/ResultCallback;Lkotlinx/coroutines/Job;Lkotlin/jvm/functions/Function1;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/core/call/ResultCallback {
+	public abstract fun onFailure (Lio/github/thanhng224/sdkbase/core/error/SdkError;)V
+	public abstract fun onSuccess (Ljava/lang/Object;)V
+}
+
 public final class io/github/thanhng224/sdkbase/core/call/RetryPolicy {
 	public static final field Companion Lio/github/thanhng224/sdkbase/core/call/RetryPolicy$Companion;
 	public fun <init> ()V
@@ -253,6 +270,15 @@ public final class io/github/thanhng224/sdkbase/core/result/SdkResultKt {
 	public static final fun map (Lio/github/thanhng224/sdkbase/core/result/SdkResult;Lkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
 	public static final fun onFailure (Lio/github/thanhng224/sdkbase/core/result/SdkResult;Lkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
 	public static final fun onSuccess (Lio/github/thanhng224/sdkbase/core/result/SdkResult;Lkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+}
+
+public final class io/github/thanhng224/sdkbase/core/session/ObserveStateKt {
+	public static final fun observe (Lkotlinx/coroutines/flow/StateFlow;Lio/github/thanhng224/sdkbase/core/concurrency/DispatcherProvider;Lio/github/thanhng224/sdkbase/core/session/StateListener;Lkotlinx/coroutines/Job;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public static synthetic fun observe$default (Lkotlinx/coroutines/flow/StateFlow;Lio/github/thanhng224/sdkbase/core/concurrency/DispatcherProvider;Lio/github/thanhng224/sdkbase/core/session/StateListener;Lkotlinx/coroutines/Job;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/core/session/StateListener {
+	public abstract fun onState (Ljava/lang/Object;)V
 }
 
 public abstract interface class io/github/thanhng224/sdkbase/core/telemetry/TelemetrySink {

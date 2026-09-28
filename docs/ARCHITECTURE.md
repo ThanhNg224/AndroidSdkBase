@@ -91,7 +91,21 @@ This must find nothing.
 - `call/` — `safeCall(operation, timeoutMillis, mapper, block)` contains host code via its own
   `withTimeoutOrNull` (an enclosing cancellation still propagates). `RetryPolicy` retries with
   capped exponential backoff, stopping on success, `maxAttempts`, or when `retryOn` (default
-  `RetryPolicy.TransientErrors`) rejects.
+  `RetryPolicy.TransientErrors`) rejects. `launchCallback(dispatchers, callback, parent, onUndelivered,
+  block)` is the one primitive every Java-callable outbound entry point (`OtpSdk.start`,
+  `OtpSession.submit`/`resend`) is built from: it runs `block` on `dispatchers.default`, delivers to
+  a `ResultCallback` on `dispatchers.main`, and — via one `AtomicBoolean` deciding cancel-vs-deliver
+  — guarantees the callback never fires once cancelled and, if `block` still succeeds after that,
+  hands the value to `onUndelivered` instead of leaking it (e.g. `OtpSdk.start`'s `onUndelivered`
+  closes the session). It is `@SdkInternalApi` (see `annotation/`), so only `sdk/` modules call it
+  directly; a host only ever sees the public callback entry points built on it.
+- `session/` — `StateFlow<S>.observe(dispatchers, listener, parent)` is `launchCallback`'s sibling
+  for a `StateFlow`: delivers the current value then every change to a `StateListener` on
+  `dispatchers.main`, contained the same way, until cancelled.
+- `annotation/` — `@SdkInternalApi` (`@RequiresOptIn`) marks a declaration (`launchCallback`,
+  `observe`) meant only for SDK modules; `sdkbase.android.library` opts every SDK module in via
+  `compilerOptions.optIn`, while `apps/demo` and `verification/consumer` are not opted in, so a host
+  reaching for one gets a normal opt-in compile error.
 - `time/` — `Clock`/`IdGenerator`: injected "now"/id sources so backoff and log timestamps are
   testable.
 - `logging/` — `SdkLogger` (built via `SdkLogger.Builder`, `NoOp` by default) hands out a

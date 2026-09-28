@@ -1,16 +1,22 @@
 package io.github.thanhng224.consumer;
 
+import io.github.thanhng224.sdkbase.core.call.Cancellable;
+import io.github.thanhng224.sdkbase.core.call.ResultCallback;
 import io.github.thanhng224.sdkbase.core.environment.SdkEnvironment;
+import io.github.thanhng224.sdkbase.core.error.SdkError;
 import io.github.thanhng224.sdkbase.core.gateway.CompletionCallback;
 import io.github.thanhng224.sdkbase.core.gateway.GatewayCallback;
 import io.github.thanhng224.sdkbase.core.logging.LogLevel;
 import io.github.thanhng224.sdkbase.core.logging.SdkLogger;
 import io.github.thanhng224.sdkbase.core.result.SdkResult;
+import io.github.thanhng224.sdkbase.otp.OtpSdk;
 import io.github.thanhng224.sdkbase.otp.config.OtpSdkConfig;
 import io.github.thanhng224.sdkbase.otp.gateway.OtpCallbackGateway;
 import io.github.thanhng224.sdkbase.otp.gateway.OtpChallenge;
 import io.github.thanhng224.sdkbase.otp.gateway.OtpGateway;
+import io.github.thanhng224.sdkbase.otp.session.OtpSession;
 
+import kotlin.Unit;
 import kotlin.coroutines.Continuation;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -107,6 +113,32 @@ public final class JavaConsumer {
         return new OtpSdkConfig.Builder("0900000000", new JavaGateway())
                 .environment(buildEnvironment())
                 .build();
+    }
+
+    /**
+     * What a Java host with no coroutine support at all can now write: no {@link Continuation}
+     * anywhere, not even to build the config, and every outbound call returns a {@link Cancellable}.
+     */
+    public static Cancellable startFromJava(OtpSdkConfig config) {
+        return OtpSdk.start(config, new ResultCallback<OtpSession>() {
+            @Override
+            public void onSuccess(OtpSession session) {
+                session.observeState(state -> { });
+                session.submit("123456", new ResultCallback<Unit>() {
+                    @Override
+                    public void onSuccess(Unit value) {
+                    }
+
+                    @Override
+                    public void onFailure(@NotNull SdkError error) {
+                    }
+                });
+            }
+
+            @Override
+            public void onFailure(@NotNull SdkError error) {
+            }
+        });
     }
 
     /**

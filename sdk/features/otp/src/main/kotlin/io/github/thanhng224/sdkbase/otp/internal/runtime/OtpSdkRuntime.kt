@@ -1,7 +1,12 @@
 package io.github.thanhng224.sdkbase.otp.internal.runtime
 
+import io.github.thanhng224.sdkbase.core.call.Cancellable
+import io.github.thanhng224.sdkbase.core.call.ResultCallback
+import io.github.thanhng224.sdkbase.core.call.launchCallback
 import io.github.thanhng224.sdkbase.core.logging.SdkLogger
 import io.github.thanhng224.sdkbase.core.result.SdkResult
+import io.github.thanhng224.sdkbase.core.session.StateListener
+import io.github.thanhng224.sdkbase.core.session.observe
 import io.github.thanhng224.sdkbase.otp.config.OtpSdkConfig
 import io.github.thanhng224.sdkbase.otp.internal.emitSafely
 import io.github.thanhng224.sdkbase.otp.internal.engine.OtpEngine
@@ -24,11 +29,17 @@ internal class OtpSdkRuntime(
 
     private val log = logger.tagged(TAG)
 
+    // Held directly (not read back off `scope`) so submit/resend/observeState can hand it to
+    // launchCallback/observe as `parent`: cancelling it in close() below cancels every pending
+    // Java-callable call this session has outstanding, not just dispatch()'s own fire-and-forget
+    // launches.
+    private val job = SupervisorJob()
+
     // dispatch() is non-suspending (a UI callback can't suspend), so it fires into this scope
     // instead. The handler matters: a SupervisorJob with none rethrows an uncaught exception to the
     // thread's default handler, which on Android kills the host process.
     private val scope = CoroutineScope(
-        SupervisorJob() + config.environment.dispatchers.default +
+        job + config.environment.dispatchers.default +
             CoroutineExceptionHandler { _, t -> log.e(t) { "dispatch failed" } },
     )
 
@@ -49,6 +60,15 @@ internal class OtpSdkRuntime(
         scope.cancel()
         engine.close()
     }
+
+    override fun submit(code: String, callback: ResultCallback<Unit>): Cancellable =
+        launchCallback(config.environment.dispatchers, callback, parent = job) { submit(code) }
+
+    override fun resend(callback: ResultCallback<Unit>): Cancellable =
+        launchCallback(config.environment.dispatchers, callback, parent = job) { resend() }
+
+    override fun observeState(listener: StateListener<OtpState>): Cancellable =
+        state.observe(config.environment.dispatchers, listener, parent = job)
 
     private companion object {
         const val TAG = "OtpSession"
