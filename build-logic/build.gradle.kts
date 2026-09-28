@@ -21,4 +21,7 @@ dependencies {
 
     // Puts the generated `LibrariesForLibs` accessor jar on the classpath so precompiled scripts can use `libs.*`.
     implementation(files(libs.javaClass.superclass.protectionDomain.codeSource.location))
+
+    // SourceRulesTest exercises findViolations() directly — plain JUnit 4, same as every SDK module.
+    testImplementation(libs.junit)
 }

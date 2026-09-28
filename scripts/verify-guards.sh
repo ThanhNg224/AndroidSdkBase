@@ -206,6 +206,34 @@ run_case abi-missing-baseline \
   "rm sdk/features/otp-ui-compose/api/otp-ui-compose.api" \
   "./gradlew :sdk:features:otp-ui-compose:apiCheck -q" "Missing ABI baseline"
 
+# --- Source rules (checkSourceRules: GlobalScope, android.util.Log, an owned CoroutineScope in a
+# feature/composition module, a public multi-property data class) -------------------------------
+run_case source-global-scope-in-feature \
+  "edit $OTP/OtpSdk.kt 'public object OtpSdk {' 'public object OtpSdk {
+
+    internal val leaked = GlobalScope'" \
+  "./gradlew :sdk:features:otp:checkSourceRules -q" "global-scope"
+run_case source-android-log-in-feature \
+  "edit $OTP/OtpSdk.kt 'import kotlinx.coroutines.CancellationException' 'import kotlinx.coroutines.CancellationException
+import android.util.Log'" \
+  "./gradlew :sdk:features:otp:checkSourceRules -q" "android-log"
+run_case source-own-coroutine-scope-in-feature \
+  "edit $OTP/OtpSdk.kt 'public object OtpSdk {' 'public object OtpSdk {
+
+    internal val extra = CoroutineScope(SupervisorJob())'" \
+  "./gradlew :sdk:features:otp:checkSourceRules -q" "own-coroutine-scope"
+# LogcatSink.kt is the one file in core where android.util.Log is allowed — a different core file
+# must still be flagged (the exception is by file name AND zone, not a blanket core exemption).
+run_case source-android-log-in-core-non-logcat-file \
+  "printf 'package io.github.thanhng224.sdkbase.core.logging\n\nimport android.util.Log\n' > $CORE/logging/RogueLog.kt" \
+  "./gradlew :sdk:core:checkSourceRules -q" "android-log"
+run_case source-public-data-class-in-core \
+  "printf 'package io.github.thanhng224.sdkbase.core.error\n\npublic data class RogueConfig(public val a: Int, public val b: Int)\n' > $CORE/error/RogueConfig.kt" \
+  "./gradlew :sdk:core:checkSourceRules -q" "public-data-class"
+run_case source-module-without-rules-task \
+  "new_module sdk/composition/rogue com.android.library && register composition :sdk:composition:rogue" \
+  "./gradlew help -q" ":sdk:composition:rogue \\[composition\\] has no checkSourceRules"
+
 # --- Kotlin floor and R8 canary (slow: each runs the whole publication gate) --------------------
 PUB='./scripts/verify-publication.sh'
 ACT=verification/consumer/app/src/main/kotlin/io/github/thanhng224/consumer/ConsumerActivity.kt

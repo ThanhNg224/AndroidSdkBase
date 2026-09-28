@@ -30,6 +30,16 @@ tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
 
+// The root project has no `check` task of its own — `./gradlew check` already reaches every
+// subproject's `check` because Gradle selects same-named tasks across the whole build. Registering
+// one here only to carry this one dependency joins that same selection, so `:build-logic:test`
+// (SourceRulesTest — the source-rules gate's own unit tests) always runs alongside it.
+tasks.register("check") {
+    group = "verification"
+    description = "Runs build-logic's own unit tests (SourceRulesTest) alongside every module's check."
+    dependsOn(gradle.includedBuild("build-logic").task(":test"))
+}
+
 // ---------------------------------------------------------------------------------------------
 // Zone guard: module boundaries are enforced here, at configuration time, not by review.
 // Rules: (1) every included module is registered; (2) dependency and constraint edges only go to
@@ -62,6 +72,9 @@ val allowedTargets: Map<String, Set<String>> = mapOf(
 
 @Suppress("UNCHECKED_CAST")
 val policedZones = (rootProject.extra["dependencyPolicedZones"] as List<String>).toSet()
+
+@Suppress("UNCHECKED_CAST")
+val sourceRuledZones = (rootProject.extra["sourceRuledZones"] as List<String>).toSet()
 
 // `otp-ui-compose` -> `otp` is the one allowed feature -> feature edge: a UI module on top of the
 // feature it renders. Two different features are wired together only in a composition module.
@@ -122,6 +135,9 @@ gradle.projectsEvaluated {
         }
         if (sourceZone in policedZones && source.tasks.findByName("checkDependencyPolicy") == null) {
             violations += "${source.path} [$sourceZone] has no checkDependencyPolicy (apply sdkbase.android.library)"
+        }
+        if (sourceZone in sourceRuledZones && source.tasks.findByName("checkSourceRules") == null) {
+            violations += "${source.path} [$sourceZone] has no checkSourceRules (apply sdkbase.android.library)"
         }
         if (published) {
             if (sourceZone != "bom" && source.tasks.findByName("apiCheck") == null) {

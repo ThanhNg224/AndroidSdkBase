@@ -6,6 +6,7 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 plugins {
     id("com.android.library")
     id("sdkbase.dependency-policy")
+    id("sdkbase.source-rules")
 }
 
 // Precompiled script plugins cannot use the generated `libs` accessor directly.

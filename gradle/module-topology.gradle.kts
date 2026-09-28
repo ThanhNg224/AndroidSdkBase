@@ -23,6 +23,10 @@ extra["zones"] = mapOf(
 // Zones whose modules must not resolve an HTTP client or DI framework (checkDependencyPolicy).
 extra["dependencyPolicedZones"] = listOf("core", "testing", "feature", "composition")
 
+// Zones whose modules run checkSourceRules (GlobalScope, android.util.Log, an owned
+// CoroutineScope in feature/composition, a public multi-property data class).
+extra["sourceRuledZones"] = listOf("core", "testing", "feature", "composition", "adapter")
+
 extra["publishedArtifacts"] = listOf(
     ":sdk:core",
     ":sdk:core-testing",

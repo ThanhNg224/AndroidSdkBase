@@ -46,6 +46,8 @@ Empty zones are deliberate: the slot and its rules exist before the first module
 5. A published module has an `apiCheck` task (applies `sdkbase.abi`) and a `localTest` publication.
 6. Every `core`/`testing`/`feature`/`composition` module (`dependencyPolicedZones`) runs
    `checkDependencyPolicy`.
+7. Every `core`/`testing`/`feature`/`composition`/`adapter` module (`sourceRuledZones`) runs
+   `checkSourceRules` (see "Source rules" below).
 
 ## The host-gateway rule
 
@@ -70,6 +72,25 @@ problem to resolve.
 the shortest path to the offender. The forbidden groups live in
 `build-logic/src/main/kotlin/sdkbase/dependencies/DependencyPolicy.kt`. A ready-made gateway on a
 specific client belongs in an `adapter` module (e.g. `:sdk:adapters:otp-okhttp`), which is exempt.
+
+## Source rules
+
+`checkSourceRules` (part of `check`) scans a module's `src/main` Kotlin sources — after stripping
+comments and string/char literals, so a mention inside a KDoc or a string is never a false positive
+— for:
+
+| Rule | Zones | Fails on |
+|---|---|---|
+| `global-scope` | every SDK zone | `GlobalScope` |
+| `android-log` | every SDK zone | `android.util.Log` (except `LogcatSink.kt` in `core`) |
+| `own-coroutine-scope` | `feature`, `composition` | `CoroutineScope(` — own coroutines through `SessionScope` instead |
+| `public-data-class` | every SDK zone | a non-`internal`/non-`private` `data class` with more than one constructor property |
+
+The pure rule engine is `findViolations(fileName, text, zone)` in
+`build-logic/src/main/kotlin/sdkbase/sources/SourceRules.kt` (unit-tested in
+`build-logic/src/test/kotlin/sdkbase/sources/SourceRulesTest.kt`, wired into the root `check`).
+Known limitation: `public-data-class` only reads a `data class` declaration's own modifier, not an
+enclosing class's — one nested inside an `internal`/`private` outer class is not detected this way.
 
 ## Headless feature, optional UI
 
