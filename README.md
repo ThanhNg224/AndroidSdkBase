@@ -65,18 +65,23 @@ AGENTS.md "Package rules" for the layout conventions inside each module.
 ./scripts/new-feature.sh face-match
 ```
 
-Scaffolds `sdk/features/<name>` (entry point, config builder, gateway, business-error catalog,
-one test), registers it in both `settings.gradle.kts` and `gradle/module-topology.gradle.kts`, and
-records its initial ABI baseline — the module is green from the first commit. The name must be
-lowercase, dash-case (e.g. `face-match`), not already used, and not contain a `ui` segment (that
-naming is reserved for `<feature>-ui-<toolkit>` modules); it refuses with exit code 2 and leaves
-the tree untouched otherwise. Then:
+Scaffolds `sdk/features/<name>` built on the core session kit — entry point, config builder
+(validated via `validateConfig`), gateway, business-error catalog, a session interface extending
+`SdkSession`, a plain state class, and a runtime on `SdkSessionBase`, plus two tests — registers it
+in both `settings.gradle.kts` and `gradle/module-topology.gradle.kts`, and records its initial ABI
+baseline — the module is green from the first commit. The name must be lowercase, dash-case (e.g.
+`face-match`), not already used, not contain a `ui` segment (that naming is reserved for
+`<feature>-ui-<toolkit>` modules), not become a Kotlin hard keyword once its dashes are joined
+(e.g. `in`), and not collide with a namespace another `sdk/` module already declares (e.g. `core`);
+it refuses with exit code 2 and leaves the tree untouched otherwise. Then:
 
 1. Implement the gateway with the calls this feature needs, and pick an unused 3xxx block in its
    `*Errors.kt` for its business errors — see AGENTS.md "Package rules" for the layout conventions
    (entry point at the package root, other public types in named sub-packages, engine code under
    `internal/`) and `sdk/features/otp` as a worked example.
-2. Wire the gateway into `*Sdk.kt`, replacing its stub.
+2. Add fields to `session/*State.kt` and operations to `session/*Session.kt`, then drive them from
+   `internal/*SdkRuntime.kt` (`scope.ifOpen`/`scope.call`/`scope.launch`) and `*Sdk.kt`'s `start()`,
+   replacing the stubs.
 3. Run `./gradlew :sdk:features:<name>:apiDump` again and commit the baseline diff with the code.
 
 ## Remove the example

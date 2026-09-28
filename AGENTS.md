@@ -14,7 +14,7 @@ own feature. Published artifacts: `core`, `otp`, `otp-ui-compose`, `bom`.
 ## Layout
 - `sdk/core` — Android library toolkit shared by every feature: `result/`, `error/`, `call/` (`safeCall`, `RetryPolicy`), `time/` (`Clock`, `IdGenerator`), `concurrency/`, `logging/` (`SdkLogger`, `TaggedLogger`), `telemetry/`, `gateway/`.
 - `sdk/core-testing` — published test kit: fakes (`FakeClock`, `SequentialIdGenerator`, `TestDispatcherProvider`), recording sinks (`RecordingLogSink`, `RecordingTelemetrySink`) and `SdkResult` assertions. Consumed via `testImplementation`; only `bom` and `app` may target it in a non-test configuration.
-- `sdk/features/<name>` — one published artifact per feature; scaffold a new one with `./scripts/new-feature.sh <name>` (registers it, generates the entry point/config/gateway/error catalog, dumps its initial ABI). Engine code lives in `internal/` and is Kotlin `internal`.
+- `sdk/features/<name>` — one published artifact per feature; scaffold a new one with `./scripts/new-feature.sh <name>` (registers it, generates the entry point/config/gateway/error catalog plus a session built on the core kit — a `SdkSession`-extending interface, a plain state class, a runtime on `SdkSessionBase` — dumps its initial ABI). Engine code lives in `internal/` and is Kotlin `internal`.
 - `sdk/features/<name>-ui-compose` — optional UI artifact. Compose never enters a non-UI module.
 - `sdk/composition/<flow>` — wires several features into one flow; the only place two features meet.
 - `sdk/adapters/<feature>-<lib>` — optional host bridge (e.g. a gateway on OkHttp); the only SDK zone allowed an HTTP client or DI framework, and nothing in the SDK depends on it.

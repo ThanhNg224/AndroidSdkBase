@@ -55,6 +55,27 @@ if [ -z "$PROJECT_NAME" ]; then
   exit 2
 fi
 
+# Dashes are dropped when segments are joined into one package name (e.g. "face-match" ->
+# "facematch"); refuse before writing anything if that joined segment cannot compile as one.
+JOINED="${NAME//-/}"
+KOTLIN_KEYWORDS="as break class continue do else false for fun if in interface is null object package return super this throw true try typealias typeof val var when while"
+for kw in $KOTLIN_KEYWORDS; do
+  if [ "$JOINED" = "$kw" ]; then
+    echo "refusing: '$NAME' becomes package segment '$JOINED', a Kotlin hard keyword" >&2
+    exit 2
+  fi
+done
+
+# <ns>.<joined> must not already be a namespace some other sdk/ module declares (e.g. "core"
+# would collide with sdk/core itself) — checked before any file is written.
+NEW_NAMESPACE="$CORE_NAMESPACE.$JOINED"
+while IFS= read -r -d '' file; do
+  if grep -qF "namespace = \"$NEW_NAMESPACE\"" "$file"; then
+    echo "refusing: '$NAME' collides with the namespace $NEW_NAMESPACE already declared in $file" >&2
+    exit 2
+  fi
+done < <(find sdk -name build.gradle.kts -print0)
+
 echo "==> Generating $DIR"
 NAME="$NAME" CORE_NAMESPACE="$CORE_NAMESPACE" PROJECT_NAME="$PROJECT_NAME" python3 - <<'EOF'
 import os
@@ -75,6 +96,9 @@ src_test = f"{module_dir}/src/test/kotlin/{pkg_path}"
 os.makedirs(src_main, exist_ok=True)
 os.makedirs(f"{src_main}/config", exist_ok=True)
 os.makedirs(f"{src_main}/gateway", exist_ok=True)
+os.makedirs(f"{src_main}/session", exist_ok=True)
+os.makedirs(f"{src_main}/internal", exist_ok=True)
+os.makedirs(src_test, exist_ok=True)
 os.makedirs(f"{src_test}/config", exist_ok=True)
 
 def write(path, content):
@@ -105,7 +129,12 @@ import {ns}.core.call.Cancellable
 import {ns}.core.call.ResultCallback
 import {ns}.core.call.launchCallback
 import {ns}.core.result.SdkResult
+import {ns}.core.session.SessionScope
+import {ns}.core.session.StateStore
 import {pkg}.config.{pascal}SdkConfig
+import {pkg}.internal.{pascal}SdkRuntime
+import {pkg}.session.{pascal}Session
+import {pkg}.session.{pascal}State
 
 /**
  * The only class a host needs to know about. It validates, wires and delegates — and nothing
@@ -114,21 +143,127 @@ import {pkg}.config.{pascal}SdkConfig
 public object {pascal}Sdk {{
 
     @JvmStatic
-    public suspend fun start(config: {pascal}SdkConfig): SdkResult<Unit> {{
-        // TODO: replace with real work — call config.gateway, build a session, wire it to
-        // config.environment's logger/telemetry. Left as a stub so the module is green from the
-        // first commit.
-        config.environment.logger.tagged("{pascal}Sdk").d {{ "start() called; feature not yet implemented" }}
-        return SdkResult.Success(Unit)
+    public suspend fun start(config: {pascal}SdkConfig): SdkResult<{pascal}Session> {{
+        val environment = config.environment
+        val sessionLogger = environment.logger.withSession(environment.idGenerator.newId())
+        // The one SessionScope the whole session lives on: every coroutine this feature ever
+        // starts runs on it — there is no other CoroutineScope anywhere in this module.
+        val scope = SessionScope(environment.dispatchers, sessionLogger.tagged("{pascal}Session"))
+        val store = StateStore({pascal}State.initial())
+        // TODO: replace with real work — call config.gateway, drive `store.withLock {{ ... }}`
+        // from its result, and `scope.close()` if starting fails. Left as a stub so the module is
+        // green from the first commit — see `:sdk:features:otp`'s OtpSdk.start for the pattern.
+        return SdkResult.Success({pascal}SdkRuntime(scope, store, config, sessionLogger))
     }}
 
     /**
      * The Java-callable twin of [start]: no `Continuation`, delivered on the config's
-     * [SdkEnvironment][{ns}.core.environment.SdkEnvironment]'s main dispatcher.
+     * [SdkEnvironment][{ns}.core.environment.SdkEnvironment]'s main dispatcher. A session that
+     * finishes starting but never gets delivered — the caller cancelled first — is closed instead
+     * of leaked.
      */
     @JvmStatic
-    public fun start(config: {pascal}SdkConfig, callback: ResultCallback<Unit>): Cancellable =
-        launchCallback(config.environment.dispatchers, callback) {{ start(config) }}
+    public fun start(config: {pascal}SdkConfig, callback: ResultCallback<{pascal}Session>): Cancellable =
+        launchCallback(
+            dispatchers = config.environment.dispatchers,
+            callback = callback,
+            onUndelivered = {{ it.close() }},
+        ) {{ start(config) }}
+}}
+''')
+
+write(f"{src_main}/session/{pascal}Session.kt", f'''package {pkg}.session
+
+import {ns}.core.session.SdkSession
+
+/**
+ * A running {pascal} flow. The host holds this, renders [state], and closes it when done. `state`,
+ * `observeState` and `close` come from [SdkSession] — every feature session extends it instead of
+ * redeclaring the three members every session needs. Add operations here as a suspend
+ * `fun x(): SdkResult<T>` plus its Java-callable twin `fun x(callback: ResultCallback<T>):
+ * Cancellable` — see `:sdk:features:otp`'s OtpSession for the pattern to follow once this feature
+ * has calls to make.
+ */
+public interface {pascal}Session : SdkSession<{pascal}State>
+''')
+
+write(f"{src_main}/session/{pascal}State.kt", f'''package {pkg}.session
+
+import {ns}.core.error.SdkError
+
+/** Immutable snapshot of the {pascal} flow. The UI renders this and nothing else. */
+public class {pascal}State(
+    public val phase: Phase,
+    public val error: SdkError?,
+) {{
+    public enum class Phase {{ Idle, Active, Completed, Failed }}
+
+    /** A plain class, not a `data class` (ABI: `copy`/`componentN` would freeze the property list
+     * for every consumer). `internal`: only engine code inside this module needs to derive a new
+     * state; a host only ever reads the properties above. */
+    internal fun copy(
+        phase: Phase = this.phase,
+        error: SdkError? = this.error,
+    ): {pascal}State = {pascal}State(phase = phase, error = error)
+
+    override fun equals(other: Any?): Boolean {{
+        if (this === other) return true
+        if (other !is {pascal}State) return false
+        return phase == other.phase && error == other.error
+    }}
+
+    override fun hashCode(): Int {{
+        var result = phase.hashCode()
+        result = 31 * result + (error?.hashCode() ?: 0)
+        return result
+    }}
+
+    override fun toString(): String = "{pascal}State(phase=$phase, error=$error)"
+
+    public companion object {{
+        public fun initial(): {pascal}State = {pascal}State(phase = Phase.Idle, error = null)
+    }}
+}}
+''')
+
+write(f"{src_main}/internal/{pascal}SdkRuntime.kt", f'''package {pkg}.internal
+
+import {ns}.core.logging.SdkLogger
+import {ns}.core.session.SdkSessionBase
+import {ns}.core.session.SessionScope
+import {ns}.core.session.StateStore
+import {pkg}.config.{pascal}SdkConfig
+import {pkg}.session.{pascal}Session
+import {pkg}.session.{pascal}State
+
+/**
+ * Wires this feature's own work to the public [{pascal}Session] contract, on top of
+ * [SdkSessionBase]. Kept Kotlin `internal`. Add operations as `scope.ifOpen {{ ... }}` (suspend),
+ * their Java twins as `scope.call(callback) {{ ... }}`, and fire-and-forget work as
+ * `scope.launch {{ ... }}` — every one of those routes `close()` racing an operation through
+ * [SessionScope] instead of this class re-implementing the guard — see `:sdk:features:otp`'s
+ * OtpSdkRuntime for the pattern.
+ */
+internal class {pascal}SdkRuntime(
+    scope: SessionScope,
+    store: StateStore<{pascal}State>,
+    private val config: {pascal}SdkConfig,
+    logger: SdkLogger,
+) : SdkSessionBase<{pascal}State>(scope, store), {pascal}Session {{
+
+    private val log = logger.tagged(TAG)
+
+    /** Runs exactly once, the first time [close] actually closes the session (see
+     * [SdkSessionBase.close]'s idempotency guarantee) — a legitimate diagnostic, not a
+     * workaround: lets a host (or a test) confirm a session actually got released instead of
+     * leaked. */
+    override fun onClose() {{
+        log.d {{ "session closed" }}
+    }}
+
+    private companion object {{
+        const val TAG = "{pascal}Session"
+    }}
 }}
 ''')
 
@@ -152,13 +287,14 @@ public interface {pascal}Gateway
 
 write(f"{src_main}/config/{pascal}SdkConfig.kt", f'''package {pkg}.config
 
+import {ns}.core.config.validateConfig
 import {ns}.core.environment.SdkEnvironment
 import {ns}.core.result.SdkResult
 import {pkg}.gateway.{pascal}Gateway
 
 /**
- * Host-supplied configuration. A builder rather than default arguments because a Java host cannot
- * use Kotlin default arguments.
+ * Host-supplied configuration. Validated once, here, at the public boundary — never deeper. A
+ * builder rather than default arguments because a Java host cannot use Kotlin default arguments.
  */
 public class {pascal}SdkConfig private constructor(
     public val gateway: {pascal}Gateway,
@@ -169,8 +305,11 @@ public class {pascal}SdkConfig private constructor(
 
         public fun environment(value: SdkEnvironment): Builder = apply {{ environment = value }}
 
-        public fun build(): SdkResult<{pascal}SdkConfig> =
-            SdkResult.Success({pascal}SdkConfig(gateway = gateway, environment = environment))
+        public fun build(): SdkResult<{pascal}SdkConfig> = validateConfig {{
+            // TODO: add `ensure(...) {{ "..." }}` checks as this feature grows its own config —
+            // see `:sdk:features:otp`'s OtpSdkConfig.Builder.build for the pattern.
+            {pascal}SdkConfig(gateway = gateway, environment = environment)
+        }}
     }}
 }}
 ''')
@@ -187,10 +326,68 @@ class {pascal}SdkConfigTest {{
     private val gateway = object : {pascal}Gateway {{}}
 
     @Test
-    fun `build succeeds with defaults`() {{
+    fun buildSucceedsWithDefaults() {{
         val config = {pascal}SdkConfig.Builder(gateway).build().assertSuccess()
 
         assertNotNull(config)
+    }}
+}}
+''')
+
+write(f"{src_test}/{pascal}SdkTest.kt", f'''package {pkg}
+
+import {ns}.core.environment.SdkEnvironment
+import {ns}.core.logging.LogLevel
+import {ns}.core.logging.SdkLogger
+import {ns}.core.testing.RecordingLogSink
+import {ns}.core.testing.TestDispatcherProvider
+import {ns}.core.testing.assertSuccess
+import {pkg}.config.{pascal}SdkConfig
+import {pkg}.gateway.{pascal}Gateway
+import {pkg}.session.{pascal}State
+import kotlinx.coroutines.test.StandardTestDispatcher
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Test
+
+/**
+ * [{pascal}Sdk.start] is business logic, not UI, so it gets a unit test per the repo's testing
+ * rule — see `:sdk:features:otp`'s OtpSdkTest for the fuller pattern once this feature has real
+ * gateway calls to drive.
+ */
+class {pascal}SdkTest {{
+
+    private val gateway = object : {pascal}Gateway {{}}
+
+    private fun configOf(logger: SdkLogger = SdkLogger.NoOp): {pascal}SdkConfig =
+        {pascal}SdkConfig.Builder(gateway)
+            .environment(
+                SdkEnvironment.Builder()
+                    .logger(logger)
+                    .dispatchers(TestDispatcherProvider(StandardTestDispatcher()))
+                    .build(),
+            )
+            .build()
+            .assertSuccess()
+
+    @Test
+    fun startReturnsIdleSession() = runTest {{
+        val session = {pascal}Sdk.start(configOf()).assertSuccess()
+
+        assertEquals({pascal}State.Phase.Idle, session.state.value.phase)
+        session.close()
+    }}
+
+    @Test
+    fun closeIsIdempotent() = runTest {{
+        val sink = RecordingLogSink()
+        val logger = SdkLogger.Builder().minLevel(LogLevel.DEBUG).sink(sink).build()
+        val session = {pascal}Sdk.start(configOf(logger)).assertSuccess()
+
+        session.close()
+        session.close()
+
+        assertEquals(1, sink.messages(LogLevel.DEBUG).count {{ it.contains("session closed") }})
     }}
 }}
 ''')
@@ -237,7 +434,9 @@ Done. sdk/features/$NAME is registered and green.
 Next steps:
   1. Implement $DIR/src/main/kotlin/.../gateway/*Gateway.kt with the calls this feature needs.
   2. Pick an unused 3xxx block in *Errors.kt for this feature's business errors.
-  3. Wire the gateway into *Sdk.kt, replacing the TODO stub.
+  3. Add fields to session/*State.kt and operations to session/*Session.kt, then drive them from
+     internal/*SdkRuntime.kt (scope.ifOpen/scope.call/scope.launch) and *Sdk.kt's start(), replacing
+     the TODO stubs — see sdk/features/otp for the pattern.
   4. Add demo usage under apps/demo, then run:
        ./gradlew check -Psdkbase.warningsAsErrors=true
        ./scripts/verify-publication.sh

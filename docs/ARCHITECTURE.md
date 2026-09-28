@@ -173,7 +173,33 @@ append-only: never renumber a released code. Hosts branch on `SdkError.code`, ne
 
 ## Threading
 
-`OtpEngine` serializes every state transition through one `Mutex`, so a UI-driven `dispatch()` and a
-host-driven `submitCode()`/`resend()` can never interleave. Every call into the host's gateway goes
-through core's `safeCall`, which maps a timeout, `IOException`, or any other exception to an
-`SdkError` — nothing the host throws or hangs on ever reaches the engine's caller.
+`OtpEngine` serializes every state transition — a UI-driven `dispatch()`, a host-driven
+`submitCode()`/`resend()`, and its own timer ticks alike — through `StateStore.withLock`, so no two
+transitions can ever interleave. `SessionScope` is the only owner of the session's coroutines: the
+engine's ticker runs on `scope.coroutineScope`, `dispatch()` goes through `scope.launch`, and
+`submitCode()`/`resend()` (and their Java twins) go through `scope.ifOpen`/`scope.call`. `close()`
+cancels every one of them, in flight or not, and every call afterwards — suspend or Java — gets
+`Failure(SdkErrors.sessionClosed())` instead of reaching the engine. Every call into the host's
+gateway goes through core's `safeCall`, which maps a timeout, `IOException`, or any other exception
+to an `SdkError` — nothing the host throws or hangs on ever reaches the engine's caller.
+
+## Building a feature
+
+`./scripts/new-feature.sh <name>` scaffolds a feature on this kit instead of a bare stub: a session
+interface extending `SdkSession<S>`, a plain state class, and a runtime extending `SdkSessionBase`
+— see "Core toolkit" `session/` above. To add an operation:
+
+1. Add whatever fields it needs to `session/*State.kt` (a plain class, not a `data class` —
+   `public-data-class` in "Source rules" above) and a `Phase`/case for it if the flow gains a new
+   state.
+2. Declare it on `session/*Session.kt`: a suspend `fun x(): SdkResult<T>` plus its Java-callable
+   twin `fun x(callback: ResultCallback<T>): Cancellable`.
+3. Implement both on `internal/*SdkRuntime.kt`, routed through the inherited `scope`: a suspend
+   operation through `scope.ifOpen { ... }`, its Java twin through `scope.call(callback) { ... }`,
+   fire-and-forget UI-driven work through `scope.launch { ... }`. Mutate state only inside
+   `store.withLock { update { ... } }` — never by holding a reference to the store's value and
+   writing to it directly.
+4. Wire `*Sdk.kt`'s `start()` to call the gateway, close the `SessionScope` on failure (see
+   `OtpSdk.start`'s try/catch around a mid-start cancellation), and hand back the runtime.
+
+`sdk/features/otp` is the worked example for all four steps.

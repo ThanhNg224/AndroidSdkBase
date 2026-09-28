@@ -289,9 +289,10 @@ if [[ "scaffold-rejects-bad-names" == "$FILTER"* ]]; then
   sync_tree
   ok=true
   # Face_Match: not lowercase/dash-case. otp-ui-x: a "ui" segment, reserved for <feature>-ui-<toolkit>.
-  # otp: sdk/features/otp already exists. Each command sits in an `if`, not bare, so a refusal's
-  # non-zero exit (the expected outcome) does not trip this script's own `set -e`.
-  for bad in Face_Match otp-ui-x otp; do
+  # otp: sdk/features/otp already exists. in: a Kotlin hard keyword as the joined package segment.
+  # core: <ns>.core collides with sdk/core's own namespace. Each command sits in an `if`, not bare,
+  # so a refusal's non-zero exit (the expected outcome) does not trip this script's own `set -e`.
+  for bad in Face_Match otp-ui-x otp in core; do
     if ( cd "$WORK" && ./scripts/new-feature.sh "$bad" ) >>"$log" 2>&1; then
       echo "new-feature.sh '$bad' unexpectedly succeeded" >>"$log"
       ok=false
