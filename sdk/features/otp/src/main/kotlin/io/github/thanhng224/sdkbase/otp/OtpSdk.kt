@@ -12,6 +12,7 @@ import io.github.thanhng224.sdkbase.otp.internal.engine.OtpEngine
 import io.github.thanhng224.sdkbase.otp.internal.runtime.OtpSdkRuntime
 import io.github.thanhng224.sdkbase.otp.session.OtpSession
 import io.github.thanhng224.sdkbase.otp.session.OtpState
+import kotlinx.coroutines.CancellationException
 
 /**
  * The only class a host needs to know about. It validates, wires and delegates — and nothing else.
@@ -36,7 +37,15 @@ public object OtpSdk {
         // OtpEngine.start is suspend and updates `state` synchronously (via direct suspend calls,
         // not a launch into its own scope) before returning, so inspecting state.value immediately
         // afterwards reflects the real outcome of the request — not a race.
-        engine.start(config.destination)
+        try {
+            engine.start(config.destination)
+        } catch (e: CancellationException) {
+            // The caller was cancelled mid-start. withLock/withContext rethrow that cancellation even
+            // after the challenge was issued and the ticker started, and no session is returned to
+            // close it - so close the scope here or the ticker outlives the call.
+            scope.close()
+            throw e
+        }
 
         val state = engine.state.value
         if (state.phase == OtpState.Phase.Failed) {
