@@ -41,4 +41,20 @@ class SdkErrorsTest {
     fun `all contains 4002`() {
         assertTrue(SdkErrors.all().contains(SdkErrors.SESSION_CLOSED))
     }
+
+    @Test
+    fun `only network and timeout failures are retryable`() {
+        val retryable = listOf(
+            SdkErrors.unknown(), SdkErrors.invalidConfig("x"), SdkErrors.cancelledByUser(),
+            SdkErrors.networkUnavailable(), SdkErrors.gatewayFailure("x"), SdkErrors.timeout("x"),
+            SdkErrors.notStarted(), SdkErrors.alreadyRunning(), SdkErrors.sessionClosed(),
+        ).filter { it.isRetryable }.map { it.code }
+        assertEquals(listOf(SdkErrors.NETWORK_UNAVAILABLE, SdkErrors.TIMEOUT), retryable)
+    }
+
+    @Test
+    fun `an error is not retryable unless it says so`() {
+        assertEquals(false, SdkError.Business(3999, "x").isRetryable)
+        assertEquals(true, SdkError.Business(3999, "x", null, true).isRetryable)
+    }
 }

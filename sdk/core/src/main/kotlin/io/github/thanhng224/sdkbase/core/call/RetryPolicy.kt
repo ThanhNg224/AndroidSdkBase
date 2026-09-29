@@ -1,7 +1,6 @@
 package io.github.thanhng224.sdkbase.core.call
 
 import io.github.thanhng224.sdkbase.core.error.SdkError
-import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import io.github.thanhng224.sdkbase.core.result.SdkResult
 import kotlinx.coroutines.delay
 
@@ -42,9 +41,8 @@ public class RetryPolicy @JvmOverloads constructor(
     public companion object {
         // Declared before `None`: `None`'s constructor call resolves the `retryOn` default to
         // this field, which must already be initialized by then.
-        public val TransientErrors: (SdkError) -> Boolean = { error ->
-            error.code == SdkErrors.NETWORK_UNAVAILABLE || error.code == SdkErrors.TIMEOUT
-        }
+        /** Retries exactly the errors that declare [SdkError.isRetryable]. */
+        public val TransientErrors: (SdkError) -> Boolean = { error -> error.isRetryable }
 
         /** A single attempt, no retry. */
         public val None: RetryPolicy = RetryPolicy(maxAttempts = 1)

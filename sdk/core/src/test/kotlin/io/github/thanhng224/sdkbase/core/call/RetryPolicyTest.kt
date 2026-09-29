@@ -1,5 +1,6 @@
 package io.github.thanhng224.sdkbase.core.call
 
+import io.github.thanhng224.sdkbase.core.error.SdkError
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import io.github.thanhng224.sdkbase.core.result.SdkResult
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -80,5 +81,16 @@ class RetryPolicyTest {
     @Test(expected = IllegalArgumentException::class)
     fun `rejects a factor below 1`() {
         RetryPolicy(factor = 0.5)
+    }
+
+    @Test
+    fun `retries a feature error that declares itself retryable`() = runTest {
+        var attempts = 0
+        val policy = RetryPolicy(maxAttempts = 2, initialDelayMillis = 10)
+        policy.run { attempt ->
+            attempts = attempt
+            SdkResult.Failure(SdkError.Business(3999, "rate limited", null, true))
+        }
+        assertEquals(2, attempts)
     }
 }

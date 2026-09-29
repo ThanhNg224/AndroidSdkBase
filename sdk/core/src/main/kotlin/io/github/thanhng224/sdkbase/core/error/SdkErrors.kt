@@ -33,13 +33,13 @@ public object SdkErrors {
         SdkError.Common(CANCELLED_BY_USER, "Cancelled by user")
 
     public fun networkUnavailable(cause: Throwable? = null): SdkError =
-        SdkError.System(NETWORK_UNAVAILABLE, "Network unavailable", cause)
+        SdkError.System(NETWORK_UNAVAILABLE, "Network unavailable", cause, isRetryable = true)
 
     public fun gatewayFailure(reason: String, cause: Throwable? = null): SdkError =
         SdkError.System(GATEWAY_FAILURE, "Host gateway failed: $reason", cause)
 
     public fun timeout(reason: String): SdkError =
-        SdkError.System(TIMEOUT, "Timed out: $reason")
+        SdkError.System(TIMEOUT, "Timed out: $reason", isRetryable = true)
 
     public fun notStarted(): SdkError =
         SdkError.Lifecycle(NOT_STARTED, "The SDK has not been started")
