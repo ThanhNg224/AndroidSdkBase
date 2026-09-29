@@ -13,14 +13,17 @@ LOGS="$SRC/build/guard-logs"
 FILTER="${1:-}"
 mkdir -p "$WORK" "$LOGS"
 failures=0
+baseline_repo_ready=false
 
 sync_tree() {
   # Restores the scratch copy to the current working tree; keeps its build outputs and caches.
-  # The scaffold case creates this module only in scratch. Its excluded build/ directory prevents
-  # rsync from removing the orphan on the next sync; remove it when no real source module exists.
-  if [ ! -e "$SRC/sdk/features/face-match" ]; then
-    rm -rf "$WORK/sdk/features/face-match"
-  fi
+  # The scaffold cases create feature modules only in scratch. Their excluded build/ directories
+  # prevent rsync from removing them on the next sync; remove every scratch feature that has no
+  # real source module.
+  local dir
+  for dir in "$WORK"/sdk/features/*/; do
+    [ -e "$SRC/sdk/features/$(basename "$dir")" ] || rm -rf "$dir"
+  done
   rsync -a --delete --exclude 'build/' --exclude '.gradle/' --exclude '.kotlin/' --exclude '.git/' \
     "$SRC/" "$WORK/"
 }
@@ -56,10 +59,27 @@ open(path, "w").write(text.replace(old, new, 1))
 EOF
 }
 
+prepare_baseline_repo() {
+  $baseline_repo_ready && return 0
+  local log="$LOGS/publication-baseline.log"
+  if ( cd "$WORK" && ./scripts/verify-publication.sh --publish-only ) >"$log" 2>&1; then
+    baseline_repo_ready=true
+    return 0
+  fi
+  echo "ERROR could not prepare the clean local SDK repo (see $log)"
+  failures=$((failures + 1))
+  return 1
+}
+
 run_case() { # NAME MUTATE GATE EXPECT_REGEX
   local name="$1" mutate="$2" gate="$3" expect="$4" log="$LOGS/$1.log"
   [[ "$name" == "$FILTER"* ]] || return 0
   sync_tree
+  case "$name" in
+    r8-*|consumer-*) prepare_baseline_repo || return 0 ;;
+    # These gates republish (rm -rf build/local-repo), which invalidates the shared baseline.
+    floor-*) baseline_repo_ready=false ;;
+  esac
   if ! ( cd "$WORK" && eval "$mutate" ) >"$log" 2>&1; then
     echo "ERROR $name — the mutation itself failed (see $log)"; failures=$((failures + 1)); return 0
   fi
@@ -154,6 +174,37 @@ run_case zone-feature-main-to-testing \
   "add_dep sdk/features/otp/build.gradle.kts 'implementation(project(\":sdk:core-testing\"))'" \
   "./gradlew help -q" ":sdk:features:otp \\[feature\\] -> :sdk:core-testing \\[testing\\] is not allowed"
 
+# --- UI zone: the shared Compose toolkit is reachable only from <name>-ui-<toolkit> modules ------
+run_case zone-ui-to-feature \
+  "add_dep sdk/core-ui-compose/build.gradle.kts 'implementation(project(\":sdk:features:otp\"))'" \
+  "./gradlew help -q" ":sdk:core-ui-compose \\[ui\\] -> :sdk:features:otp \\[feature\\] is not allowed"
+# A headless feature must never inherit Compose through the toolkit.
+run_case zone-headless-feature-to-ui \
+  "add_dep sdk/features/otp/build.gradle.kts 'implementation(project(\":sdk:core-ui-compose\"))'" \
+  "./gradlew help -q" ":sdk:features:otp \\[feature\\] -> :sdk:core-ui-compose \\[ui\\] is not allowed: only <name>-ui-<toolkit>"
+run_case zone-composition-to-ui \
+  "new_module sdk/composition/rogue && register composition :sdk:composition:rogue &&
+   add_dep sdk/composition/rogue/build.gradle.kts 'implementation(project(\":sdk:core-ui-compose\"))'" \
+  "./gradlew help -q" ":sdk:composition:rogue \\[composition\\] -> :sdk:core-ui-compose \\[ui\\] is not allowed"
+
+# --- Vendor zone: a binary with no Maven coordinate is reachable only from an adapter, and never published
+run_case zone-feature-to-vendor \
+  "add_dep sdk/features/otp/build.gradle.kts 'implementation(project(\":sdk:vendor:fake-sms-vendor\"))'" \
+  "./gradlew help -q" ":sdk:features:otp \\[feature\\] -> :sdk:vendor:fake-sms-vendor \\[vendor\\] is not allowed"
+run_case zone-app-to-vendor \
+  "add_dep apps/demo/build.gradle.kts 'implementation(project(\":sdk:vendor:fake-sms-vendor\"))'" \
+  "./gradlew help -q" ":apps:demo \\[app\\] -> :sdk:vendor:fake-sms-vendor \\[vendor\\] is not allowed"
+run_case zone-vendor-to-core \
+  "add_dep sdk/vendor/fake-sms-vendor/build.gradle.kts 'implementation(project(\":sdk:core\"))'" \
+  "./gradlew help -q" ":sdk:vendor:fake-sms-vendor \\[vendor\\] -> :sdk:core \\[core\\] is not allowed"
+# Publishing the adapter would drag the unpublished vendor binary into a published graph.
+run_case zone-published-adapter-on-vendor \
+  "edit $TOPO '    \":sdk:bom\",
+)' '    \":sdk:adapters:otp-fake-sms\",
+    \":sdk:bom\",
+)'" \
+  "./gradlew help -q" ":sdk:adapters:otp-fake-sms is published but depends on unpublished :sdk:vendor:fake-sms-vendor"
+
 # --- Dependency policy (resolves real coordinates: needs network or a warm Gradle cache) ----------
 run_case deps-http-client-in-feature \
   "add_dep sdk/features/otp/build.gradle.kts 'implementation(\"com.squareup.okhttp3:okhttp:4.12.0\")'" \
@@ -197,7 +248,7 @@ run_case abi-add-abstract-to-host-interface \
   "./gradlew :sdk:core:apiCheck -q" "$ABI_CORE"
 run_case abi-add-sealed-subtype \
   "edit $CORE/error/SdkError.kt '    public class Lifecycle @JvmOverloads constructor(' '    public class Security(code: Int, reason: String) :
-        SdkError(code, reason, null, false)
+        SdkError(code, reason, null, false, Disposition.DIALOG_TERMINAL)
 
     public class Lifecycle @JvmOverloads constructor('" \
   "./gradlew :sdk:core:apiCheck -q" "$ABI_CORE"
@@ -235,11 +286,79 @@ run_case source-android-log-in-core-non-logcat-file \
 run_case source-public-data-class-in-core \
   "printf 'package io.github.thanhng224.sdkbase.core.error\n\npublic data class RogueConfig(public val a: Int, public val b: Int)\n' > $CORE/error/RogueConfig.kt" \
   "./gradlew :sdk:core:checkSourceRules -q" "public-data-class"
+# UI modules draw only with theme tokens: a colour literal in Kotlin or in res/ XML fails, in the
+# shared toolkit and in a feature's own UI module alike.
+UITK=sdk/core-ui-compose/src/main
+OTPUI=sdk/features/otp-ui-compose/src/main
+run_case source-ui-color-literal-in-toolkit \
+  "printf 'package io.github.thanhng224.sdkbase.ui.theme\n\nimport androidx.compose.ui.graphics.Color\n\ninternal val Rogue = Color(0xFF112233)\n' > $UITK/kotlin/io/github/thanhng224/sdkbase/ui/theme/Rogue.kt" \
+  "./gradlew :sdk:core-ui-compose:checkSourceRules -q" "ui-color-literal"
+run_case source-ui-named-color-in-feature-ui-module \
+  "printf 'package io.github.thanhng224.sdkbase.otp.ui\n\nimport androidx.compose.ui.graphics.Color\n\ninternal val Rogue = Color.Red\n' > $OTPUI/kotlin/io/github/thanhng224/sdkbase/otp/ui/Rogue.kt" \
+  "./gradlew :sdk:features:otp-ui-compose:checkSourceRules -q" "ui-color-literal"
+run_case source-ui-color-in-resources \
+  "printf '<resources>\n    <color name=\"rogue\">#FF0000</color>\n</resources>\n' > $OTPUI/res/values/colors.xml" \
+  "./gradlew :sdk:features:otp-ui-compose:checkSourceRules -q" "res/values/colors.xml:2: ui-color-literal"
 run_case source-module-without-rules-task \
   "new_module sdk/composition/rogue com.android.library && register composition :sdk:composition:rogue" \
   "./gradlew help -q" ":sdk:composition:rogue \\[composition\\] has no checkSourceRules"
 
-# --- Kotlin floor and R8 canary (slow: each runs the whole publication gate) --------------------
+# --- Error catalog (checkErrorCatalog: code, sdk/error-codes.ledger and docs/ERROR_CODE_REFERENCE.md
+# must agree; codes are append-only) ---------------------------------------------------------------
+LEDGER=sdk/error-codes.ledger
+REFERENCE=docs/ERROR_CODE_REFERENCE.md
+CATALOG_GATE="./gradlew checkErrorCatalog -q"
+run_case errors-renumber-code \
+  "edit $CORE/error/SdkErrors.kt 'UNKNOWN: Int = 1000' 'UNKNOWN: Int = 1009'" \
+  "$CATALOG_GATE" "core UNKNOWN was 1000 in the ledger but is now 1009"
+# Renumbering the code AND its documentation together must still fail: the ledger is the witness.
+run_case errors-renumber-code-and-reference \
+  "edit $CORE/error/SdkErrors.kt 'UNKNOWN: Int = 1000' 'UNKNOWN: Int = 1009' &&
+   edit $REFERENCE '| \`1000\` | core | \`UNKNOWN\`' '| \`1009\` | core | \`UNKNOWN\`'" \
+  "$CATALOG_GATE" "core UNKNOWN was 1000 in the ledger but is now 1009"
+run_case errors-new-code-not-in-ledger \
+  "printf 'package io.github.thanhng224.sdkbase.core.error\n\npublic object RogueErrors {\n    public const val ROGUE: Int = 1099\n}\n' > $CORE/error/RogueErrors.kt" \
+  "$CATALOG_GATE" "core ROGUE = 1099 is not in the ledger"
+run_case errors-removed-code-not-retired \
+  "python3 - <<'EOF'
+p = '$CORE/error/SdkErrors.kt'
+t = open(p).read()
+line = '    public const val ALREADY_RUNNING: Int = 4001\n'
+assert line in t
+open(p, 'w').write(t.replace(line, ''))
+EOF" \
+  "$CATALOG_GATE" "core ALREADY_RUNNING = 4001 is in the ledger but no longer declared"
+run_case errors-duplicate-code \
+  "printf 'package io.github.thanhng224.sdkbase.core.error\n\npublic object RogueErrors {\n    public const val CLASH: Int = 3000\n}\n' > $CORE/error/RogueErrors.kt &&
+   printf 'core CLASH 3000\n' >> $LEDGER" \
+  "$CATALOG_GATE" "code 3000 is used by more than one error"
+run_case errors-out-of-range-code \
+  "printf 'package io.github.thanhng224.sdkbase.core.error\n\npublic object RogueErrors {\n    public const val LOW: Int = 999\n}\n' > $CORE/error/RogueErrors.kt &&
+   printf 'core LOW 999\n' >> $LEDGER" \
+  "$CATALOG_GATE" "code 999 is outside 1000..4999"
+run_case errors-ledger-line-deleted \
+  "python3 - <<'EOF'
+p = '$LEDGER'
+lines = open(p).read().splitlines(keepends=True)
+kept = [l for l in lines if not l.startswith('features/otp OTP_INVALID ')]
+assert len(kept) == len(lines) - 1
+open(p, 'w').write(''.join(kept))
+EOF" \
+  "$CATALOG_GATE" "features/otp OTP_INVALID = 3000 is not in the ledger"
+run_case errors-reference-row-missing \
+  "python3 - <<'EOF'
+p = '$REFERENCE'
+lines = open(p).read().splitlines(keepends=True)
+kept = [l for l in lines if 'OTP_RESEND_TOO_SOON' not in l]
+assert len(kept) == len(lines) - 1
+open(p, 'w').write(''.join(kept))
+EOF" \
+  "$CATALOG_GATE" "ERROR_CODE_REFERENCE.md is missing or disagrees with the ledger on: features/otp OTP_RESEND_TOO_SOON"
+run_case errors-reference-status-drift \
+  "edit $REFERENCE '| \`4002\` | core | \`SESSION_CLOSED\` | \`SILENT\` | no | active |' '| \`4002\` | core | \`SESSION_CLOSED\` | \`SILENT\` | no | retired |'" \
+  "$CATALOG_GATE" "ERROR_CODE_REFERENCE.md .* core SESSION_CLOSED"
+
+# --- Kotlin floor and R8 canary ----------------------------------------------------------------
 PUB='./scripts/verify-publication.sh'
 ACT=verification/consumer/app/src/main/kotlin/io/github/thanhng224/consumer/ConsumerActivity.kt
 # Flipping the property ALONE is not a real violation: every convention also declares an explicit
@@ -251,33 +370,33 @@ run_case floor-stdlib-unpinned \
   "edit gradle.properties 'kotlin.stdlib.default.dependency=false' 'kotlin.stdlib.default.dependency=true' &&
    edit build-logic/src/main/kotlin/sdkbase.android.library.gradle.kts '\"api\"(libs.kotlin.stdlib)
     ' ''" \
-  "$PUB" "declares kotlin-stdlib"
+  "$PUB --poms" "declares kotlin-stdlib"
 # The `sdkbase.kotlin.jvm` convention no longer exists (every module, including core, is now an
 # Android library) — this case alone covers the floor for all of them.
 run_case floor-unpin-android-library \
   "edit build-logic/src/main/kotlin/sdkbase.android.library.gradle.kts 'languageVersion.set(floor)' '' &&
    edit build-logic/src/main/kotlin/sdkbase.android.library.gradle.kts 'apiVersion.set(floor)' ''" \
-  "$PUB" "compiled with an incompatible version of Kotlin"
+  "$PUB --floor" "compiled with an incompatible version of Kotlin"
 run_case r8-canary-unreachable-sdk \
   "edit $ACT '/* SDK_CALLS_BEGIN */' '/* SDK_CALLS_BEGIN' && edit $ACT '/* SDK_CALLS_END */' 'SDK_CALLS_END */'" \
-  "$PUB" "R8 kept no classes from"
+  "$PUB --consumer-r8 app" "R8 kept no classes from"
 run_case r8-canary-minify-disabled \
   "edit verification/consumer/app/build.gradle.kts 'isMinifyEnabled = true' 'isMinifyEnabled = false'" \
-  "$PUB" "R8 mapping file is missing"
+  "$PUB --consumer-r8 app" "R8 mapping file is missing"
 
 # Consumer graph contracts are independent of a successful Kotlin compilation or R8 build.
 run_case consumer-headless-resolves-compose \
   "add_dep verification/consumer/headless/build.gradle.kts 'implementation(\"androidx.compose.ui:ui:1.12.1\")'" \
-  "$PUB" "Headless consumer unexpectedly resolves Compose"
+  "$PUB --consumer-check headless" "Headless consumer unexpectedly resolves Compose"
 run_case consumer-headless-resolves-workmanager \
   "add_dep verification/consumer/headless/build.gradle.kts 'implementation(\"androidx.work:work-runtime:2.10.5\")'" \
-  "$PUB" "Core/OTP headless consumer unexpectedly resolves WorkManager"
+  "$PUB --consumer-check headless" "Core/OTP headless consumer unexpectedly resolves WorkManager"
 run_case consumer-logging-resolves-compose \
   "add_dep verification/consumer/logging/build.gradle.kts 'implementation(\"androidx.compose.ui:ui:1.12.1\")'" \
-  "$PUB" "Headless consumer unexpectedly resolves Compose"
+  "$PUB --consumer-check logging" "Headless consumer unexpectedly resolves Compose"
 run_case consumer-runtime-stdlib-upgraded \
   "add_dep verification/consumer/headless/build.gradle.kts 'implementation(\"org.jetbrains.kotlin:kotlin-stdlib:2.4.20\")'" \
-  "$PUB" "stdlib 2.4.20, expected 2.2.21"
+  "$PUB --consumer-check headless" "stdlib 2.4.20, expected 2.2.21"
 
 # --- Scaffold (scripts/new-feature.sh) self-test ------------------------------------------------
 # Positive checks: the scaffold script and the gate it hands off to must SUCCEED — the opposite of
@@ -298,6 +417,22 @@ if [[ "scaffold-new-feature-is-green" == "$FILTER"* ]]; then
     echo "ok    $name"
   else
     echo "FAIL  $name — new-feature.sh face-match, then check, did not both succeed (see $log)"
+    failures=$((failures + 1))
+  fi
+fi
+
+# Two scaffolds in a row: each starts with an empty error catalog, so neither claims a code and the
+# ledger/reference guard stays green without any registration step.
+if [[ "scaffold-twice-is-green" == "$FILTER"* ]]; then
+  name=scaffold-twice-is-green
+  log="$LOGS/$name.log"
+  sync_tree
+  rm -rf "$WORK/sdk/features/face-match" "$WORK/sdk/features/pay-link" "$WORK/.gradle/configuration-cache"
+  if ( cd "$WORK" && ./scripts/new-feature.sh face-match && ./scripts/new-feature.sh pay-link &&
+       ./gradlew check -Psdkbase.warningsAsErrors=true -q ) >"$log" 2>&1; then
+    echo "ok    $name"
+  else
+    echo "FAIL  $name — two consecutive scaffolds, then check, did not all succeed (see $log)"
     failures=$((failures + 1))
   fi
 fi

@@ -86,6 +86,16 @@ public final class io/github/thanhng224/sdkbase/core/environment/SdkEnvironment$
 	public final fun getDefault ()Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;
 }
 
+public final class io/github/thanhng224/sdkbase/core/error/Disposition : java/lang/Enum {
+	public static final field DIALOG_RETRY Lio/github/thanhng224/sdkbase/core/error/Disposition;
+	public static final field DIALOG_TERMINAL Lio/github/thanhng224/sdkbase/core/error/Disposition;
+	public static final field INLINE_RETRY Lio/github/thanhng224/sdkbase/core/error/Disposition;
+	public static final field SILENT Lio/github/thanhng224/sdkbase/core/error/Disposition;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lio/github/thanhng224/sdkbase/core/error/Disposition;
+	public static fun values ()[Lio/github/thanhng224/sdkbase/core/error/Disposition;
+}
+
 public abstract interface class io/github/thanhng224/sdkbase/core/error/FailureMapper {
 	public static final field Companion Lio/github/thanhng224/sdkbase/core/error/FailureMapper$Companion;
 	public abstract fun map (Ljava/lang/String;Ljava/lang/Throwable;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
@@ -96,9 +106,10 @@ public final class io/github/thanhng224/sdkbase/core/error/FailureMapper$Compani
 }
 
 public abstract class io/github/thanhng224/sdkbase/core/error/SdkError {
-	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ZLkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ZLio/github/thanhng224/sdkbase/core/error/Disposition;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getCause ()Ljava/lang/Throwable;
 	public final fun getCode ()I
+	public final fun getDisposition ()Lio/github/thanhng224/sdkbase/core/error/Disposition;
 	public final fun getReason ()Ljava/lang/String;
 	public final fun isRetryable ()Z
 	public fun toString ()Ljava/lang/String;
@@ -108,28 +119,32 @@ public final class io/github/thanhng224/sdkbase/core/error/SdkError$Business : i
 	public fun <init> (ILjava/lang/String;)V
 	public fun <init> (ILjava/lang/String;Ljava/lang/Throwable;)V
 	public fun <init> (ILjava/lang/String;Ljava/lang/Throwable;Z)V
-	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ZLio/github/thanhng224/sdkbase/core/error/Disposition;)V
+	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ZLio/github/thanhng224/sdkbase/core/error/Disposition;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
 public final class io/github/thanhng224/sdkbase/core/error/SdkError$Common : io/github/thanhng224/sdkbase/core/error/SdkError {
 	public fun <init> (ILjava/lang/String;)V
 	public fun <init> (ILjava/lang/String;Ljava/lang/Throwable;)V
 	public fun <init> (ILjava/lang/String;Ljava/lang/Throwable;Z)V
-	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ZLio/github/thanhng224/sdkbase/core/error/Disposition;)V
+	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ZLio/github/thanhng224/sdkbase/core/error/Disposition;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
 public final class io/github/thanhng224/sdkbase/core/error/SdkError$Lifecycle : io/github/thanhng224/sdkbase/core/error/SdkError {
 	public fun <init> (ILjava/lang/String;)V
 	public fun <init> (ILjava/lang/String;Ljava/lang/Throwable;)V
 	public fun <init> (ILjava/lang/String;Ljava/lang/Throwable;Z)V
-	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ZLio/github/thanhng224/sdkbase/core/error/Disposition;)V
+	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ZLio/github/thanhng224/sdkbase/core/error/Disposition;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
 public final class io/github/thanhng224/sdkbase/core/error/SdkError$System : io/github/thanhng224/sdkbase/core/error/SdkError {
 	public fun <init> (ILjava/lang/String;)V
 	public fun <init> (ILjava/lang/String;Ljava/lang/Throwable;)V
 	public fun <init> (ILjava/lang/String;Ljava/lang/Throwable;Z)V
-	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ZILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ZLio/github/thanhng224/sdkbase/core/error/Disposition;)V
+	public synthetic fun <init> (ILjava/lang/String;Ljava/lang/Throwable;ZLio/github/thanhng224/sdkbase/core/error/Disposition;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
 }
 
 public final class io/github/thanhng224/sdkbase/core/error/SdkErrors {

@@ -17,6 +17,7 @@ plugins {
     alias(libs.plugins.dokka) apply false
     alias(libs.plugins.maven.publish) apply false
     alias(libs.plugins.dependency.analysis)
+    id("sdkbase.error-catalog")
 }
 
 apply(from = "gradle/module-topology.gradle.kts")
@@ -36,8 +37,9 @@ tasks.register<Delete>("clean") {
 // (SourceRulesTest — the source-rules gate's own unit tests) always runs alongside it.
 tasks.register("check") {
     group = "verification"
-    description = "Runs build-logic's own unit tests (SourceRulesTest) alongside every module's check."
+    description = "Runs build-logic's own unit tests and the error-catalog guard alongside every module's check."
     dependsOn(gradle.includedBuild("build-logic").task(":test"))
+    dependsOn("checkErrorCatalog")
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -46,8 +48,9 @@ tasks.register("check") {
 // allowed zones, across every non-test configuration (compileOnly, runtimeOnly and variant-specific
 // ones included); (3) a feature depends on another feature only as that feature's UI module;
 // (4) a published module depends only on published modules; (5) a published module has an ABI check
-// and a local publication; (6) every core/testing/feature/composition module runs
-// checkDependencyPolicy.
+// and a local publication; (6) every core/testing/ui/feature/composition module runs
+// checkDependencyPolicy; (7) the shared UI toolkit (zone `ui`) is used only by
+// <name>-ui-<toolkit> modules, never by a headless feature.
 // ---------------------------------------------------------------------------------------------
 
 @Suppress("UNCHECKED_CAST")
@@ -62,12 +65,14 @@ val zoneByPath: Map<String, String> =
 val allowedTargets: Map<String, Set<String>> = mapOf(
     "core" to emptySet(),
     "testing" to setOf("core"),
-    // feature -> feature is narrowed further by isOwnUiModule below.
-    "feature" to setOf("core", "feature"),
+    "ui" to setOf("core"),
+    // feature -> feature is narrowed further by isOwnUiModule below, feature -> ui by isUiToolkitModule.
+    "feature" to setOf("core", "feature", "ui"),
     "composition" to setOf("core", "feature"),
-    "adapter" to setOf("core", "feature"),
-    "bom" to setOf("core", "feature", "composition", "adapter", "testing"),
-    "app" to setOf("core", "feature", "composition", "adapter", "app", "testing"),
+    "adapter" to setOf("core", "feature", "vendor"),
+    "vendor" to emptySet(),
+    "bom" to setOf("core", "feature", "composition", "adapter", "testing", "ui"),
+    "app" to setOf("core", "feature", "composition", "adapter", "app", "testing", "ui"),
 )
 
 @Suppress("UNCHECKED_CAST")
@@ -80,6 +85,9 @@ val sourceRuledZones = (rootProject.extra["sourceRuledZones"] as List<String>).t
 // feature it renders. Two different features are wired together only in a composition module.
 fun isOwnUiModule(sourceName: String, targetName: String): Boolean =
     Regex("${Regex.escape(targetName)}-ui(-[a-z0-9]+)*").matches(sourceName)
+
+// Only a `<name>-ui-<toolkit>` module may use the shared UI toolkit: Compose must not reach a headless feature.
+fun isUiToolkitModule(name: String): Boolean = Regex(".+-ui(-[a-z0-9]+)+").matches(name)
 
 fun isTestConfiguration(name: String): Boolean = name.contains("test", ignoreCase = true)
 
@@ -128,6 +136,10 @@ gradle.projectsEvaluated {
                 violations += "${source.path} [feature] -> $target [feature] is not allowed: a feature " +
                     "depends on another feature only as its UI module (<name>-ui-<toolkit> -> <name>); " +
                     "wire different features together in a composition module"
+            }
+            if (sourceZone == "feature" && targetZone == "ui" && !isUiToolkitModule(source.name)) {
+                violations += "${source.path} [feature] -> $target [ui] is not allowed: only " +
+                    "<name>-ui-<toolkit> modules may use the shared UI toolkit"
             }
             if (published && target !in publishedArtifacts) {
                 violations += "${source.path} is published but depends on unpublished $target"

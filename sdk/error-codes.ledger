@@ -1,0 +1,28 @@
+# Error-code ledger: the committed, append-only record of every SDK error code.
+# Format: <module under sdk/> <CONSTANT_NAME> <code> [retired]
+# Add new codes with `./gradlew errorCatalogDump`. Never edit a code, and never delete a line:
+# a code that is no longer declared is marked `retired` and stays reserved. See docs/ERROR_CODE_REFERENCE.md.
+core UNKNOWN 1000
+core INVALID_CONFIG 1001
+core CANCELLED_BY_USER 1002
+core NETWORK_UNAVAILABLE 2000
+core GATEWAY_FAILURE 2001
+core TIMEOUT 2002
+features/event-logging STORAGE_FAILURE 2101
+features/event-logging DELIVERY_IN_PROGRESS 2102
+features/event-logging DELIVERY_FAILURE 2103
+features/event-logging SCHEDULER_FAILURE 2104
+features/logging-file STORAGE_FAILURE 2201
+features/otp OTP_INVALID 3000
+features/otp OTP_EXPIRED 3001
+features/otp OTP_ATTEMPTS_EXCEEDED 3002
+features/otp OTP_RESEND_TOO_SOON 3003
+features/event-logging INVALID_EVENT 3101
+features/event-logging QUEUE_FULL 3103
+features/logging-file INVALID_CONFIG 3201
+features/logging-file DIRECTORY_IN_USE 3203
+features/logging-file CRASH_HANDLER_UNAVAILABLE 3204
+features/logging-file INVALID_CRASH_ID 3205
+core NOT_STARTED 4000
+core ALREADY_RUNNING 4001
+core SESSION_CLOSED 4002

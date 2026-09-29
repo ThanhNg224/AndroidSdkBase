@@ -1,12 +1,12 @@
 # AGENTS.md
 
 Android SDK starter. Clone it, run `scripts/rename-project.sh`, replace the OTP example with your
-own feature. Published artifacts: `core`, `core-testing`, `otp`, `otp-ui-compose`, `event-logging`,
+own feature. Published artifacts: `core`, `core-testing`, `core-ui-compose`, `otp`, `otp-ui-compose`, `event-logging`,
 `logging-file`, `event-logging-work`, `bom`.
 
 ## Gates — run before saying anything is done
 ```bash
-./gradlew check -Psdkbase.warningsAsErrors=true   # tests, lint, zone guard, apiCheck, dependency policy, source rules
+./gradlew check -Psdkbase.warningsAsErrors=true   # tests, lint, zone guard, apiCheck, dependency policy, source rules, error catalog
 ./scripts/verify-publication.sh                   # local publish, POM checks, floor-Kotlin consumer under R8
 ./scripts/verify-guards.sh                        # only when you touch a guard: proves each can still fail
 ./scripts/new-feature.sh <name>                   # scaffold a new sdk/features/<name>, registered and green
@@ -15,10 +15,12 @@ own feature. Published artifacts: `core`, `core-testing`, `otp`, `otp-ui-compose
 ## Layout
 - `sdk/core` — Android library toolkit shared by every feature: `result/`, `error/`, `call/` (`safeCall`, `RetryPolicy`), `time/` (`Clock`, `IdGenerator`), `concurrency/`, `logging/` (`SdkLogger`, `TaggedLogger`), `telemetry/` (`emitSafely`), `gateway/` (`awaitCallback`), `environment/` (`SdkEnvironment`), `session/` (`SessionScope`, `StateStore`, `SdkSessionBase`), `config/` (`validateConfig`).
 - `sdk/core-testing` — published test kit: fakes (`FakeClock`, `SequentialIdGenerator`, `TestDispatcherProvider`), recording sinks (`RecordingLogSink`, `RecordingTelemetrySink`) and `SdkResult` assertions. Consumed via `testImplementation`; only `bom` and `app` may target it in a non-test configuration.
+- `sdk/core-ui-compose` — the shared Compose toolkit (zone `ui`): `SdkColors`, `SdkSpacing`/`SdkDimens`, `contrastRatio`, `sdkErrorMessage`, `ProvideSdkLocale`. Only `<name>-ui-<toolkit>` modules (and `bom`/`app`) may depend on it; a UI module uses no colour literal (`checkSourceRules`). See `docs/THEMING.md`.
 - `sdk/features/<name>` — one published artifact per feature; scaffold a new one with `./scripts/new-feature.sh <name>` (registers it, generates the entry point/config/gateway/error catalog plus a session built on the core kit — a `SdkSession`-extending interface, a plain state class, a runtime on `SdkSessionBase` — dumps its initial ABI). Engine code lives in `internal/` and is Kotlin `internal`.
 - `sdk/features/<name>-ui-compose` — optional UI artifact. Compose never enters a non-UI module.
 - `sdk/composition/<flow>` — wires several features into one flow; the only place two features meet.
 - `sdk/adapters/<feature>-<lib>` — optional host bridge (e.g. a gateway on OkHttp); the only SDK zone allowed an HTTP client or DI framework, and nothing in the SDK depends on it.
+- `sdk/vendor/<name>` — wraps a local binary with no Maven coordinate (never published; only an adapter may depend on it). `sdk/vendor/fake-sms-vendor` + `sdk/adapters/otp-fake-sms` are the worked example.
 - `sdk/bom` — lists every published module automatically.
 - `apps/demo` — manual testing only; never published.
 - `verification/consumer` — separate build that uses the SDK only by Maven coordinate.
@@ -39,7 +41,7 @@ own feature. Published artifacts: `core`, `core-testing`, `otp`, `otp-ui-compose
 - * The host owns networking: features declare a gateway interface; no HTTP client or DI framework in a core/feature/composition classpath, transitively (`checkDependencyPolicy`). Call host code only through `safeCall` — it maps exceptions to `SdkError` and applies its own timeout.
 - * No `GlobalScope` in `sdk/`, and a feature/composition module owns no `CoroutineScope` of its own — one `SessionScope` per session owns every coroutine (`checkSourceRules`).
 - Nothing escapes to the host as an exception: return `SdkResult`; map host exceptions to `SdkError`. A host-supplied `LogSink`/`TelemetrySink` is always contained — a throw from one never reaches the caller.
-- Error codes are append-only: 1xxx common, 2xxx system, 3xxx feature business, 4xxx lifecycle.
+- Error codes are append-only: 1xxx common, 2xxx system, 3xxx feature business, 4xxx lifecycle. A new code is recorded with `./gradlew errorCatalogDump` and a row in `docs/ERROR_CODE_REFERENCE.md`; never renumber or delete one — mark it `retired` (`checkErrorCatalog`). Every `SdkError` has a `Disposition`; the UI chooses text by `code`, never by `reason`.
 - A public change (an `.api` diff, a new error code, a UI string resource) adds a line to `CHANGELOG.md` in the same commit; the version bump it implies is in `docs/COMPATIBILITY.md` "Versioning".
 - Java hosts must be able to use every entry point: builders instead of default arguments, callback interfaces next to suspend ones. For an outbound call (the SDK calling the host back), build the callback-based twin on core's `launchCallback`/`observe` (`core/call/`, `core/session/`) rather than hand-rolling threading/cancellation — see `OtpSdk.start(config, callback)`.
 - * Log only through `SdkLogger`/`TaggedLogger` — never `android.util.Log` in `sdk/` except inside `LogcatSink` (`checkSourceRules`). Every record is redacted before a sink sees it; mask an identifier yourself with `DefaultRedactor.mask()`.

@@ -57,4 +57,29 @@ class SdkErrorsTest {
         assertEquals(false, SdkError.Business(3999, "x").isRetryable)
         assertEquals(true, SdkError.Business(3999, "x", null, true).isRetryable)
     }
+
+    @Test
+    fun `disposition is derived from family and retryability`() {
+        assertEquals(Disposition.SILENT, SdkError.Lifecycle(4999, "x").disposition)
+        assertEquals(Disposition.SILENT, SdkError.Lifecycle(4999, "x", null, true).disposition)
+        assertEquals(Disposition.DIALOG_RETRY, SdkError.System(2999, "x", null, true).disposition)
+        assertEquals(Disposition.DIALOG_TERMINAL, SdkError.Business(3999, "x").disposition)
+        assertEquals(Disposition.DIALOG_TERMINAL, SdkError.Common(1999, "x").disposition)
+    }
+
+    @Test
+    fun `a catalog can override the derived disposition`() {
+        val error = SdkError.Business(3999, "x", disposition = Disposition.INLINE_RETRY)
+        assertEquals(Disposition.INLINE_RETRY, error.disposition)
+        assertEquals(false, error.isRetryable)
+    }
+
+    @Test
+    fun `catalog dispositions`() {
+        assertEquals(Disposition.SILENT, SdkErrors.cancelledByUser().disposition)
+        assertEquals(Disposition.DIALOG_RETRY, SdkErrors.networkUnavailable().disposition)
+        assertEquals(Disposition.DIALOG_RETRY, SdkErrors.timeout("x").disposition)
+        assertEquals(Disposition.DIALOG_TERMINAL, SdkErrors.invalidConfig("x").disposition)
+        assertEquals(Disposition.SILENT, SdkErrors.sessionClosed().disposition)
+    }
 }

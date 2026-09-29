@@ -27,6 +27,8 @@ import io.github.thanhng224.sdkbase.otp.ui.internal.component.CodeCells
 import io.github.thanhng224.sdkbase.otp.ui.internal.component.Keypad
 import io.github.thanhng224.sdkbase.otp.ui.internal.text.errorMessageRes
 import io.github.thanhng224.sdkbase.otp.ui.internal.theme.LocalOtpColors
+import io.github.thanhng224.sdkbase.ui.theme.SdkDimens
+import io.github.thanhng224.sdkbase.ui.theme.SdkSpacing
 
 /**
  * Stateless by construction: it receives an [OtpState] and emits [OtpCommand]s. It holds no state
@@ -45,7 +47,7 @@ public fun OtpScreen(
             .fillMaxSize()
             .background(colors.background)
             .windowInsetsPadding(WindowInsets.safeDrawing)
-            .padding(horizontal = 24.dp, vertical = 16.dp),
+            .padding(horizontal = SdkSpacing.Three, vertical = SdkSpacing.Two),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.weight(1f))
@@ -56,16 +58,16 @@ public fun OtpScreen(
             modifier = Modifier.fillMaxWidth(),
         )
 
-        Spacer(Modifier.size(24.dp))
+        Spacer(Modifier.size(SdkSpacing.Three))
 
         CodeCells(state = state, borderColor = colors.cellBorder, textColor = colors.onBackground)
 
-        Spacer(Modifier.size(16.dp))
+        Spacer(Modifier.size(SdkSpacing.Two))
 
         val error = state.error
         when {
             state.phase == OtpState.Phase.Requesting || state.phase == OtpState.Phase.Verifying ->
-                CircularProgressIndicator(Modifier.size(24.dp))
+                CircularProgressIndicator(Modifier.size(SdkSpacing.Three))
 
             // Verified must be checked before the expiry fallback, or the screen falls through to
             // a frozen "Expires in Ns" and never tells the user the flow succeeded.
@@ -94,12 +96,12 @@ public fun OtpScreen(
             Text(stringResource(R.string.sdk_otp_ui_compose_verify))
         }
 
-        Spacer(Modifier.size(8.dp))
+        Spacer(Modifier.size(SdkSpacing.One))
 
         TextButton(
             onClick = { onCommand(OtpCommand.Resend) },
             enabled = state.canResend,
-            modifier = Modifier.fillMaxWidth().height(48.dp),
+            modifier = Modifier.fillMaxWidth().height(SdkDimens.MinTouchTarget),
         ) {
             Text(
                 if (state.canResend) stringResource(R.string.sdk_otp_ui_compose_resend)
@@ -107,7 +109,7 @@ public fun OtpScreen(
             )
         }
 
-        Spacer(Modifier.size(8.dp))
+        Spacer(Modifier.size(SdkSpacing.One))
 
         Keypad(onCommand = onCommand, enabled = state.phase == OtpState.Phase.AwaitingCode)
     }

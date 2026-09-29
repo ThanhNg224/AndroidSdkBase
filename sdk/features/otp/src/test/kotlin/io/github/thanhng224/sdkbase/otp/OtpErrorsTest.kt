@@ -1,5 +1,6 @@
 package io.github.thanhng224.sdkbase.otp
 
+import io.github.thanhng224.sdkbase.core.error.Disposition
 import io.github.thanhng224.sdkbase.core.error.SdkError
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import org.junit.Assert.assertEquals
@@ -25,5 +26,13 @@ class OtpErrorsTest {
         val error = OtpErrors.otpResendTooSoon(retryAfterSeconds = 30)
         assertEquals(OtpErrors.OTP_RESEND_TOO_SOON, error.code)
         assertTrue(error.reason.contains("30"))
+    }
+
+    @Test
+    fun `user-correctable errors are inline, exhausted attempts end the flow`() {
+        assertEquals(Disposition.INLINE_RETRY, OtpErrors.otpInvalid().disposition)
+        assertEquals(Disposition.INLINE_RETRY, OtpErrors.otpExpired().disposition)
+        assertEquals(Disposition.INLINE_RETRY, OtpErrors.otpResendTooSoon(30).disposition)
+        assertEquals(Disposition.DIALOG_TERMINAL, OtpErrors.otpAttemptsExceeded().disposition)
     }
 }

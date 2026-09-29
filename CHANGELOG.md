@@ -7,6 +7,24 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Zone `vendor` for a local binary with no Maven coordinate: never published, only an adapter may
+  depend on it, and `verify-publication.sh` proves neither reaches `build/local-repo`. Worked example:
+  `sdk/vendor/fake-sms-vendor` and the unpublished adapter `sdk/adapters/otp-fake-sms`.
+- `:sdk:core-ui-compose` (new zone `ui`): the shared Compose toolkit — `SdkColors`,
+  `SdkSpacing`/`SdkDimens`, `contrastRatio`/`meetsContrast`, `sdkErrorMessage`/`sdkErrorMessageRes`
+  (text chosen by error code, English and Vietnamese, host-overridable by resource name) and
+  `ProvideSdkLocale`. Only `<name>-ui-<toolkit>` modules may depend on it. `otp-ui-compose` uses it;
+  its `sdk_otp_ui_compose_error_network/timeout/generic` strings keep working and now default to the
+  shared text.
+- `checkSourceRules` fails a colour literal (Kotlin `Color(0x…)`, named colours, `parseColor`, or
+  `#hex`/`@android:color/` in `res/`) in a UI module; new build guards for the `ui` zone.
+- `docs/ERROR_CODE_REFERENCE.md`, `sdk/error-codes.ledger` and the `checkErrorCatalog` gate (part of
+  `check`): error codes are recorded once and can only be appended; a renumbered, deleted, reused or
+  undocumented code fails the build. `./gradlew errorCatalogDump` appends new codes to the ledger.
+- `Disposition` and `SdkError.disposition`: how a UI presents a failure (`INLINE_RETRY`,
+  `DIALOG_RETRY`, `DIALOG_TERMINAL`, `SILENT`). Derived from the family and `isRetryable` unless a
+  catalog overrides it; the existing `SdkError` constructors keep working. `OtpErrors` marks a wrong or
+  expired code and a too-early resend as `INLINE_RETRY`, exhausted attempts as `DIALOG_TERMINAL`.
 - **Logging (additive minor):** optional `event-logging` with an ordered bounded durable queue,
   stable delivery IDs, allowlisted/redacted attributes, session timing, metadata-only diagnostics,
   Java callbacks and host-owned transport; optional `event-logging-work` adds network-constrained

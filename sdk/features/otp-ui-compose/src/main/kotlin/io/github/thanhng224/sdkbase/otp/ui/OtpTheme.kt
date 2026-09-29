@@ -1,12 +1,12 @@
 package io.github.thanhng224.sdkbase.otp.ui
 
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.ReadOnlyComposable
 import androidx.compose.ui.graphics.Color
 import io.github.thanhng224.sdkbase.otp.ui.internal.theme.LocalOtpColors
+import io.github.thanhng224.sdkbase.ui.theme.SdkColors
 
 /**
  * Every colour the SDK's UI can draw. There are NO hardcoded colour literals anywhere else in this
@@ -51,13 +51,16 @@ public class OtpColors(
         /** Derives the token set from the host's Material theme, which is the sane default. */
         @Composable
         @ReadOnlyComposable
-        public fun fromMaterialTheme(): OtpColors = OtpColors(
-            background = MaterialTheme.colorScheme.surface,
-            onBackground = MaterialTheme.colorScheme.onSurface,
-            accent = MaterialTheme.colorScheme.primary,
-            error = MaterialTheme.colorScheme.error,
-            cellBorder = MaterialTheme.colorScheme.outline,
-        )
+        public fun fromMaterialTheme(): OtpColors {
+            val tokens = SdkColors.fromMaterialTheme()
+            return OtpColors(
+                background = tokens.background,
+                onBackground = tokens.onBackground,
+                accent = tokens.accent,
+                error = tokens.error,
+                cellBorder = tokens.outline,
+            )
+        }
     }
 }
 

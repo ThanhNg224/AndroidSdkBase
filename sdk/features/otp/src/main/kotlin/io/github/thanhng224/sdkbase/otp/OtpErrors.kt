@@ -1,5 +1,6 @@
 package io.github.thanhng224.sdkbase.otp
 
+import io.github.thanhng224.sdkbase.core.error.Disposition
 import io.github.thanhng224.sdkbase.core.error.SdkError
 
 /** Business errors of the OTP feature, in the 3xxx family. Codes are append-only. */
@@ -10,16 +11,28 @@ public object OtpErrors {
     public const val OTP_RESEND_TOO_SOON: Int = 3003
 
     public fun otpInvalid(): SdkError =
-        SdkError.Business(OTP_INVALID, "The submitted code is not correct")
+        SdkError.Business(
+            OTP_INVALID,
+            "The submitted code is not correct",
+            disposition = Disposition.INLINE_RETRY,
+        )
 
     public fun otpExpired(): SdkError =
-        SdkError.Business(OTP_EXPIRED, "The challenge has expired")
+        SdkError.Business(OTP_EXPIRED, "The challenge has expired", disposition = Disposition.INLINE_RETRY)
 
     public fun otpAttemptsExceeded(): SdkError =
-        SdkError.Business(OTP_ATTEMPTS_EXCEEDED, "Too many incorrect attempts")
+        SdkError.Business(
+            OTP_ATTEMPTS_EXCEEDED,
+            "Too many incorrect attempts",
+            disposition = Disposition.DIALOG_TERMINAL,
+        )
 
     public fun otpResendTooSoon(retryAfterSeconds: Int): SdkError =
-        SdkError.Business(OTP_RESEND_TOO_SOON, "Resend allowed in $retryAfterSeconds seconds")
+        SdkError.Business(
+            OTP_RESEND_TOO_SOON,
+            "Resend allowed in $retryAfterSeconds seconds",
+            disposition = Disposition.INLINE_RETRY,
+        )
 
     /** Every code this feature can emit. */
     public fun all(): List<Int> =

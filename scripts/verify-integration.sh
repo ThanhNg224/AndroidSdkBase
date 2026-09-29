@@ -117,7 +117,7 @@ PY
 
 python3 - "$SOURCE/settings.gradle.kts" "$SOURCE/gradle/module-topology.gradle.kts" <<'PY'
 from pathlib import Path
-import sys
+import re, sys
 settings, topology = map(Path, sys.argv[1:])
 s = settings.read_text()
 needle = 'include(":sdk:features:otp")\n'
@@ -126,15 +126,33 @@ if s.count(needle) != 1:
 s = s.replace(needle, needle + 'include(":sdk:features:profile")\ninclude(":sdk:composition:onboarding")\ninclude(":sdk:adapters:profile-callback")\n')
 settings.write_text(s)
 t = topology.read_text()
-for old, new in [
-    ('        ":sdk:features:otp-ui-compose",\n', '        ":sdk:features:otp-ui-compose",\n        ":sdk:features:profile",\n'),
-    ('    "composition" to listOf<String>(),', '    "composition" to listOf(":sdk:composition:onboarding"),'),
-    ('    "adapter" to listOf(":sdk:adapters:event-logging-work"),', '    "adapter" to listOf(":sdk:adapters:event-logging-work", ":sdk:adapters:profile-callback"),'),
-    ('    ":sdk:bom",\n)', '    ":sdk:features:profile",\n    ":sdk:composition:onboarding",\n    ":sdk:adapters:profile-callback",\n    ":sdk:bom",\n)'),
-]:
-    if t.count(old) != 1:
-        raise SystemExit(f"FAIL expected one topology insertion point: {old.strip()}")
-    t = t.replace(old, new)
+
+def append_to_list(text, header, item):
+    """Appends `item` to the Kotlin listOf(...) that follows `header`, whatever it already holds."""
+    match = re.search(re.escape(header) + r"listOf(?:<String>)?\(", text)
+    if match is None:
+        raise SystemExit(f"FAIL topology has no list after {header.strip()}")
+    depth, i = 1, match.end()
+    while depth:
+        depth += {"(": 1, ")": -1}.get(text[i], 0)
+        i += 1
+    close = i - 1
+    body = text[match.end():close].strip()
+    quoted = f'"{item}"'
+    if not body:
+        return text[:match.start()] + f"{header}listOf({quoted})" + text[close + 1:]
+    inner = text[match.end():close]
+    if "\n" not in inner:  # single-line list
+        return text[:close] + f", {quoted}" + text[close:]
+    indent = re.search(r"\n( *)\S", inner).group(1)
+    head = text[:close].rstrip()
+    return head + f"\n{indent}{quoted}," + text[len(head):]
+
+t = append_to_list(t, '"feature" to ', ":sdk:features:profile")
+t = append_to_list(t, '"composition" to ', ":sdk:composition:onboarding")
+t = append_to_list(t, '"adapter" to ', ":sdk:adapters:profile-callback")
+for item in (":sdk:features:profile", ":sdk:composition:onboarding", ":sdk:adapters:profile-callback"):
+    t = append_to_list(t, 'extra["publishedArtifacts"] = ', item)
 topology.write_text(t)
 PY
 

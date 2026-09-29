@@ -30,7 +30,7 @@ public object SdkErrors {
         SdkError.Common(INVALID_CONFIG, "Invalid configuration: $reason")
 
     public fun cancelledByUser(): SdkError =
-        SdkError.Common(CANCELLED_BY_USER, "Cancelled by user")
+        SdkError.Common(CANCELLED_BY_USER, "Cancelled by user", disposition = Disposition.SILENT)
 
     public fun networkUnavailable(cause: Throwable? = null): SdkError =
         SdkError.System(NETWORK_UNAVAILABLE, "Network unavailable", cause, isRetryable = true)

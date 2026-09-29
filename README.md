@@ -8,7 +8,7 @@ verification — exercises every layer end to end so you have something real to 
 
 | Gate | What fails it | Command |
 |---|---|---|
-| `check` | A module crossing a zone boundary, a feature depending on another feature, an HTTP client or DI framework on an SDK classpath, a changed/removed public signature, a failing test, lint | `./gradlew check -Psdkbase.warningsAsErrors=true` |
+| `check` | A module crossing a zone boundary, a feature depending on another feature, an HTTP client or DI framework on an SDK classpath, a changed/removed public signature, a renumbered or unrecorded error code, a colour literal in a UI module, a headless feature using the UI toolkit, a failing test, lint | `./gradlew check -Psdkbase.warningsAsErrors=true` |
 | `verify-publication.sh` | A broken POM, an unpinned `kotlin-stdlib`, the Kotlin-2.2.10 consumer failing to build, R8 stripping SDK code | `./scripts/verify-publication.sh` |
 | `verify-guards.sh` | A guard above that can no longer fail on a real violation | `./scripts/verify-guards.sh` |
 | `verify-integration.sh` | A multi-feature flow leaking sessions, optional adapter becoming required, or fixture artifacts failing Maven/R8 consumption | `./scripts/verify-integration.sh` |
@@ -42,6 +42,8 @@ sdk/core                          Android library toolkit shared by every featur
                                    concurrency/, logging/, telemetry/, gateway/.
 sdk/core-testing                  published test kit: fakes, recording sinks and SdkResult
                                    assertions; use via testImplementation.
+sdk/core-ui-compose               shared Compose toolkit (zone `ui`): colour tokens, spacing, contrast,
+                                   error text by code, per-screen locale; see docs/THEMING.md.
 sdk/features/<name>                one published artifact per feature; entry point at the package
                                     root, public sub-packages (config/, gateway/, session/...),
                                     engine code under internal/ and Kotlin `internal`.
@@ -51,6 +53,8 @@ sdk/composition/<flow>             (zone reserved) wires several features into o
                                     place two features meet.
 sdk/adapters/<feature>-<lib>       optional host bridge, e.g. event-logging-work or a gateway on OkHttp;
                                     the only SDK zone allowed an HTTP client or DI framework.
+sdk/vendor/<name>                  (zone) wraps a local vendor binary with no Maven coordinate; never
+                                    published, reachable only from an adapter.
 sdk/bom                            lists every published module automatically.
 apps/demo                          manual testing only; never published.
 verification/consumer              separate build that uses the SDK only by Maven coordinate.

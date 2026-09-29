@@ -25,13 +25,24 @@ public data class Violation(public val ruleId: String, public val line: Int, pub
 
 // Rule zones (AGENTS.md "SDK rules" / docs/ARCHITECTURE.md "The rules the guard enforces"). Every
 // SDK zone owns none of the first three; only `feature`/`composition` own a session's coroutines.
-private val ALL_SDK_ZONES = setOf("core", "testing", "feature", "composition", "adapter")
+private val ALL_SDK_ZONES = setOf("core", "testing", "ui", "feature", "composition", "adapter")
 private val OWN_SCOPE_ZONES = setOf("feature", "composition")
 
 private val GLOBAL_SCOPE = Regex("\\bGlobalScope\\b")
 private val ANDROID_LOG = Regex("android\\.util\\.Log")
 private val OWN_COROUTINE_SCOPE = Regex("\\bCoroutineScope\\(")
 private val DATA_CLASS = Regex("\\bdata\\s+class\\b")
+
+// UI modules draw only with theme tokens. `Color.Transparent`/`Unspecified` carry no hue, so they stay legal.
+private val COLOR_LITERAL_KOTLIN = Regex(
+    "\\bColor\\s*\\(\\s*(?:0[xX]|\\d)" +
+        "|\\bColor\\.(?:Black|White|Red|Green|Blue|Yellow|Cyan|Magenta|Gray|LightGray|DarkGray)\\b" +
+        "|\\bparseColor\\b",
+)
+// A whole-value `#hex` (attribute or element text), so a `#123` inside prose is not a colour.
+private val COLOR_LITERAL_XML =
+    Regex("[\"'>]\\s*#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\\s*[\"'<]|@android:color/")
+private val XML_COMMENT = Regex("<!--.*?-->", RegexOption.DOT_MATCHES_ALL)
 
 private val MODIFIER_KEYWORDS = setOf(
     "public", "internal", "private", "protected", "abstract", "open", "final",
@@ -45,7 +56,12 @@ private val MODIFIER_KEYWORDS = setOf(
  * a false positive. [zone] is the module's zone as registered in `gradle/module-topology.gradle.kts`
  * (e.g. "core", "feature").
  */
-public fun findViolations(fileName: String, text: String, zone: String): List<Violation> {
+public fun findViolations(
+    fileName: String,
+    text: String,
+    zone: String,
+    isUiModule: Boolean = false,
+): List<Violation> {
     val code = stripCommentsAndStrings(text)
     val violations = mutableListOf<Violation>()
 
@@ -68,7 +84,26 @@ public fun findViolations(fileName: String, text: String, zone: String): List<Vi
         violations += publicDataClassViolations(code)
     }
 
+    if (isUiModule) {
+        violations += matches(
+            code, COLOR_LITERAL_KOTLIN, "ui-color-literal",
+            "take colours from the theme tokens (SdkColors / MaterialTheme), never a literal",
+        )
+    }
+
     return violations.sortedBy { it.line }
+}
+
+/**
+ * The resource half of the UI colour rule: no `#hex` and no `@android:color/` in a UI module's
+ * `res/` XML (comments are ignored). Colours belong to the host's theme, not to a resource file.
+ */
+public fun findResourceViolations(text: String): List<Violation> {
+    val code = XML_COMMENT.replace(text) { match -> match.value.filter { it == '\n' } }
+    return matches(
+        code, COLOR_LITERAL_XML, "ui-color-literal",
+        "take colours from the theme tokens (SdkColors / MaterialTheme), never a resource literal",
+    ).sortedBy { it.line }
 }
 
 private fun matches(code: String, regex: Regex, ruleId: String, fix: String): List<Violation> =
@@ -271,8 +306,18 @@ public abstract class CheckSourceRulesTask : DefaultTask() {
     @get:Internal
     public abstract val sourceRoot: DirectoryProperty
 
+    @get:InputFiles
+    @get:PathSensitive(PathSensitivity.RELATIVE)
+    public abstract val resourceFiles: ConfigurableFileCollection
+
+    @get:Internal
+    public abstract val resourceRoot: DirectoryProperty
+
     @get:Input
     public abstract val zone: Property<String>
+
+    @get:Input
+    public abstract val uiModule: Property<Boolean>
 
     @get:Input
     public abstract val projectPath: Property<String>
@@ -284,10 +329,19 @@ public abstract class CheckSourceRulesTask : DefaultTask() {
     public fun check() {
         val root = sourceRoot.get().asFile
         val z = zone.get()
-        val violations = sourceFiles.files.sortedBy { it.path }.flatMap { file ->
+        val ui = uiModule.get()
+        val sourceViolations = sourceFiles.files.sortedBy { it.path }.flatMap { file ->
             val relative = file.relativeTo(root).invariantSeparatorsPath
-            findViolations(file.name, file.readText(), z).map { v -> "$relative:${v.line}: ${v.message}" }
+            findViolations(file.name, file.readText(), z, ui).map { v -> "$relative:${v.line}: ${v.message}" }
         }
+        val resourceViolations = if (!ui) emptyList() else {
+            val resRoot = resourceRoot.get().asFile
+            resourceFiles.files.sortedBy { it.path }.flatMap { file ->
+                val relative = "res/" + file.relativeTo(resRoot).invariantSeparatorsPath
+                findResourceViolations(file.readText()).map { v -> "$relative:${v.line}: ${v.message}" }
+            }
+        }
+        val violations = sourceViolations + resourceViolations
         if (violations.isNotEmpty()) {
             throw GradleException(
                 "${projectPath.get()} [$z] violates the source rules " +

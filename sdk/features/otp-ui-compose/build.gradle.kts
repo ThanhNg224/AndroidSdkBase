@@ -13,4 +13,5 @@ android {
 
 dependencies {
     api(project(":sdk:features:otp"))
+    implementation(project(":sdk:core-ui-compose"))
 }

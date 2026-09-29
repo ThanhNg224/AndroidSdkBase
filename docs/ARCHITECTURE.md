@@ -13,16 +13,22 @@ Every included module is registered in exactly one zone:
 |---|---|---|
 | `core` | `:sdk:core` | *(nothing)* |
 | `testing` | `:sdk:core-testing` | `core` |
-| `feature` | `otp`, `otp-ui-compose`, `event-logging`, `logging-file` | `core`; another `feature` only as its UI module |
+| `ui` | `:sdk:core-ui-compose` | `core` |
+| `feature` | `otp`, `otp-ui-compose`, `event-logging`, `logging-file` | `core`; another `feature` only as its UI module; `ui` only from a `<name>-ui-<toolkit>` module |
 | `composition` | *(none yet)* | `core`, `feature` |
-| `adapter` | `:sdk:adapters:event-logging-work` | `core`, `feature` |
-| `bom` | `:sdk:bom` | `core`, `feature`, `composition`, `adapter`, `testing` |
+| `adapter` | `:sdk:adapters:event-logging-work`, `:sdk:adapters:otp-fake-sms` | `core`, `feature`, `vendor` |
+| `vendor` | `:sdk:vendor:fake-sms-vendor` | *(no project)* |
+| `bom` | `:sdk:bom` | `core`, `feature`, `composition`, `adapter`, `testing`, `ui` |
 | `app` | `:apps:demo` | everything |
 
 - **testing** — the published test kit (`:sdk:core-testing`): fakes and assertions for SDK and
   host tests. Depends on `core` only. Only `bom` and `app` may target it in a non-test
   configuration; a feature or composition consumes it via `testImplementation`, which the zone
   guard ignores (see rule 2), so it never appears in `allowedTargets` for those zones.
+- **ui** — the shared Compose toolkit (`:sdk:core-ui-compose`): theme tokens, spacing and touch-target
+  constants, contrast maths, error text by code, and a per-screen locale. Depends on `core` only.
+  Only a `<name>-ui-<toolkit>` feature module (plus `bom`/`app`) may depend on it, so Compose never
+  reaches a headless feature. See [THEMING.md](THEMING.md).
 - **feature** — one capability, headless, plus its optional `<name>-ui-<toolkit>` module.
 - **composition** — wires several features into one flow (e.g. `:sdk:composition:onboarding` =
   OTP + KYC). The only SDK zone that sees more than one feature, so cross-feature orchestration has
@@ -30,6 +36,12 @@ Every included module is registered in exactly one zone:
 - **adapter** — optional bridge a host opts into: a gateway backed by a concrete HTTP client, a
   vendor device SDK. The only SDK zone allowed an HTTP client or DI framework; no SDK zone may depend
   on it, so it never rides along transitively.
+- **vendor** — wraps a binary a vendor hands you that has no Maven coordinate (a local `.jar`/`.aar`):
+  `:sdk:vendor:fake-sms-vendor` is the worked example. It depends on no project and is never
+  published; only an `adapter` may depend on it (`:sdk:adapters:otp-fake-sms` implements `OtpGateway`
+  on it). Rule 4 below makes it impossible for anything published to reach it, so a published
+  artifact can never require a file no consumer can resolve. A host that wants such an adapter copies
+  the adapter and the binary, or writes its own gateway.
 
 The empty composition zone is deliberate: the slot and its rules exist before the first module needs them.
 
@@ -44,10 +56,12 @@ The empty composition zone is deliberate: the slot and its rules exist before th
 4. A published module (`publishedArtifacts` in the topology file) depends only on other published
    modules — a consumer resolving by Maven coordinate must be able to resolve every edge.
 5. A published module has an `apiCheck` task (applies `sdkbase.abi`) and a `localTest` publication.
-6. Every `core`/`testing`/`feature`/`composition` module (`dependencyPolicedZones`) runs
+6. Every `core`/`testing`/`ui`/`feature`/`composition` module (`dependencyPolicedZones`) runs
    `checkDependencyPolicy`.
-7. Every `core`/`testing`/`feature`/`composition`/`adapter` module (`sourceRuledZones`) runs
+7. Every `core`/`testing`/`ui`/`feature`/`composition`/`adapter` module (`sourceRuledZones`) runs
    `checkSourceRules` (see "Source rules" below).
+8. The `ui` zone is used only by `<name>-ui-<toolkit>` modules: `otp-ui-compose -> core-ui-compose`
+   passes, `otp -> core-ui-compose` fails.
 
 ## The host-gateway rule
 
@@ -101,8 +115,9 @@ comments and string/char literals, so a mention inside a KDoc or a string is nev
 | `android-log` | every SDK zone | `android.util.Log` (except `LogcatSink.kt` in `core`) |
 | `own-coroutine-scope` | `feature`, `composition` | `CoroutineScope(` — own coroutines through `SessionScope` instead |
 | `public-data-class` | every SDK zone | a non-`internal`/non-`private` `data class` with more than one constructor property |
+| `ui-color-literal` | `ui` and every `<name>-ui-<toolkit>` module | `Color(0x…)`, `Color.Red` and the other named colours, `parseColor`, and a `#hex` or `@android:color/` in `res/` XML (`Color.Transparent`/`Unspecified` are fine) |
 
-The pure rule engine is `findViolations(fileName, text, zone)` in
+The pure rule engine is `findViolations(fileName, text, zone, isUiModule)` (plus `findResourceViolations` for `res/` XML) in
 `build-logic/src/main/kotlin/sdkbase/sources/SourceRules.kt` (unit-tested in
 `build-logic/src/test/kotlin/sdkbase/sources/SourceRulesTest.kt`, wired into the root `check`).
 Known limitation: `public-data-class` only reads a `data class` declaration's own modifier, not an
@@ -183,11 +198,17 @@ implementation, no `utils/misc/helpers` — live in AGENTS.md "Package rules".
 
 ## Error codes
 
-`SdkErrors` (`:sdk:core`) owns the shared common/system/lifecycle codes. Optional logging catalogs
-reserve 2101–2104 (event storage/delivery/scheduling), 2201 (file storage),
-3101/3103 (event admission) and 3201/3203–3205 (file logging). Each feature owns its catalog; code families remain
-1xxx common, 2xxx system, 3xxx business and 4xxx lifecycle. Codes are
-append-only: never renumber a released code. Hosts branch on `SdkError.code`, never on `.reason`.
+`SdkErrors` (`:sdk:core`) owns the shared common/system/lifecycle codes; each feature owns its own
+catalog in a block no other module uses (the logging features hold 2101–2104, 2201, 3101/3103 and
+3201/3203–3205). Families: 1xxx common, 2xxx system, 3xxx business, 4xxx lifecycle. Hosts branch on
+`SdkError.code`, never on `.reason`. Every error also carries a `Disposition` (`INLINE_RETRY`,
+`DIALOG_RETRY`, `DIALOG_TERMINAL`, `SILENT`) that tells a UI how to present it, independent of
+`isRetryable`.
+
+Codes are append-only, and the build enforces it: `sdk/error-codes.ledger` records every code,
+`docs/ERROR_CODE_REFERENCE.md` lists them with their disposition, and `checkErrorCatalog` (part of
+`./gradlew check`) fails on a renumbered, dropped, reused or unrecorded code. Add one with
+`./gradlew errorCatalogDump`; see the reference for the full procedure.
 
 ## Threading
 

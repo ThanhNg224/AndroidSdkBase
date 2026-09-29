@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sdk_core_ui_compose_error_unknown">Đã có lỗi xảy ra. Vui lòng thử lại.</string>
+    <string name="sdk_core_ui_compose_error_invalid_config">Tính năng này chưa được thiết lập đúng.</string>
+    <string name="sdk_core_ui_compose_error_network">Không có kết nối. Kiểm tra mạng và thử lại.</string>
+    <string name="sdk_core_ui_compose_error_gateway">Dịch vụ không thể hoàn tất yêu cầu.</string>
+    <string name="sdk_core_ui_compose_error_timeout">Yêu cầu quá thời gian. Vui lòng thử lại.</string>
+</resources>

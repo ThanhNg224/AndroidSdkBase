@@ -14,14 +14,15 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.thanhng224.sdkbase.otp.session.OtpCommand
 import io.github.thanhng224.sdkbase.otp.ui.R
+import io.github.thanhng224.sdkbase.ui.theme.SdkSpacing
 
 /** The digit pad the host UI drives [OtpCommand]s from. */
 @Composable
 internal fun Keypad(onCommand: (OtpCommand) -> Unit, enabled: Boolean) {
     val rows = listOf(listOf('1', '2', '3'), listOf('4', '5', '6'), listOf('7', '8', '9'))
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(SdkSpacing.One)) {
         rows.forEach { row ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(horizontalArrangement = Arrangement.spacedBy(SdkSpacing.One)) {
                 row.forEach { digit ->
                     // 56.dp exceeds the 48.dp Material minimum touch target.
                     TextButton(
@@ -32,7 +33,7 @@ internal fun Keypad(onCommand: (OtpCommand) -> Unit, enabled: Boolean) {
                 }
             }
         }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(SdkSpacing.One)) {
             TextButton(
                 onClick = { onCommand(OtpCommand.AppendDigit('0')) },
                 enabled = enabled,

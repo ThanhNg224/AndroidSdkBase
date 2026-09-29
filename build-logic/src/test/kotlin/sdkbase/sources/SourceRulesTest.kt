@@ -162,4 +162,53 @@ class SourceRulesTest {
 
         assertTrue(findViolations("Config.kt", text, "feature").isEmpty())
     }
+
+    @Test
+    fun colourLiteralsAreFlaggedOnlyInUiModules() {
+        val text = """
+            |package test
+            |
+            |val a = Color(0xFF112233)
+            |val b = Color.Red
+            |val c = Color(255, 0, 0)
+            |val d = android.graphics.Color.parseColor("#fff")
+            |val ok1 = Color.Transparent
+            |val ok2 = Color.Unspecified
+            |val ok3 = MaterialTheme.colorScheme.primary
+            |// Color(0xFF000000) in a comment is fine
+            |val ok4 = "Color.Red in a string is fine"
+            |
+        """.trimMargin()
+
+        val ui = findViolations("Foo.kt", text, "ui", isUiModule = true)
+        assertEquals(listOf(3, 4, 5, 6), ui.map { it.line })
+        assertTrue(ui.all { it.ruleId == "ui-color-literal" })
+
+        assertTrue(findViolations("Foo.kt", text, "feature", isUiModule = false).isEmpty())
+        assertEquals(4, findViolations("Foo.kt", text, "feature", isUiModule = true).size)
+    }
+
+    @Test
+    fun uiZoneIsAnSdkZone() {
+        val text = "package test\n\nval scope = GlobalScope\n"
+
+        assertEquals("global-scope", findViolations("Foo.kt", text, "ui").single().ruleId)
+    }
+
+    @Test
+    fun resourceColourLiteralsAreFlagged() {
+        val xml = """
+            |<resources>
+            |    <!-- <color name="commented">#FF0000</color> -->
+            |    <color name="bad">#FF0000</color>
+            |    <item name="alsoBad">@android:color/white</item>
+            |    <string name="fine">Order #5</string>
+            |</resources>
+        """.trimMargin()
+
+        val violations = findResourceViolations(xml)
+
+        assertEquals(listOf(3, 4), violations.map { it.line })
+        assertTrue(violations.all { it.ruleId == "ui-color-literal" })
+    }
 }

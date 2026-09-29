@@ -9,40 +9,57 @@ package io.github.thanhng224.sdkbase.core.error
  * [isRetryable] says whether the same call may succeed if simply repeated (a dropped network, a
  * timeout); it is what [io.github.thanhng224.sdkbase.core.call.RetryPolicy] retries on by default.
  * The catalog that creates an error decides it — `false` unless stated.
+ *
+ * [disposition] says how a UI should present the failure; see [Disposition]. It defaults from the
+ * family and [isRetryable], and a catalog may override it.
  */
 public sealed class SdkError(
     public val code: Int,
     public val reason: String,
     public val cause: Throwable?,
     public val isRetryable: Boolean,
+    public val disposition: Disposition,
 ) {
     public class Common @JvmOverloads constructor(
         code: Int,
         reason: String,
         cause: Throwable? = null,
         isRetryable: Boolean = false,
-    ) : SdkError(code, reason, cause, isRetryable)
+        disposition: Disposition? = null,
+    ) : SdkError(
+        code, reason, cause, isRetryable, disposition ?: defaultDisposition(isRetryable, lifecycle = false),
+    )
 
     public class System @JvmOverloads constructor(
         code: Int,
         reason: String,
         cause: Throwable? = null,
         isRetryable: Boolean = false,
-    ) : SdkError(code, reason, cause, isRetryable)
+        disposition: Disposition? = null,
+    ) : SdkError(
+        code, reason, cause, isRetryable, disposition ?: defaultDisposition(isRetryable, lifecycle = false),
+    )
 
     public class Business @JvmOverloads constructor(
         code: Int,
         reason: String,
         cause: Throwable? = null,
         isRetryable: Boolean = false,
-    ) : SdkError(code, reason, cause, isRetryable)
+        disposition: Disposition? = null,
+    ) : SdkError(
+        code, reason, cause, isRetryable, disposition ?: defaultDisposition(isRetryable, lifecycle = false),
+    )
 
     public class Lifecycle @JvmOverloads constructor(
         code: Int,
         reason: String,
         cause: Throwable? = null,
         isRetryable: Boolean = false,
-    ) : SdkError(code, reason, cause, isRetryable)
+        disposition: Disposition? = null,
+    ) : SdkError(
+        code, reason, cause, isRetryable, disposition ?: defaultDisposition(isRetryable, lifecycle = true),
+    )
 
-    override fun toString(): String = "SdkError(code=$code, reason=$reason, retryable=$isRetryable)"
+    override fun toString(): String =
+        "SdkError(code=$code, reason=$reason, retryable=$isRetryable, disposition=$disposition)"
 }

@@ -96,6 +96,15 @@ customises the bundled screen's text by declaring a string with the same name in
 wins over the library's at merge time. Renaming or removing one silently reverts every host that
 overrode it, so it counts as a breaking change (see Versioning). Adding one is not.
 
+## Host-owned adapters
+
+An adapter built on a vendor binary with no Maven coordinate cannot be published: a consumer could not
+resolve the file. Such a binary lives in the `vendor` zone and its adapter in the `adapter` zone, both
+unpublished (`sdk/vendor/fake-sms-vendor` and `sdk/adapters/otp-fake-sms` are the worked example), and
+the build proves nothing published reaches them (zone guard rule 4; `verify-publication.sh` checks
+`build/local-repo`). A host that wants one copies the adapter and the vendor's binary into its own
+project, or implements the feature's gateway itself.
+
 ## Versioning
 
 Every artifact shares one version (`sdkbase.version`), aligned for hosts by the BOM, and follows

@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sdk_core_ui_compose_error_unknown">Something went wrong. Try again.</string>
+    <string name="sdk_core_ui_compose_error_invalid_config">This feature is not set up correctly.</string>
+    <string name="sdk_core_ui_compose_error_network">No connection. Check your network and try again.</string>
+    <string name="sdk_core_ui_compose_error_gateway">The service could not complete the request.</string>
+    <string name="sdk_core_ui_compose_error_timeout">The request timed out. Try again.</string>
+</resources>
