@@ -6,6 +6,26 @@ public final class io/github/thanhng224/sdkbase/core/testing/FakeClock : io/gith
 	public final fun set (J)V
 }
 
+public final class io/github/thanhng224/sdkbase/core/testing/GatewayContract {
+	public static final field DEFAULT_SETTLE_MILLIS J
+	public static final field DEFAULT_TIMEOUT_MILLIS J
+	public static final field INSTANCE Lio/github/thanhng224/sdkbase/core/testing/GatewayContract;
+	public static final fun assertCallsBackOnce (JJLkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+	public static final fun assertCallsBackOnce (JLkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+	public static final fun assertCallsBackOnce (Lkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+	public static synthetic fun assertCallsBackOnce$default (JJLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+	public static final fun assertCancellable (JLkotlin/jvm/functions/Function1;)V
+	public static final fun assertCancellable (Lkotlin/jvm/functions/Function1;)V
+	public static synthetic fun assertCancellable$default (JLkotlin/jvm/functions/Function1;ILjava/lang/Object;)V
+	public static final fun assertCompletesOnce (JJLkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+	public static final fun assertCompletesOnce (JLkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+	public static final fun assertCompletesOnce (Lkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+	public static synthetic fun assertCompletesOnce$default (JJLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+	public static final fun assertReturns (JLkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+	public static final fun assertReturns (Lkotlin/jvm/functions/Function1;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+	public static synthetic fun assertReturns$default (JLkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+}
+
 public final class io/github/thanhng224/sdkbase/core/testing/RecordingLogSink : io/github/thanhng224/sdkbase/core/logging/LogSink {
 	public fun <init> ()V
 	public final fun clear ()V

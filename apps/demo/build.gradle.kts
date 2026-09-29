@@ -56,4 +56,7 @@ dependencies {
     // convenience, not part of the SDK's contract.
     implementation("androidx.lifecycle:lifecycle-runtime-compose:${libs.versions.androidxLifecycle.get()}")
     debugImplementation(libs.compose.tooling)
+
+    testImplementation(project(":sdk:core-testing"))
+    testImplementation(libs.junit)
 }

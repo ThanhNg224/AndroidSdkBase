@@ -73,6 +73,22 @@ the shortest path to the offender. The forbidden groups live in
 `build-logic/src/main/kotlin/sdkbase/dependencies/DependencyPolicy.kt`. A ready-made gateway on a
 specific client belongs in an `adapter` module (e.g. `:sdk:adapters:otp-okhttp`), which is exempt.
 
+The SDK relies on more of a gateway than its signature says: a suspend gateway must return rather
+than throw, and must stop when cancelled (the SDK's timeouts cancel it); a callback gateway must
+call back exactly once. `GatewayContract` in `:sdk:core-testing` checks this from the host's own
+unit tests, in real time, throwing `AssertionError` (no test framework required):
+
+```kotlin
+@Test fun `gateway honours the contract`() {
+    val gateway = MyOtpGateway(fakeApi)
+    GatewayContract.assertReturns { gateway.requestOtp("+84901234567") }
+    GatewayContract.assertCancellable { gateway.requestOtp("+84901234567") }
+}
+```
+
+`assertCallsBackOnce`/`assertCompletesOnce` do the same for `GatewayCallback`/`CompletionCallback`
+based gateways. `apps/demo` has a worked example (`DemoOtpGatewayContractTest`).
+
 ## Source rules
 
 `checkSourceRules` (part of `check`) scans a module's `src/main` Kotlin sources — after stripping
