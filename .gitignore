@@ -93,5 +93,4 @@ docs/superpowers/
 *.hprof
 .cache/
 node_modules/
-/docs/plan
 docs/plans/

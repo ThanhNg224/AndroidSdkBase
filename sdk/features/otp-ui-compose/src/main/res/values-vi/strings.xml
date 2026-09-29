@@ -11,7 +11,4 @@
     <string name="sdk_otp_ui_compose_error_expired">Mã đã hết hạn. Vui lòng yêu cầu mã mới.</string>
     <string name="sdk_otp_ui_compose_error_attempts_exceeded">Nhập sai quá nhiều lần</string>
     <string name="sdk_otp_ui_compose_error_resend_too_soon">Vui lòng đợi trước khi yêu cầu mã mới</string>
-    <string name="sdk_otp_ui_compose_error_network">@string/sdk_core_ui_compose_error_network</string>
-    <string name="sdk_otp_ui_compose_error_timeout">@string/sdk_core_ui_compose_error_timeout</string>
-    <string name="sdk_otp_ui_compose_error_generic">@string/sdk_core_ui_compose_error_unknown</string>
 </resources>

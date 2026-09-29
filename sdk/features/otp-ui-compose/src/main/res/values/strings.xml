@@ -11,9 +11,4 @@
     <string name="sdk_otp_ui_compose_error_expired">The code has expired. Request a new one.</string>
     <string name="sdk_otp_ui_compose_error_attempts_exceeded">Too many incorrect attempts</string>
     <string name="sdk_otp_ui_compose_error_resend_too_soon">Please wait before requesting a new code</string>
-    <!-- The next three default to the shared SDK text; they stay OTP keys so a host that
-         overrode them keeps working. -->
-    <string name="sdk_otp_ui_compose_error_network">@string/sdk_core_ui_compose_error_network</string>
-    <string name="sdk_otp_ui_compose_error_timeout">@string/sdk_core_ui_compose_error_timeout</string>
-    <string name="sdk_otp_ui_compose_error_generic">@string/sdk_core_ui_compose_error_unknown</string>
 </resources>

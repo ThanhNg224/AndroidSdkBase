@@ -119,7 +119,8 @@ SemVer. The `api/*.api` diff decides the bump:
 While the version is `0.x`, a minor release may break — but only if the changelog says so under a
 `### Breaking` heading of that release.
 
-**Deprecation:** mark the old API `@Deprecated(level = DeprecationLevel.WARNING)` with a
+**Deprecation** (applies only once the API is frozen; see "Pre-release" in `AGENTS.md` — before that,
+change or delete directly): mark the old API `@Deprecated(level = DeprecationLevel.WARNING)` with a
 `ReplaceWith` for at least one minor release, then `ERROR` for one more, and remove it only in a
 major. **Error codes** are never reused or renumbered, even after the feature that owned them is
 removed.

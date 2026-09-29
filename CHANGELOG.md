@@ -13,9 +13,8 @@ All notable changes to this project are documented here. The format follows
 - `:sdk:core-ui-compose` (new zone `ui`): the shared Compose toolkit — `SdkColors`,
   `SdkSpacing`/`SdkDimens`, `contrastRatio`/`meetsContrast`, `sdkErrorMessage`/`sdkErrorMessageRes`
   (text chosen by error code, English and Vietnamese, host-overridable by resource name) and
-  `ProvideSdkLocale`. Only `<name>-ui-<toolkit>` modules may depend on it. `otp-ui-compose` uses it;
-  its `sdk_otp_ui_compose_error_network/timeout/generic` strings keep working and now default to the
-  shared text.
+  `ProvideSdkLocale`. Only `<name>-ui-<toolkit>` modules may depend on it. `otp-ui-compose` uses it
+  for every non-OTP error; its `sdk_otp_ui_compose_error_network/timeout/generic` strings are removed.
 - `checkSourceRules` fails a colour literal (Kotlin `Color(0x…)`, named colours, `parseColor`, or
   `#hex`/`@android:color/` in `res/`) in a UI module; new build guards for the `ui` zone.
 - `docs/ERROR_CODE_REFERENCE.md`, `sdk/error-codes.ledger` and the `checkErrorCatalog` gate (part of

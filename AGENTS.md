@@ -8,6 +8,8 @@ own feature. Published artifacts: `core`, `core-testing`, `core-ui-compose`, `ot
 ```bash
 ./gradlew check -Psdkbase.warningsAsErrors=true   # tests, lint, zone guard, apiCheck, dependency policy, source rules, error catalog
 ./scripts/verify-publication.sh                   # local publish, POM checks, floor-Kotlin consumer under R8
+./scripts/verify-publication.sh --current         # same on the current Kotlin compiler (CI runs both)
+./scripts/verify-integration.sh                   # multi-feature composition, optional adapters, coordinate-only consumers (CI runs it)
 ./scripts/verify-guards.sh                        # only when you touch a guard: proves each can still fail
 ./scripts/new-feature.sh <name>                   # scaffold a new sdk/features/<name>, registered and green
 ```
@@ -41,14 +43,28 @@ own feature. Published artifacts: `core`, `core-testing`, `core-ui-compose`, `ot
 - * The host owns networking: features declare a gateway interface; no HTTP client or DI framework in a core/feature/composition classpath, transitively (`checkDependencyPolicy`). Call host code only through `safeCall` — it maps exceptions to `SdkError` and applies its own timeout.
 - * No `GlobalScope` in `sdk/`, and a feature/composition module owns no `CoroutineScope` of its own — one `SessionScope` per session owns every coroutine (`checkSourceRules`).
 - Nothing escapes to the host as an exception: return `SdkResult`; map host exceptions to `SdkError`. A host-supplied `LogSink`/`TelemetrySink` is always contained — a throw from one never reaches the caller.
-- Error codes are append-only: 1xxx common, 2xxx system, 3xxx feature business, 4xxx lifecycle. A new code is recorded with `./gradlew errorCatalogDump` and a row in `docs/ERROR_CODE_REFERENCE.md`; never renumber or delete one — mark it `retired` (`checkErrorCatalog`). Every `SdkError` has a `Disposition`; the UI chooses text by `code`, never by `reason`.
+- Error codes are append-only once the API is frozen (see Pre-release below): 1xxx common, 2xxx system, 3xxx feature business, 4xxx lifecycle. A new code is recorded with `./gradlew errorCatalogDump` and a row in `docs/ERROR_CODE_REFERENCE.md`; never renumber or delete one — mark it `retired` (`checkErrorCatalog`). Every `SdkError` has a `Disposition`; the UI chooses text by `code`, never by `reason`.
 - A public change (an `.api` diff, a new error code, a UI string resource) adds a line to `CHANGELOG.md` in the same commit; the version bump it implies is in `docs/COMPATIBILITY.md` "Versioning".
 - Java hosts must be able to use every entry point: builders instead of default arguments, callback interfaces next to suspend ones. For an outbound call (the SDK calling the host back), build the callback-based twin on core's `launchCallback`/`observe` (`core/call/`, `core/session/`) rather than hand-rolling threading/cancellation — see `OtpSdk.start(config, callback)`.
 - * Log only through `SdkLogger`/`TaggedLogger` — never `android.util.Log` in `sdk/` except inside `LogcatSink` (`checkSourceRules`). Every record is redacted before a sink sees it; mask an identifier yourself with `DefaultRedactor.mask()`.
 - Unit tests for business logic (state machines, engines, config validation). No tests for Compose layouts.
 
+## Pre-release: breaking changes are allowed
+No release has been tagged, so no consumer exists. Until the maintainer freezes the API (a line here
+saying "API frozen from <tag>"), a breaking change is the default way to fix a bad design — do not
+keep the old shape alive.
+- Change or delete a public API directly. No compatibility overloads, aliases, `@Deprecated` shims, or
+  legacy resource names "so existing hosts keep working" — there are none.
+- Still run `./gradlew :<module>:apiDump` and commit the `.api` diff with the code, and add the
+  `CHANGELOG.md` line. Batch `apiDump` at the end of a change instead of after every edit.
+- Error codes too: renumber or delete one by editing the `*Errors.kt` constant, its
+  `sdk/error-codes.ledger` line and its `docs/ERROR_CODE_REFERENCE.md` row together, in one commit. No
+  `retired` marker for a code nobody has seen. `checkErrorCatalog` still runs unchanged.
+- Every other gate is unchanged.
+- `@JvmOverloads` and callback twins are Java usability, not compatibility — keep them.
+
 ## Do not
 - Publish to Maven Central or add Central/Sonatype plugins or credentials. This is a base; there is nothing to release. Only `build/local-repo` is used.
 - Regenerate an `.api` baseline just to make `apiCheck` pass without understanding the diff.
 - Weaken or skip a gate. If a gate is wrong, fix the gate and prove it with `verify-guards.sh`.
-- Commit `local.properties`, keystores, or anything under `docs/superpowers/` (local working notes).
+- Commit `local.properties`, keystores, or anything under `docs/plans/` (local, git-ignored plans). Delete a plan once its work is done.

@@ -6,7 +6,7 @@ keeps it honest. Read it before adding, changing or retiring an error.
 
 ## Rules
 
-- **Codes are append-only.** Never renumber a code, never reuse one, never delete its record — not
+- **Codes are append-only once the API is frozen** (before that, see "Pre-release" below). Never renumber a code, never reuse one, never delete its record — not
   even after the feature that owned it is removed. A code that is no longer declared is marked
   `retired` here and in the ledger, and stays reserved.
 - **Families:** `1xxx` common, `2xxx` system/transport, `3xxx` business, `4xxx` lifecycle. `SdkErrors`
@@ -34,8 +34,15 @@ each. `./gradlew check` runs `checkErrorCatalog`, which fails when:
 To add a code: declare the `const val` in the module's `*Errors.kt`, run `./gradlew errorCatalogDump`
 (it only appends), add the matching table row, and commit all three together with a `CHANGELOG.md`
 line. `errorCatalogDump` refuses to change an existing code, so a renumbering has to be a visible
-hand-edit of the ledger, which review must reject. A new feature scaffolded by
+hand-edit of the ledger, which review must reject once the API is frozen. A new feature scaffolded by
 `scripts/new-feature.sh` starts with an empty catalog; register codes only when it has real errors.
+
+## Pre-release
+
+While no release is tagged (see `AGENTS.md`, "Pre-release"), a code may be renumbered or deleted:
+edit the constant, its ledger line and its table row together in one commit, and never mark it
+`retired`. The build checks only that code, ledger and table agree; it does not look at git history.
+From the first tagged release the rules above apply in full.
 
 ## Catalog
 
