@@ -191,10 +191,10 @@ run_case abi-add-abstract-to-host-interface \
 }'" \
   "./gradlew :sdk:core:apiCheck -q" "$ABI_CORE"
 run_case abi-add-sealed-subtype \
-  "edit $CORE/error/SdkError.kt '    public class Lifecycle(' '    public class Security(code: Int, reason: String, cause: Throwable? = null) :
-        SdkError(code, reason, cause)
+  "edit $CORE/error/SdkError.kt '    public class Lifecycle @JvmOverloads constructor(' '    public class Security(code: Int, reason: String) :
+        SdkError(code, reason, null, false)
 
-    public class Lifecycle('" \
+    public class Lifecycle @JvmOverloads constructor('" \
   "./gradlew :sdk:core:apiCheck -q" "$ABI_CORE"
 run_case abi-android-module-addition \
   "printf 'package io.github.thanhng224.sdkbase.otp.session\n\npublic fun OtpState.isTerminal(): Boolean = phase == OtpState.Phase.Verified\n' > $OTP/session/OtpStateExt.kt" \
