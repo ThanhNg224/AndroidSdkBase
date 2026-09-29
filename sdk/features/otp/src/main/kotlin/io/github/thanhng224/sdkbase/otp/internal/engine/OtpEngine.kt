@@ -117,6 +117,17 @@ internal class OtpEngine(
             val result = safeCall("requestOtp", gatewayTimeoutMillis) { gateway.requestOtp(destination) }
         ) {
             is SdkResult.Success -> {
+                val violation = result.value.violation()
+                if (violation != null) {
+                    log.e { "invalid challenge from host: $violation" }
+                    update {
+                        OtpStateMachine.onFatal(
+                            it,
+                            SdkErrors.gatewayFailure("requestOtp returned an invalid challenge: $violation"),
+                        )
+                    }
+                    return
+                }
                 challengeId = result.value.challengeId
                 update {
                     OtpStateMachine.onChallengeIssued(

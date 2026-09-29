@@ -173,12 +173,12 @@ class OtpEngineTest {
         repeat(200) {
             val verifies = java.util.concurrent.atomic.AtomicInteger()
             val (scope, engine) = engineWith(
-                requestOtp = { SdkResult.Success(OtpChallenge("c", 1, 60, 30)) },
+                requestOtp = { SdkResult.Success(OtpChallenge("c", 4, 60, 30)) },
                 verifyOtp = { verifies.incrementAndGet(); kotlinx.coroutines.yield(); SdkResult.Success(Unit) },
                 dispatchers = realDispatchers,
             )
             engine.start("0900")
-            engine.dispatch(OtpCommand.AppendDigit('1'))
+            "1234".forEach { engine.dispatch(OtpCommand.AppendDigit(it)) }
             (1..2).map { launch { engine.dispatch(OtpCommand.Submit) } }.joinAll()
             assertEquals(1, verifies.get())
             scope.close()

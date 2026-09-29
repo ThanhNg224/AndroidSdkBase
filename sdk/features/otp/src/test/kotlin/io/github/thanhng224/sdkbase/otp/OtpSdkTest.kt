@@ -133,6 +133,35 @@ class OtpSdkTest {
     }
 
     @Test
+    fun invalidChallengeFailsTheStart() = runTest {
+        val gateway = FakeGateway(challenge = OtpChallenge("ch-1", 3, 60, 30))
+
+        val result = OtpSdk.start(configOf(gateway))
+
+        assertTrue(result is SdkResult.Failure)
+        assertEquals(SdkErrors.GATEWAY_FAILURE, result.errorOrNull()?.code)
+    }
+
+    @Test
+    fun invalidChallengeOnResendFailsTheSession() = runTest {
+        var calls = 0
+        val gateway = FakeGateway(
+            requestResult = {
+                SdkResult.Success(
+                    if (calls++ == 0) OtpChallenge("ch-1", 6, 60, 0) else OtpChallenge("ch-2", 6, 0, 0),
+                )
+            },
+        )
+        val session = OtpSdk.start(configOf(gateway)).getOrNull()!!
+
+        val result = session.resend()
+
+        assertEquals(SdkErrors.GATEWAY_FAILURE, result.errorOrNull()?.code)
+        assertEquals(OtpState.Phase.Failed, session.state.value.phase)
+        session.close()
+    }
+
+    @Test
     fun `start surfaces the gateway's own error code, not unknown`() = runTest {
         val gateway = FakeGateway(
             requestResult = { SdkResult.Failure(SdkErrors.gatewayFailure("boom")) },

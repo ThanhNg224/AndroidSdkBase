@@ -21,6 +21,10 @@ public interface OtpGateway {
 /**
  * What the backend tells the SDK about a freshly created challenge. A plain class, not a
  * `data class` (ABI: `copy`/`componentN` would freeze the property list for every consumer).
+ *
+ * The SDK rejects a challenge outside these ranges with a `GATEWAY_FAILURE` error: [challengeId]
+ * not blank, [codeLength] in 4..10, [expiresInSeconds] greater than 0, [resendAfterSeconds] at
+ * least 0.
  */
 public class OtpChallenge(
     public val challengeId: String,
