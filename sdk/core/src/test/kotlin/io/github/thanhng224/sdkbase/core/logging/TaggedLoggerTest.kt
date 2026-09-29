@@ -3,6 +3,7 @@ package io.github.thanhng224.sdkbase.core.logging
 import io.github.thanhng224.sdkbase.core.testing.RecordingLogSink
 import io.github.thanhng224.sdkbase.core.time.Clock
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotSame
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
@@ -39,8 +40,10 @@ class TaggedLoggerTest {
             sink.records.map { it.level },
         )
         assertTrue(sink.records.all { it.tag == "MyTag" })
-        assertEquals(throwable, sink.records[3].throwable)
-        assertEquals(throwable, sink.records[4].throwable)
+        assertNotSame(throwable, sink.records[3].throwable)
+        assertNotSame(throwable, sink.records[4].throwable)
+        assertEquals(throwable.toString(), sink.records[3].throwable.toString())
+        assertEquals(throwable.toString(), sink.records[4].throwable.toString())
     }
 
     @Test
@@ -73,7 +76,8 @@ class TaggedLoggerTest {
         val record = sink.records.single()
         assertEquals(LogLevel.ERROR, record.level)
         assertEquals("op=doWork duration_ms=3", record.message)
-        assertEquals(boom, record.throwable)
+        assertNotSame(boom, record.throwable)
+        assertEquals(boom.toString(), record.throwable.toString())
     }
 
     @Test

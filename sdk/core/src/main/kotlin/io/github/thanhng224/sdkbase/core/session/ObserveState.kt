@@ -25,7 +25,8 @@ public fun <S> StateFlow<S>.observe(
     listener: StateListener<S>,
     parent: Job? = null,
 ): Cancellable {
-    val scope = CoroutineScope(SupervisorJob(parent) + dispatchers.main)
+    val owner = SupervisorJob(parent)
+    val scope = CoroutineScope(owner + dispatchers.main)
     val flow = this
     val job = scope.launch {
         flow.collect { state ->
@@ -36,5 +37,6 @@ public fun <S> StateFlow<S>.observe(
             }
         }
     }
+    job.invokeOnCompletion { owner.complete() }
     return Cancellable { job.cancel() }
 }

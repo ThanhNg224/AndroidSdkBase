@@ -31,6 +31,12 @@ jobs:
       - name: Verify the publication and the external consumer
         run: ./scripts/verify-publication.sh
 
+      - name: Verify headless and UI consumers on the current Kotlin compiler
+        run: ./scripts/verify-publication.sh --current
+
+      - name: Verify multi-feature composition and optional callback adapter
+        run: ./scripts/verify-integration.sh
+
       - name: Upload reports on failure
         if: failure()
         uses: actions/upload-artifact@v4

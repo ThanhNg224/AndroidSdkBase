@@ -4,6 +4,8 @@ import io.github.thanhng224.sdkbase.core.testing.FakeClock
 import io.github.thanhng224.sdkbase.core.testing.RecordingLogSink
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotSame
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -86,10 +88,11 @@ class SdkLoggerTest {
             .build()
 
         // Must not throw.
-        logger.tagged("T").e { "boom" }
+        logger.tagged("T").e(IllegalStateException("boom")) { "boom" }
 
         assertEquals(1, second.records.size)
         assertEquals("boom", second.records[0].message)
+        assertTrue(second.records[0].throwable.toString().contains("boom"))
     }
 
     @Test
@@ -109,7 +112,157 @@ class SdkLoggerTest {
         assertEquals(LogLevel.WARN, record.level)
         assertEquals("Tag1", record.tag)
         assertEquals("careful", record.message)
-        assertEquals(throwable, record.throwable)
+        assertNotSame(throwable, record.throwable)
+        assertEquals(throwable.toString(), record.throwable.toString())
         assertEquals(42_000L, record.timestampMillis)
+    }
+
+    @Test
+    fun `throwable message cause suppressed and stack text are redacted in detached snapshot`() {
+        val sink = RecordingLogSink()
+        val cause = IllegalArgumentException("cause CANARY")
+        val original = IllegalStateException("message CANARY", cause).apply {
+            stackTrace = arrayOf(StackTraceElement("pkg.CANARY", "methodCANARY", "fileCANARY.kt", 27))
+            addSuppressed(IllegalArgumentException("suppressed CANARY"))
+        }
+        val logger = SdkLogger.Builder()
+            .minLevel(LogLevel.VERBOSE)
+            .sink(sink)
+            .redactor(Redactor { it.replace("CANARY", "[redacted]") })
+            .build()
+
+        logger.tagged("T").e(original) { "request CANARY" }
+
+        val record = sink.records.single()
+        val snapshot = record.throwable!!
+        assertNotSame(original, snapshot)
+        assertNotSame(cause, snapshot.cause)
+        assertNotSame(original.suppressed.single(), snapshot.suppressed.single())
+        assertTrue(record.message.contains("[redacted]"))
+        assertFalse(record.message.contains("CANARY"))
+        val rendered = java.io.StringWriter().also { snapshot.printStackTrace(java.io.PrintWriter(it)) }.toString()
+        assertTrue(rendered.contains("message [redacted]"))
+        assertTrue(rendered.contains("cause [redacted]"))
+        assertTrue(rendered.contains("suppressed [redacted]"))
+        assertTrue(rendered.contains("pkg.[redacted].method[redacted](file[redacted].kt:27)"))
+        assertFalse(rendered.contains("CANARY"))
+        assertEquals("message CANARY", original.message)
+        assertEquals("cause CANARY", cause.message)
+        assertEquals("pkg.CANARY", original.stackTrace.single().className)
+        assertEquals("suppressed CANARY", original.suppressed.single().message)
+    }
+
+    @Test
+    fun `throwable graph cycles are represented by a marker`() {
+        class CyclingException : Exception("cycle CANARY") {
+            var next: Throwable? = null
+            override val cause: Throwable?
+                get() = next
+        }
+
+        val first = CyclingException()
+        val second = CyclingException()
+        first.next = second
+        second.next = first
+        val sink = RecordingLogSink()
+        val logger = SdkLogger.Builder().sink(sink)
+            .redactor(Redactor { it.replace("CANARY", "[redacted]") }).build()
+
+        logger.tagged("T").e(first) { "failed" }
+
+        val snapshot = sink.records.single().throwable!!
+        val cycleMarker = snapshot.cause!!.cause!!
+        assertEquals(0, cycleMarker.stackTrace.size)
+        val rendered = java.io.StringWriter().also { snapshot.printStackTrace(java.io.PrintWriter(it)) }
+            .toString()
+        assertTrue(rendered.contains("<cycle>"))
+        assertTrue(rendered.contains("cycle [redacted]"))
+        assertFalse(rendered.contains("CANARY"))
+    }
+
+    @Test
+    fun `very deep cause chain is truncated instead of overflowing the stack`() {
+        var chain: Throwable = IllegalStateException("leaf")
+        repeat(5_000) { chain = IllegalStateException("level $it", chain) }
+        val sink = RecordingLogSink()
+        val logger = SdkLogger.Builder().sink(sink).build()
+
+        logger.tagged("T").e(chain) { "deep" }
+
+        val rendered = java.io.StringWriter().also { sink.records.single().throwable!!.printStackTrace(java.io.PrintWriter(it)) }.toString()
+        assertTrue(rendered.contains("<truncated>"))
+    }
+
+    @Test
+    fun `same exception in two suppressed branches is not reported as a cycle`() {
+        val shared = IllegalArgumentException("shared")
+        val original = IllegalStateException("root").apply {
+            addSuppressed(RuntimeException("a", shared))
+            addSuppressed(RuntimeException("b", shared))
+        }
+        val sink = RecordingLogSink()
+        val logger = SdkLogger.Builder().sink(sink).build()
+
+        logger.tagged("T").e(original) { "diamond" }
+
+        val snapshot = sink.records.single().throwable!!
+        assertTrue(snapshot.suppressed.all { it.cause.toString().contains("shared") })
+        assertFalse(snapshot.suppressed.any { it.cause.toString().contains("<cycle>") })
+    }
+
+    @Test
+    fun `throwable snapshot getter failure keeps only the redacted message`() {
+        val sink = RecordingLogSink()
+        val hostile = object : Exception() {
+            override val message: String?
+                get() = throw IllegalStateException("hostile getter")
+        }
+        val logger = SdkLogger.Builder().sink(sink)
+            .redactor(Redactor { it.replace("CANARY", "[redacted]") }).build()
+
+        logger.tagged("T").e(hostile) { "message CANARY" }
+
+        val record = sink.records.single()
+        assertEquals("message [redacted]", record.message)
+        assertNull(record.throwable)
+    }
+
+    @Test
+    fun `redactor failure while processing message drops record without escaping`() {
+        val sink = RecordingLogSink()
+        val logger = SdkLogger.Builder().sink(sink)
+            .redactor(Redactor { throw IllegalArgumentException("redactor failed") }).build()
+
+        logger.tagged("T").e { "raw CANARY" }
+
+        assertTrue(sink.records.isEmpty())
+    }
+
+    @Test
+    fun `redactor failure while processing throwable drops record without escaping`() {
+        val sink = RecordingLogSink()
+        val logger = SdkLogger.Builder().sink(sink)
+            .redactor(Redactor { value ->
+                if (value.contains("THROWABLE_CANARY")) error("redactor failed")
+                value
+            }).build()
+
+        logger.tagged("T").e(IllegalStateException("THROWABLE_CANARY")) { "safe message" }
+
+        assertTrue(sink.records.isEmpty())
+    }
+
+    @Test
+    fun `Redactor None intentionally preserves throwable text while detaching source`() {
+        val sink = RecordingLogSink()
+        val original = IllegalStateException("intentional CANARY")
+        val logger = SdkLogger.Builder().sink(sink).redactor(Redactor.None).build()
+
+        logger.tagged("T").e(original) { "intentional CANARY" }
+
+        val record = sink.records.single()
+        assertEquals("intentional CANARY", record.message)
+        assertNotSame(original, record.throwable)
+        assertTrue(record.throwable.toString().contains("intentional CANARY"))
     }
 }

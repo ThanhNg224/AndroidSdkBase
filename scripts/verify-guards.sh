@@ -16,6 +16,11 @@ failures=0
 
 sync_tree() {
   # Restores the scratch copy to the current working tree; keeps its build outputs and caches.
+  # The scaffold case creates this module only in scratch. Its excluded build/ directory prevents
+  # rsync from removing the orphan on the next sync; remove it when no real source module exists.
+  if [ ! -e "$SRC/sdk/features/face-match" ]; then
+    rm -rf "$WORK/sdk/features/face-match"
+  fi
   rsync -a --delete --exclude 'build/' --exclude '.gradle/' --exclude '.kotlin/' --exclude '.git/' \
     "$SRC/" "$WORK/"
 }
@@ -259,6 +264,14 @@ run_case r8-canary-unreachable-sdk \
 run_case r8-canary-minify-disabled \
   "edit verification/consumer/app/build.gradle.kts 'isMinifyEnabled = true' 'isMinifyEnabled = false'" \
   "$PUB" "R8 mapping file is missing"
+
+# Consumer graph contracts are independent of a successful Kotlin compilation or R8 build.
+run_case consumer-headless-resolves-compose \
+  "add_dep verification/consumer/headless/build.gradle.kts 'implementation(\"androidx.compose.ui:ui:1.12.1\")'" \
+  "$PUB" "Headless consumer unexpectedly resolves Compose"
+run_case consumer-runtime-stdlib-upgraded \
+  "add_dep verification/consumer/headless/build.gradle.kts 'implementation(\"org.jetbrains.kotlin:kotlin-stdlib:2.4.20\")'" \
+  "$PUB" "stdlib 2.4.20, expected 2.2.21"
 
 # --- Scaffold (scripts/new-feature.sh) self-test ------------------------------------------------
 # Positive checks: the scaffold script and the gate it hands off to must SUCCEED — the opposite of

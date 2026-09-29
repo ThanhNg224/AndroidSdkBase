@@ -11,6 +11,17 @@ verification — exercises every layer end to end so you have something real to 
 | `check` | A module crossing a zone boundary, a feature depending on another feature, an HTTP client or DI framework on an SDK classpath, a changed/removed public signature, a failing test, lint | `./gradlew check -Psdkbase.warningsAsErrors=true` |
 | `verify-publication.sh` | A broken POM, an unpinned `kotlin-stdlib`, the Kotlin-2.2.10 consumer failing to build, R8 stripping SDK code | `./scripts/verify-publication.sh` |
 | `verify-guards.sh` | A guard above that can no longer fail on a real violation | `./scripts/verify-guards.sh` |
+| `verify-integration.sh` | A multi-feature flow leaking sessions, optional adapter becoming required, or fixture artifacts failing Maven/R8 consumption | `./scripts/verify-integration.sh` |
+
+The publication gate builds both headless and Compose UI hosts on Kotlin compiler 2.2.10;
+`./scripts/verify-publication.sh --current` repeats them on 2.4.20. Both keep runtime stdlib at
+2.2.21. See [the consumer matrix](docs/COMPATIBILITY.md#verified-consumer-profiles).
+
+Integration fixtures live under `verification/integration-fixtures` and are overlaid only into
+`build/integration-proof.*`. They exercise OTP → profile composition and an optional callback
+adapter, including failure/cancellation cleanup and coordinate-only Java/Kotlin consumers. They
+add no artifacts to the base's default publication. The callback fixture cancels waiting and
+ignores late callbacks; it cannot cancel a backend task without a host cancellation handle.
 
 ## Toolchain
 

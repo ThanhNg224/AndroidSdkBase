@@ -1,8 +1,8 @@
 package io.github.thanhng224.sdkbase.core.logging
 
 /**
- * Transforms a raw message into one safe to hand to a [LogSink]. [SdkLogger] runs this exactly
- * once per record, before any sink sees it.
+ * Transforms one raw text field into a safe value to hand to a [LogSink]. [SdkLogger] applies this
+ * to the log message and to text fields in a detached Throwable snapshot before any sink sees them.
  */
 public fun interface Redactor {
 

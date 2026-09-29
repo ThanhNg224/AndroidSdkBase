@@ -2,12 +2,19 @@
 # Local-only publication gate (nothing goes to Maven Central):
 #   1. publish every artifact to build/local-repo
 #   2. every POM: sources + javadoc jars present (except the BOM) and kotlin-stdlib pinned to the floor
-#   3. build verification/consumer from those coordinates on the floor Kotlin, release + R8
+#   3. build headless + UI consumers on the floor compiler (or --current), release + R8
 #   4. R8 output still contains classes from every published Android artifact
 set -euo pipefail
 cd "$(dirname "$0")/.."
 REPO_DIR="$PWD/build/local-repo"
 NS="io.github.thanhng224.sdkbase"
+COMPILER="2.2.10"
+if [ "${1:-}" = "--current" ] && [ "$#" -eq 1 ]; then
+  COMPILER="$(sed -n 's/^kotlin = "\(.*\)"$/\1/p' gradle/libs.versions.toml)"
+elif [ "$#" -ne 0 ]; then
+  echo "usage: $0 [--current]" >&2
+  exit 2
+fi
 
 if [ -z "${ANDROID_HOME:-}" ] && [ -f local.properties ]; then
   ANDROID_HOME="$(grep -E '^sdk\.dir=' local.properties | head -1 | cut -d= -f2-)"
@@ -52,21 +59,29 @@ EOF
   [ "$stdlib" = "$FLOOR" ] || fail "$name declares kotlin-stdlib $stdlib, expected $FLOOR"
 done < <(find "$REPO_DIR" -name '*.pom')
 
-MAPPING="verification/consumer/app/build/outputs/mapping/release/mapping.txt"
-rm -f "$MAPPING"
+for module in app headless; do
+  rm -f "verification/consumer/$module/build/outputs/mapping/release/mapping.txt"
+done
 
-echo "==> Building the external consumer (floor Kotlin, release, R8)"
-( cd verification/consumer && ./gradlew assembleRelease -PsdkLocalRepo="$REPO_DIR" --no-daemon -q ) \
-  || fail "the external consumer did not build"
+echo "==> Building external consumers (compiler $COMPILER, stdlib $FLOOR, release, R8)"
+( cd verification/consumer && ./gradlew :app:verifyRuntimeContracts :headless:verifyRuntimeContracts \
+    :app:assembleRelease :headless:assembleRelease -PconsumerKotlin="$COMPILER" \
+    -PsdkStdlibFloor="$FLOOR" -PsdkLocalRepo="$REPO_DIR" --no-daemon -q ) \
+  || fail "the external consumers did not build or violated a runtime contract"
 
-if [ ! -f "$MAPPING" ]; then
-  fail "R8 mapping file is missing; release minification may be disabled"
-else
-  echo "==> Checking R8 kept SDK code"
-  for pkg in core otp otp.ui; do
+for module in app headless; do
+  MAPPING="verification/consumer/$module/build/outputs/mapping/release/mapping.txt"
+  if [ ! -f "$MAPPING" ]; then
+    fail "$module R8 mapping file is missing; release minification may be disabled"
+    continue
+  fi
+  echo "==> Checking $module R8 kept SDK code"
+  packages="core otp"
+  if [ "$module" = "app" ]; then packages="$packages otp.ui"; fi
+  for pkg in $packages; do
     grep -Eq "^${NS//./\\.}\.${pkg//./\\.}\.[A-Za-z]" "$MAPPING" || fail "R8 kept no classes from $NS.$pkg"
   done
-fi
+done
 
 [ "$status" -eq 0 ] && echo "Publication verified."
 exit "$status"

@@ -67,7 +67,6 @@ internal class DemoOtpViewModel : ViewModel() {
     override fun onCleared() {
         session?.close()
         session = null
-        super.onCleared()
     }
 
     private companion object {

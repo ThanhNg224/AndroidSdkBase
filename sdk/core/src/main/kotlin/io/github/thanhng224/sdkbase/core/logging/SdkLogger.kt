@@ -7,8 +7,9 @@ import io.github.thanhng224.sdkbase.core.time.Clock
  * own (see `OtpSdkConfig.logger`), and [withSession] returns a new, independent instance scoped to
  * one session id instead of mutating shared state.
  *
- * A record is redacted exactly once, before any sink sees it. A sink that throws is contained by
- * [log]: the throw never escapes and never stops the remaining sinks from receiving the record.
+ * The message and detached Throwable snapshot are redacted before any sink sees them. A sink that
+ * throws is contained by [log]: the throw never escapes and never stops the remaining sinks from
+ * receiving the record.
  */
 public class SdkLogger private constructor(
     public val minLevel: LogLevel,
@@ -31,13 +32,28 @@ public class SdkLogger private constructor(
     /**
      * Redacts, prefixes and dispatches one record to every sink. `internal`: only [TaggedLogger],
      * in this same module, calls it. [message] is evaluated at most once, and only when
-     * [isLoggable] is true.
+     * [isLoggable] is true. A message redactor failure drops the record; a snapshot failure keeps
+     * the redacted message and drops only its Throwable.
      */
     internal fun log(level: LogLevel, tag: String, throwable: Throwable?, message: () -> String) {
         if (!isLoggable(level)) return
-        val redacted = redactor.redact(message())
+        val rawMessage = message()
+        val redacted = try {
+            redactText(rawMessage)
+        } catch (_: RedactorFailure) {
+            return
+        }
         val text = sessionId?.let { "session=$it $redacted" } ?: redacted
-        val record = LogRecord(level, tag, text, throwable, clock.nowMillis(), sessionId)
+        val safeThrowable = try {
+            throwable?.let { snapshotThrowable(it, ::redactText) }
+        } catch (_: RedactorFailure) {
+            return
+        } catch (_: Exception) {
+            // A hostile or broken Throwable must not prevent the already-redacted message from
+            // reaching the sinks, and must never be forwarded in its original form.
+            null
+        }
+        val record = LogRecord(level, tag, text, safeThrowable, clock.nowMillis(), sessionId)
         for (sink in sinks) {
             try {
                 sink.write(record)
@@ -46,6 +62,12 @@ public class SdkLogger private constructor(
                 // whatever business logic just tried to log something.
             }
         }
+    }
+
+    private fun redactText(value: String): String = try {
+        redactor.redact(value)
+    } catch (_: Exception) {
+        throw RedactorFailure()
     }
 
     /** Only [TaggedLogger.trace] uses this, to measure a duration with the logger's own clock. */
@@ -79,3 +101,6 @@ public class SdkLogger private constructor(
         )
     }
 }
+
+/** Distinguishes a redactor failure from an exception raised while reading a host Throwable. */
+private class RedactorFailure : RuntimeException()

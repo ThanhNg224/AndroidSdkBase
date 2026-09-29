@@ -21,6 +21,7 @@ android {
             // The demo is also the shrinker canary: if the SDK's consumer rules are wrong,
             // this build is where it shows.
             isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
@@ -33,15 +34,27 @@ android {
     buildFeatures {
         compose = true
     }
+
+    lint {
+        warningsAsErrors = true
+        abortOnError = true
+    }
 }
 
 kotlin {
     jvmToolchain(libs.versions.javaToolchain.get().toInt())
+    compilerOptions {
+        allWarningsAsErrors.set(
+            providers.gradleProperty("sdkbase.warningsAsErrors").map(String::toBoolean).getOrElse(false)
+        )
+    }
 }
 
 dependencies {
     // The app is not published; it compiles at the toolchain's own API level, not the floor.
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:${libs.versions.kotlin.get()}")
+    implementation(libs.kotlin.stdlib) {
+        version { require(libs.versions.kotlin.get()) }
+    }
     implementation(project(":sdk:features:otp"))
     implementation(project(":sdk:features:otp-ui-compose"))
     implementation(platform(libs.compose.bom))
@@ -49,12 +62,7 @@ dependencies {
     implementation(libs.compose.material3)
     implementation(libs.activity.compose)
     implementation(libs.androidx.lifecycle.runtime)
-    // Not in gradle/libs.versions.toml: this app-only dependency reuses the already-catalogued
-    // androidxLifecycle version rather than adding a library entry to the shared catalog, which
-    // is owned by the module-topology/publishing work in flight elsewhere in this repo. It must
-    // never be added to a published SDK module — collectAsStateWithLifecycle() is a host/app
-    // convenience, not part of the SDK's contract.
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:${libs.versions.androidxLifecycle.get()}")
+    implementation(libs.androidx.lifecycle.runtime.compose)
     debugImplementation(libs.compose.tooling)
 
     testImplementation(project(":sdk:core-testing"))

@@ -4,6 +4,8 @@
 
     <application
         android:allowBackup="false"
+        android:fullBackupContent="false"
+        android:dataExtractionRules="@xml/data_extraction_rules"
         android:label="AndroidSdkBase Demo"
         android:supportsRtl="true"
         android:theme="@style/Theme.Demo"

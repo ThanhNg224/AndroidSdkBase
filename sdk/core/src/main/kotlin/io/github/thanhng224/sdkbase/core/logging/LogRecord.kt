@@ -1,7 +1,9 @@
 package io.github.thanhng224.sdkbase.core.logging
 
 /**
- * One already-redacted log entry, handed to every [LogSink]. A plain class, not a `data class`:
+ * One already-redacted log entry, handed to every [LogSink]. [throwable] is a detached,
+ * redacted snapshot rather than the exception supplied to the logging call. Sinks must not rely
+ * on its identity or cast it to the source exception's subclass. A plain class, not a `data class`:
  * fields can be added later without breaking binary compatibility (a `data class` bakes its
  * property list into `equals`/`hashCode`/`copy`/`componentN`, all of which are ABI).
  */

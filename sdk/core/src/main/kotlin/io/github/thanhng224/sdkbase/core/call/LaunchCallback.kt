@@ -45,7 +45,8 @@ public fun <T> launchCallback(
     onUndelivered: ((T) -> Unit)? = null,
     block: suspend () -> SdkResult<T>,
 ): Cancellable {
-    val scope = CoroutineScope(SupervisorJob(parent) + dispatchers.default)
+    val owner = SupervisorJob(parent)
+    val scope = CoroutineScope(owner + dispatchers.default)
     // `cancel()` below still races the launched coroutine, so both must agree on the same claim
     // exactly once: `cancel()` sets it eagerly so a still-suspended `block` gets interrupted, while
     // the coroutine only consults it for real after the main-dispatcher hop, once this coroutine's
@@ -88,6 +89,10 @@ public fun <T> launchCallback(
             }
         }
     }
+
+    // A manually created Job never completes merely because its only child finished.
+    // invokeOnCompletion also runs immediately when an immediate dispatcher already finished it.
+    job.invokeOnCompletion { owner.complete() }
 
     return Cancellable {
         if (claimed.compareAndSet(false, true)) {

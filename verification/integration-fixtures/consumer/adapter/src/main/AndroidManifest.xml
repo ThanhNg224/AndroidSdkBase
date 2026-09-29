@@ -1,0 +1,5 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <application android:label="Integration consumer">
+        <activity android:name="{{SDK_NAMESPACE}}.fixture.FixtureActivity" android:exported="false" />
+    </application>
+</manifest>

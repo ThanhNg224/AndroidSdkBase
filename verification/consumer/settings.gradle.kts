@@ -1,5 +1,9 @@
 pluginManagement {
     repositories { google(); mavenCentral(); gradlePluginPortal() }
+    plugins {
+        id("org.jetbrains.kotlin.plugin.compose") version
+            providers.gradleProperty("consumerKotlin").getOrElse("2.2.10")
+    }
 }
 
 plugins {
@@ -21,3 +25,4 @@ dependencyResolutionManagement {
 
 rootProject.name = "sdkbase-consumer"
 include(":app")
+include(":headless")

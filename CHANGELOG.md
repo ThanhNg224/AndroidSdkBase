@@ -7,6 +7,10 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Verification-only profile/onboarding/callback-adapter fixtures prove composition cleanup and
+  optional adapter wiring, then Java/Kotlin consumption through Maven coordinates under R8.
+- Headless and Compose UI consumer profiles verify Kotlin compilers 2.2.10 and 2.4.20 on AGP
+  9.4.1, with runtime stdlib kept at 2.2.21 and no Compose in the headless graph.
 - Module zones `composition` (the only place two features meet), `adapter` (optional host bridges on
   a concrete client) and `testing`; a feature may depend on another feature only as its UI module.
 - Build gates: `checkDependencyPolicy` (no HTTP client or DI framework on an SDK classpath,
@@ -28,6 +32,10 @@ All notable changes to this project are documented here. The format follows
 - OTP UI strings in English and Vietnamese, overridable by the host through resources.
 
 ### Changed
+- **Logging behavior (patch; public ABI unchanged):** `LogRecord.throwable` is now a detached,
+  redacted snapshot, including cause/suppressed messages and stack-frame text. Sinks must not
+  compare it with the source exception or cast it to that exception's subclass. A snapshot-read
+  failure retains the redacted message without a throwable; a redactor failure drops the record.
 - OTP runs on the session kit: one `SessionScope` per session; timer ticks go through the state
   lock; `close()` cancels in-flight work and later calls return `SESSION_CLOSED`.
 - `RetryPolicy.TransientErrors` retries exactly the errors that declare `isRetryable`.
@@ -43,6 +51,8 @@ All notable changes to this project are documented here. The format follows
 - `OtpState`, `OtpChallenge` and `OtpColors` are plain classes: `copy` and `componentN` are gone.
 
 ### Fixed
+- Completed callback calls and cancelled state observers detach their owning jobs, so a
+  long-lived session does not accumulate empty child jobs and its parent can complete normally.
 - A callback no longer fires after `cancel()` or `close()` issued on the main thread, and a result
   that was produced but not delivered is released instead of leaked.
 - Cancelling `OtpSdk.start` mid-flight no longer leaves the session's ticker running.

@@ -123,14 +123,18 @@ public final class JavaConsumer {
         return OtpSdk.start(config, new ResultCallback<OtpSession>() {
             @Override
             public void onSuccess(OtpSession session) {
-                session.observeState(state -> { });
+                Cancellable observer = session.observeState(state -> { });
                 session.submit("123456", new ResultCallback<Unit>() {
                     @Override
                     public void onSuccess(Unit value) {
+                        observer.cancel();
+                        session.close();
                     }
 
                     @Override
                     public void onFailure(@NotNull SdkError error) {
+                        observer.cancel();
+                        session.close();
                     }
                 });
             }

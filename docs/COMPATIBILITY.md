@@ -28,8 +28,8 @@ Android module built with AGP 9's built-in Kotlin.
 Every published module publishes `kotlin-stdlib` pinned to `kotlinStdlibFloor` (`gradle/libs.versions.toml`)
 and compiles with `languageVersion`/`apiVersion` set to that same floor — `kotlin.stdlib.default.dependency=false`
 in `gradle.properties` stops the toolchain's own newer stdlib from riding along instead.
-`verification/consumer` is the proof: it builds on Kotlin 2.2.10 (AGP 9.4.1's bundled default, no
-KGP override) and resolves the SDK only by Maven coordinate. Raising `kotlinStdlibFloor` is a
+`verification/consumer` is the proof: it builds on Kotlin 2.2.10 and 2.4.20, selecting the compiler
+through AGP's buildscript classpath, and resolves the SDK only by Maven coordinate. Raising `kotlinStdlibFloor` is a
 compatibility decision, not a routine bump — it drops support for any consumer still below it.
 
 ## Host floor
@@ -38,12 +38,39 @@ No library convention sets `aarMetadata.minCompileSdk` or `minAgpVersion`. The f
 actually needs is whatever its own dependencies already require — adding a redundant, hand-picked
 floor on top only risks being wrong in one direction or the other.
 
+### Verified consumer profiles
+
+Both the headless core/OTP consumer and the OTP + Compose UI consumer build a minified release
+with Java and Kotlin call sites on this matrix:
+
+| Compiler profile | AGP | Kotlin compiler | Runtime stdlib | compileSdk / minSdk |
+|---|---|---|---|---|
+| Floor | 9.4.1 | 2.2.10 | 2.2.21 | 37 / 24 |
+| Current | 9.4.1 | 2.4.20 | 2.2.21 | 37 / 24 |
+
+`./scripts/verify-publication.sh` runs Floor; `--current` runs Current. Each checks the selected
+Kotlin Gradle plugin, resolved runtime stdlib, fresh R8 mapping and retained SDK classes. The
+headless runtime graph must contain no Compose modules. CI runs both profiles on every PR.
+These are build/consumer guarantees, not proof for older AGP/Kotlin hosts or runtime devices.
+
 ## Logging API and R8
 
 `SdkLogger.Builder`, `TaggedLogger`'s `v`/`d`/`i`/`w`/`e`/`trace`, and the `LogSink`/`Redactor`
 `fun interface`s are public ABI, tracked by `api/core.api` like everything else in `:sdk:core`.
 `sdk/core/consumer-rules.pro` ships an `-assumenosideeffects` rule so a consumer's own minified
 release build can strip `TaggedLogger.v`/`d` calls; `i`/`w`/`e` and every sink still run.
+
+Every exception handed to a sink by `SdkLogger` is a detached snapshot. The original type name is
+retained as redacted text in `toString()`, together with redacted message, cause/suppressed graph
+and stack-frame text; line numbers remain intact. Sinks must not compare exception identity or
+cast the snapshot to the source exception's subtype. The source exception and `SdkError.cause`
+are untouched. Snapshot-read failures emit the redacted message with `throwable = null`;
+redactor exceptions drop the record. `Redactor.None` deliberately disables text redaction but
+still produces a detached snapshot. `LogcatSink` renders only logger-created snapshots and ignores
+raw throwables supplied through manually constructed records.
+
+This hardening is classified as a patch under Versioning (no public ABI change). Hosts that used
+the old sink identity/subtype behavior must update their sink to consume the snapshot contract.
 
 ## Java interop
 

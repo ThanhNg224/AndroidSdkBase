@@ -6,13 +6,17 @@ import android.util.Log
  * Writes [LogRecord]s to Logcat: the one place `android.util.Log` is allowed in `sdk/`. Tags are
  * truncated to Logcat's 23-character limit on older API levels, and messages are chunked so a long
  * one is not silently cut by Logcat's own per-line limit.
+ *
+ * Only the redacted Throwable snapshot [SdkLogger] produces is rendered. A [LogRecord] a host builds
+ * itself carries an unredacted exception, so its stack trace is omitted rather than written to Logcat.
  */
 public class LogcatSink(private val tagPrefix: String = "SdkBase") : LogSink {
 
     override fun write(record: LogRecord) {
         val tag = logcatTag(tagPrefix, record.tag)
         val priority = priorityOf(record.level)
-        val body = record.throwable?.let { "${record.message}\n${Log.getStackTraceString(it)}" } ?: record.message
+        val safeThrowable = record.throwable?.takeIf(::isThrowableSnapshot)
+        val body = safeThrowable?.let { "${record.message}\n${Log.getStackTraceString(it)}" } ?: record.message
         for (chunk in logcatChunks(body)) {
             Log.println(priority, tag, chunk)
         }

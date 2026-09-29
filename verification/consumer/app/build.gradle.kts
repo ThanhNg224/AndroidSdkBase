@@ -46,6 +46,7 @@ configurations.configureEach {
 }
 
 dependencies {
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:${providers.gradleProperty("sdkStdlibFloor").getOrElse("2.2.21")}")
     // Resolved as a real host would: by coordinate, versions aligned by the SDK's BOM.
     implementation(platform("io.github.thanhng224:bom:$sdkVersion"))
     implementation("io.github.thanhng224:otp")
