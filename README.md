@@ -90,6 +90,11 @@ Delete `sdk/features/otp*`, their entries in `settings.gradle.kts` and the topol
 demo/consumer code that uses them. Keep in `sdk/core` only the gateway-agnostic parts you still
 need — `SdkResult`, `SdkError`/`SdkErrors`, `SdkLogger`.
 
+## Versioning
+
+SemVer, decided by the `api/*.api` diff — see `docs/COMPATIBILITY.md` "Versioning". Every
+public change is recorded in [CHANGELOG.md](CHANGELOG.md).
+
 ## Publishing
 
 Local file repository only (`build/local-repo`). **Maven Central is intentionally not set up while

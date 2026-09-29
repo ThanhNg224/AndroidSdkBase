@@ -60,3 +60,31 @@ built on core's `launchCallback`/`observe`. Every one of these is `@JvmStatic` w
 call from any thread. `JavaConsumer.startFromJava` in `verification/consumer` is the proof: it never
 names `Continuation` anywhere, including inside the callbacks it passes back to `submit`/
 `observeState`.
+
+## UI resources
+
+A UI module's string resources (`sdk_otp_ui_compose_*`) are a contract with the host: a host
+customises the bundled screen's text by declaring a string with the same name in its own app, which
+wins over the library's at merge time. Renaming or removing one silently reverts every host that
+overrode it, so it counts as a breaking change (see Versioning). Adding one is not.
+
+## Versioning
+
+Every artifact shares one version (`sdkbase.version`), aligned for hosts by the BOM, and follows
+SemVer. The `api/*.api` diff decides the bump:
+
+| Change | Bump |
+|---|---|
+| An `.api` line removed or changed; an abstract member added to an interface a host implements; a subtype added to a sealed type; `kotlinStdlibFloor` or `minSdk` raised; a UI string resource renamed or removed | **major** |
+| `.api` lines only added; a new error code; a new UI string resource | **minor** |
+| No `.api` change | **patch** |
+
+While the version is `0.x`, a minor release may break — but only if the changelog says so under a
+`### Breaking` heading of that release.
+
+**Deprecation:** mark the old API `@Deprecated(level = DeprecationLevel.WARNING)` with a
+`ReplaceWith` for at least one minor release, then `ERROR` for one more, and remove it only in a
+major. **Error codes** are never reused or renumbered, even after the feature that owned them is
+removed.
+
+Every public change adds a line to `CHANGELOG.md` in the same commit as its `.api` diff.
