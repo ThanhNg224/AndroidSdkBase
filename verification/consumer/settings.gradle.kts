@@ -26,3 +26,5 @@ dependencyResolutionManagement {
 rootProject.name = "sdkbase-consumer"
 include(":app")
 include(":headless")
+
+include(":logging")

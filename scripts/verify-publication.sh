@@ -2,7 +2,7 @@
 # Local-only publication gate (nothing goes to Maven Central):
 #   1. publish every artifact to build/local-repo
 #   2. every POM: sources + javadoc jars present (except the BOM) and kotlin-stdlib pinned to the floor
-#   3. build headless + UI consumers on the floor compiler (or --current), release + R8
+#   3. build headless + UI + logging consumers on the floor compiler (or --current), release + R8
 #   4. R8 output still contains classes from every published Android artifact
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -59,17 +59,17 @@ EOF
   [ "$stdlib" = "$FLOOR" ] || fail "$name declares kotlin-stdlib $stdlib, expected $FLOOR"
 done < <(find "$REPO_DIR" -name '*.pom')
 
-for module in app headless; do
+for module in app headless logging; do
   rm -f "verification/consumer/$module/build/outputs/mapping/release/mapping.txt"
 done
 
 echo "==> Building external consumers (compiler $COMPILER, stdlib $FLOOR, release, R8)"
-( cd verification/consumer && ./gradlew :app:verifyRuntimeContracts :headless:verifyRuntimeContracts \
-    :app:assembleRelease :headless:assembleRelease -PconsumerKotlin="$COMPILER" \
+( cd verification/consumer && ./gradlew :app:verifyRuntimeContracts :headless:verifyRuntimeContracts :logging:verifyRuntimeContracts \
+    :app:assembleRelease :headless:assembleRelease :logging:assembleRelease -PconsumerKotlin="$COMPILER" \
     -PsdkStdlibFloor="$FLOOR" -PsdkLocalRepo="$REPO_DIR" --no-daemon -q ) \
   || fail "the external consumers did not build or violated a runtime contract"
 
-for module in app headless; do
+for module in app headless logging; do
   MAPPING="verification/consumer/$module/build/outputs/mapping/release/mapping.txt"
   if [ ! -f "$MAPPING" ]; then
     fail "$module R8 mapping file is missing; release minification may be disabled"
@@ -77,10 +77,15 @@ for module in app headless; do
   fi
   echo "==> Checking $module R8 kept SDK code"
   packages="core otp"
+  if [ "$module" = "logging" ]; then packages="core eventlogging logging.file eventlogging.work"; fi
   if [ "$module" = "app" ]; then packages="$packages otp.ui"; fi
   for pkg in $packages; do
     grep -Eq "^${NS//./\\.}\.${pkg//./\\.}\.[A-Za-z]" "$MAPPING" || fail "R8 kept no classes from $NS.$pkg"
   done
+  if [ "$module" = "logging" ]; then
+    worker="$NS.eventlogging.work.internal.EventLoggingWorker"
+    grep -Fxq "$worker -> $worker:" "$MAPPING" || fail "logging R8 did not preserve the reflective worker name"
+  fi
 done
 
 [ "$status" -eq 0 ] && echo "Publication verified."

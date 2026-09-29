@@ -9,13 +9,15 @@ extra["zones"] = mapOf(
     "feature" to listOf(
         ":sdk:features:otp",
         ":sdk:features:otp-ui-compose",
+        ":sdk:features:event-logging",
+        ":sdk:features:logging-file",
     ),
     // Wires several features into one flow (e.g. OTP + KYC + payment). The only SDK zone that may
     // see more than one feature.
     "composition" to listOf<String>(),
     // Optional host-side bridges (a gateway backed by a specific HTTP client, a vendor device SDK).
     // The only SDK zone allowed third-party network/DI libraries; nothing in the SDK depends on it.
-    "adapter" to listOf<String>(),
+    "adapter" to listOf(":sdk:adapters:event-logging-work"),
     "bom" to listOf(":sdk:bom"),
     "app" to listOf(":apps:demo"),
 )
@@ -32,5 +34,8 @@ extra["publishedArtifacts"] = listOf(
     ":sdk:core-testing",
     ":sdk:features:otp",
     ":sdk:features:otp-ui-compose",
+    ":sdk:features:event-logging",
+    ":sdk:features:logging-file",
+    ":sdk:adapters:event-logging-work",
     ":sdk:bom",
 )

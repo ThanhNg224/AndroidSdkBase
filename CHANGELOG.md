@@ -7,6 +7,16 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- **Logging (additive minor):** optional `event-logging` with an ordered bounded durable queue,
+  stable delivery IDs, allowlisted/redacted attributes, session timing, metadata-only diagnostics,
+  Java callbacks and host-owned transport; optional `event-logging-work` adds network-constrained
+  WorkManager retry and periodic recovery after process recreation.
+- Optional `logging-file`: bounded asynchronous rolling-file sink, explicit flush/close,
+  retention and SDK-filtered opt-in crash capture that preserves the host crash handler.
+  Event system errors 2101–2104, file storage 2201, event logging 3101/3103, and file logging
+  3201/3203–3205 are append-only; existing core and OTP API remains unchanged.
+- A separate Maven-only Java/Kotlin logging consumer checks the optional artifacts under R8 on
+  floor/current compilers while core/OTP still resolves neither Compose nor WorkManager.
 - Verification-only profile/onboarding/callback-adapter fixtures prove composition cleanup and
   optional adapter wiring, then Java/Kotlin consumption through Maven coordinates under R8.
 - Headless and Compose UI consumer profiles verify Kotlin compilers 2.2.10 and 2.4.20 on AGP

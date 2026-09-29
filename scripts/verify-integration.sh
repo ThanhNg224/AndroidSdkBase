@@ -129,8 +129,8 @@ t = topology.read_text()
 for old, new in [
     ('        ":sdk:features:otp-ui-compose",\n', '        ":sdk:features:otp-ui-compose",\n        ":sdk:features:profile",\n'),
     ('    "composition" to listOf<String>(),', '    "composition" to listOf(":sdk:composition:onboarding"),'),
-    ('    "adapter" to listOf<String>(),', '    "adapter" to listOf(":sdk:adapters:profile-callback"),'),
-    ('    ":sdk:features:otp-ui-compose",\n    ":sdk:bom",', '    ":sdk:features:otp-ui-compose",\n    ":sdk:features:profile",\n    ":sdk:composition:onboarding",\n    ":sdk:adapters:profile-callback",\n    ":sdk:bom",'),
+    ('    "adapter" to listOf(":sdk:adapters:event-logging-work"),', '    "adapter" to listOf(":sdk:adapters:event-logging-work", ":sdk:adapters:profile-callback"),'),
+    ('    ":sdk:bom",\n)', '    ":sdk:features:profile",\n    ":sdk:composition:onboarding",\n    ":sdk:adapters:profile-callback",\n    ":sdk:bom",\n)'),
 ]:
     if t.count(old) != 1:
         raise SystemExit(f"FAIL expected one topology insertion point: {old.strip()}")

@@ -1,0 +1,138 @@
+public final class io/github/thanhng224/sdkbase/eventlogging/EventLoggingSdk {
+	public static final field INSTANCE Lio/github/thanhng224/sdkbase/eventlogging/EventLoggingSdk;
+	public static final fun deliverPending (Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig;Lio/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingCallbackGateway;Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public static final fun deliverPending (Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig;Lio/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingCallbackGateway;Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun deliverPending (Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig;Lio/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingGateway;Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public static final fun deliverPending (Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig;Lio/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingGateway;Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun start (Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig;Lio/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingCallbackGateway;Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public static final fun start (Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig;Lio/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingCallbackGateway;Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun start (Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig;Lio/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingGateway;Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public static final fun start (Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig;Lio/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingGateway;Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig {
+	public final fun getAllowedAttributeKeys ()Ljava/util/Set;
+	public final fun getCommonAttributes ()Ljava/util/Map;
+	public final fun getGatewayTimeoutMillis ()J
+	public final fun getMaxActionLength ()I
+	public final fun getMaxAttributes ()I
+	public final fun getMaxBytes ()I
+	public final fun getMaxEvents ()I
+	public final fun getMaxValueLength ()I
+	public final fun getNamespace ()Ljava/lang/String;
+	public final fun getRedactor ()Lio/github/thanhng224/sdkbase/core/logging/Redactor;
+	public final fun getRetentionMillis ()J
+	public final fun getRetryInitialDelayMillis ()J
+	public final fun getRetryMaxDelayMillis ()J
+	public final fun getScheduler ()Lio/github/thanhng224/sdkbase/eventlogging/delivery/EventDeliveryScheduler;
+	public final fun getStorageDirectory ()Ljava/io/File;
+}
+
+public final class io/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig$Builder {
+	public fun <init> (Ljava/lang/String;Ljava/io/File;)V
+	public final fun allowedAttributeKeys (Ljava/util/Set;)Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig$Builder;
+	public final fun build ()Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+	public final fun commonAttributes (Ljava/util/Map;)Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig$Builder;
+	public final fun gatewayTimeoutMillis (J)Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig$Builder;
+	public final fun maxActionLength (I)Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig$Builder;
+	public final fun maxAttributes (I)Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig$Builder;
+	public final fun maxBytes (I)Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig$Builder;
+	public final fun maxEvents (I)Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig$Builder;
+	public final fun maxValueLength (I)Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig$Builder;
+	public final fun redactor (Lio/github/thanhng224/sdkbase/core/logging/Redactor;)Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig$Builder;
+	public final fun retentionMillis (J)Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig$Builder;
+	public final fun retryInitialDelayMillis (J)Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig$Builder;
+	public final fun retryMaxDelayMillis (J)Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig$Builder;
+	public final fun scheduler (Lio/github/thanhng224/sdkbase/eventlogging/delivery/EventDeliveryScheduler;)Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig$Builder;
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/eventlogging/delivery/EventDeliveryScheduler {
+	public static final field Companion Lio/github/thanhng224/sdkbase/eventlogging/delivery/EventDeliveryScheduler$Companion;
+	public abstract fun schedule (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/thanhng224/sdkbase/eventlogging/delivery/EventDeliveryScheduler$Companion {
+	public final fun getNone ()Lio/github/thanhng224/sdkbase/eventlogging/delivery/EventDeliveryScheduler;
+}
+
+public final class io/github/thanhng224/sdkbase/eventlogging/error/EventLoggingErrors {
+	public static final field DELIVERY_FAILURE I
+	public static final field DELIVERY_IN_PROGRESS I
+	public static final field INSTANCE Lio/github/thanhng224/sdkbase/eventlogging/error/EventLoggingErrors;
+	public static final field INVALID_EVENT I
+	public static final field QUEUE_FULL I
+	public static final field SCHEDULER_FAILURE I
+	public static final field STORAGE_FAILURE I
+	public final fun all ()Ljava/util/List;
+	public final fun deliveryFailure (Ljava/lang/Throwable;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public static synthetic fun deliveryFailure$default (Lio/github/thanhng224/sdkbase/eventlogging/error/EventLoggingErrors;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun deliveryInProgress ()Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun invalidEvent (Ljava/lang/String;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun queueFull ()Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun schedulerFailure (Ljava/lang/Throwable;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public static synthetic fun schedulerFailure$default (Lio/github/thanhng224/sdkbase/eventlogging/error/EventLoggingErrors;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public final fun storageFailure (Ljava/lang/Throwable;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+	public static synthetic fun storageFailure$default (Lio/github/thanhng224/sdkbase/eventlogging/error/EventLoggingErrors;Ljava/lang/Throwable;ILjava/lang/Object;)Lio/github/thanhng224/sdkbase/core/error/SdkError;
+}
+
+public final class io/github/thanhng224/sdkbase/eventlogging/event/EventLoggingEvent {
+	public final fun getAction ()Ljava/lang/String;
+	public final fun getAttributes ()Ljava/util/Map;
+	public final fun getLevel ()Ljava/lang/String;
+	public final fun getScreenId ()Ljava/lang/String;
+}
+
+public final class io/github/thanhng224/sdkbase/eventlogging/event/EventLoggingEvent$Builder {
+	public fun <init> (Ljava/lang/String;)V
+	public final fun attributes (Ljava/util/Map;)Lio/github/thanhng224/sdkbase/eventlogging/event/EventLoggingEvent$Builder;
+	public final fun build ()Lio/github/thanhng224/sdkbase/eventlogging/event/EventLoggingEvent;
+	public final fun level (Ljava/lang/String;)Lio/github/thanhng224/sdkbase/eventlogging/event/EventLoggingEvent$Builder;
+	public final fun screenId (Ljava/lang/String;)Lio/github/thanhng224/sdkbase/eventlogging/event/EventLoggingEvent$Builder;
+}
+
+public final class io/github/thanhng224/sdkbase/eventlogging/event/EventLoggingRecord {
+	public final fun getAction ()Ljava/lang/String;
+	public final fun getAttributes ()Ljava/util/Map;
+	public final fun getCreatedAtMillis ()J
+	public final fun getElapsedSinceSessionStartMillis ()J
+	public final fun getId ()Ljava/lang/String;
+	public final fun getLevel ()Ljava/lang/String;
+	public final fun getScreenId ()Ljava/lang/String;
+	public final fun getSessionId ()Ljava/lang/String;
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingCallbackGateway {
+	public abstract fun deliver (Lio/github/thanhng224/sdkbase/eventlogging/event/EventLoggingRecord;Lio/github/thanhng224/sdkbase/core/gateway/CompletionCallback;)V
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingGateway {
+	public abstract fun deliver (Lio/github/thanhng224/sdkbase/eventlogging/event/EventLoggingRecord;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingGatewayKt {
+	public static final fun asGateway (Lio/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingCallbackGateway;)Lio/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingGateway;
+}
+
+public final class io/github/thanhng224/sdkbase/eventlogging/session/EventLoggingDiagnostics {
+	public final fun getDeliveredEvents ()J
+	public final fun getDeliveryFailures ()J
+	public final fun getEnqueuedEvents ()J
+	public final fun getLastFailureCode ()Ljava/lang/Integer;
+	public final fun getPendingBytes ()I
+	public final fun getPendingEvents ()I
+	public final fun getRejectedEvents ()J
+	public final fun isDelivering ()Z
+}
+
+public final class io/github/thanhng224/sdkbase/eventlogging/session/EventLoggingSession : io/github/thanhng224/sdkbase/core/session/SdkSession, java/lang/AutoCloseable {
+	public fun close ()V
+	public final fun flush (Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public final fun flush (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun getDiagnostics ()Lkotlinx/coroutines/flow/StateFlow;
+	public fun getState ()Lkotlinx/coroutines/flow/StateFlow;
+	public final fun getTelemetrySink ()Lio/github/thanhng224/sdkbase/core/telemetry/TelemetrySink;
+	public fun observeState (Lio/github/thanhng224/sdkbase/core/session/StateListener;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public final fun track (Lio/github/thanhng224/sdkbase/eventlogging/event/EventLoggingEvent;Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public final fun track (Lio/github/thanhng224/sdkbase/eventlogging/event/EventLoggingEvent;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+

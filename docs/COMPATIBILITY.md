@@ -40,7 +40,7 @@ floor on top only risks being wrong in one direction or the other.
 
 ### Verified consumer profiles
 
-Both the headless core/OTP consumer and the OTP + Compose UI consumer build a minified release
+The headless core/OTP, OTP + Compose UI, and optional logging consumers build a minified release
 with Java and Kotlin call sites on this matrix:
 
 | Compiler profile | AGP | Kotlin compiler | Runtime stdlib | compileSdk / minSdk |
@@ -50,7 +50,8 @@ with Java and Kotlin call sites on this matrix:
 
 `./scripts/verify-publication.sh` runs Floor; `--current` runs Current. Each checks the selected
 Kotlin Gradle plugin, resolved runtime stdlib, fresh R8 mapping and retained SDK classes. The
-headless runtime graph must contain no Compose modules. CI runs both profiles on every PR.
+headless core/OTP runtime graph must contain neither Compose nor WorkManager; the logging
+consumer explicitly opts into WorkManager and remains Compose-free. CI runs both profiles on every PR.
 These are build/consumer guarantees, not proof for older AGP/Kotlin hosts or runtime devices.
 
 ## Logging API and R8
@@ -115,3 +116,16 @@ major. **Error codes** are never reused or renumbered, even after the feature th
 removed.
 
 Every public change adds a line to `CHANGELOG.md` in the same commit as its `.api` diff.
+
+## Optional logging artifacts
+
+`event-logging`, `logging-file` and `event-logging-work` add public API and error codes without
+changing existing core/OTP signatures or raising the Kotlin/minSdk floor. This is an additive
+**minor** change under Versioning. Each has its own committed ABI baseline and publishes sources,
+Javadoc and a floor-pinned POM. WorkManager is pinned to 2.10.5 in the optional adapter to preserve
+the current host floor; it is absent from core and both logging feature graphs.
+
+The adapter keeps its reflectively constructed worker name and constructor in consumer R8 rules,
+so queued WorkManager requests remain resolvable after minification. Renaming that worker or
+changing the persisted queue format requires an explicit migration. These checks prove build and
+consumer compatibility; real-device background execution still requires device verification.

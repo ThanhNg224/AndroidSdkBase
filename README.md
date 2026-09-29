@@ -49,7 +49,7 @@ sdk/features/<name>-ui-compose     optional UI artifact; public surface at ui/, 
                                     under ui/internal/. Compose never enters a non-UI module.
 sdk/composition/<flow>             (zone reserved) wires several features into one flow; the only
                                     place two features meet.
-sdk/adapters/<feature>-<lib>       (zone reserved) optional host bridge, e.g. a gateway on OkHttp;
+sdk/adapters/<feature>-<lib>       optional host bridge, e.g. event-logging-work or a gateway on OkHttp;
                                     the only SDK zone allowed an HTTP client or DI framework.
 sdk/bom                            lists every published module automatically.
 apps/demo                          manual testing only; never published.
@@ -59,6 +59,16 @@ verification/consumer              separate build that uses the SDK only by Mave
 `gradle/module-topology.gradle.kts` is the module registry; every included module must be listed
 there or the zone guard in root `build.gradle.kts` fails the build. See `docs/ARCHITECTURE.md` and
 AGENTS.md "Package rules" for the layout conventions inside each module.
+
+## Optional logging
+
+Core technical logging remains lightweight. Add `event-logging` for durable structured events,
+`logging-file` for bounded rolling files and opt-in SDK crash capture, and `event-logging-work`
+for network-constrained background recovery. The host supplies the transport; no HTTP client
+enters core or either logging feature. See [logging contracts and setup](docs/LOGGING.md).
+
+The publication gate also builds a separate Java/Kotlin logging consumer under R8. The core/OTP
+headless consumer verifies that neither Compose nor WorkManager becomes a mandatory dependency.
 
 ## Start a new SDK
 

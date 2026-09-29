@@ -269,6 +269,12 @@ run_case r8-canary-minify-disabled \
 run_case consumer-headless-resolves-compose \
   "add_dep verification/consumer/headless/build.gradle.kts 'implementation(\"androidx.compose.ui:ui:1.12.1\")'" \
   "$PUB" "Headless consumer unexpectedly resolves Compose"
+run_case consumer-headless-resolves-workmanager \
+  "add_dep verification/consumer/headless/build.gradle.kts 'implementation(\"androidx.work:work-runtime:2.10.5\")'" \
+  "$PUB" "Core/OTP headless consumer unexpectedly resolves WorkManager"
+run_case consumer-logging-resolves-compose \
+  "add_dep verification/consumer/logging/build.gradle.kts 'implementation(\"androidx.compose.ui:ui:1.12.1\")'" \
+  "$PUB" "Headless consumer unexpectedly resolves Compose"
 run_case consumer-runtime-stdlib-upgraded \
   "add_dep verification/consumer/headless/build.gradle.kts 'implementation(\"org.jetbrains.kotlin:kotlin-stdlib:2.4.20\")'" \
   "$PUB" "stdlib 2.4.20, expected 2.2.21"

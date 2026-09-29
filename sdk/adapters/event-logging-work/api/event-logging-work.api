@@ -1,0 +1,23 @@
+public final class io/github/thanhng224/sdkbase/eventlogging/work/EventLoggingWorkScheduler : io/github/thanhng224/sdkbase/eventlogging/delivery/EventDeliveryScheduler {
+	public fun <init> (Landroid/content/Context;)V
+	public fun <init> (Landroid/content/Context;J)V
+	public fun <init> (Landroid/content/Context;JLio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;)V
+	public synthetic fun <init> (Landroid/content/Context;JLio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun cancel (Ljava/lang/String;Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public final fun cancel (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public final fun schedule (Ljava/lang/String;Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public fun schedule (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/thanhng224/sdkbase/eventlogging/work/provider/EventLoggingWorkConfiguration {
+	public fun <init> (Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig;Lio/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingCallbackGateway;Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;)V
+	public fun <init> (Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig;Lio/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingGateway;Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;)V
+	public final fun getConfig ()Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig;
+	public final fun getEnvironment ()Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;
+	public final fun getGateway ()Lio/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingGateway;
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/eventlogging/work/provider/EventLoggingWorkProvider {
+	public abstract fun resolve (Ljava/lang/String;)Lio/github/thanhng224/sdkbase/eventlogging/work/provider/EventLoggingWorkConfiguration;
+}
+

@@ -13,9 +13,9 @@ Every included module is registered in exactly one zone:
 |---|---|---|
 | `core` | `:sdk:core` | *(nothing)* |
 | `testing` | `:sdk:core-testing` | `core` |
-| `feature` | `:sdk:features:otp`, `:sdk:features:otp-ui-compose` | `core`; another `feature` only as its UI module |
+| `feature` | `otp`, `otp-ui-compose`, `event-logging`, `logging-file` | `core`; another `feature` only as its UI module |
 | `composition` | *(none yet)* | `core`, `feature` |
-| `adapter` | *(none yet)* | `core`, `feature` |
+| `adapter` | `:sdk:adapters:event-logging-work` | `core`, `feature` |
 | `bom` | `:sdk:bom` | `core`, `feature`, `composition`, `adapter`, `testing` |
 | `app` | `:apps:demo` | everything |
 
@@ -31,7 +31,7 @@ Every included module is registered in exactly one zone:
   vendor device SDK. The only SDK zone allowed an HTTP client or DI framework; no SDK zone may depend
   on it, so it never rides along transitively.
 
-Empty zones are deliberate: the slot and its rules exist before the first module needs them.
+The empty composition zone is deliberate: the slot and its rules exist before the first module needs them.
 
 ## The rules the guard enforces
 
@@ -183,8 +183,10 @@ implementation, no `utils/misc/helpers` — live in AGENTS.md "Package rules".
 
 ## Error codes
 
-`SdkErrors` (`:sdk:core`) owns 1xxx common, 2xxx system/transport, and 4xxx lifecycle codes. Each
-feature owns its own 3xxx business range in its own catalog — `OtpErrors` for OTP. Codes are
+`SdkErrors` (`:sdk:core`) owns the shared common/system/lifecycle codes. Optional logging catalogs
+reserve 2101–2104 (event storage/delivery/scheduling), 2201 (file storage),
+3101/3103 (event admission) and 3201/3203–3205 (file logging). Each feature owns its catalog; code families remain
+1xxx common, 2xxx system, 3xxx business and 4xxx lifecycle. Codes are
 append-only: never renumber a released code. Hosts branch on `SdkError.code`, never on `.reason`.
 
 ## Threading
@@ -219,3 +221,21 @@ interface extending `SdkSession<S>`, a plain state class, and a runtime extendin
    `OtpSdk.start`'s try/catch around a mid-start cancellation), and hand back the runtime.
 
 `sdk/features/otp` is the worked example for all four steps.
+
+## Optional logging pipelines
+
+`event-logging` implements the core `TelemetrySink` contract through a session-owned bounded
+admission queue. Explicit `track` acknowledges durable persistence; `flush` drains the same
+ordered disk queue through a host gateway under `safeCall`. File locks serialize queue mutations
+and prevent concurrent foreground/background drainers. IDs remain stable across delivery retries.
+
+`event-logging-work` adds WorkManager only when explicitly consumed. A host Application provider
+restores the same namespace/config/gateway after process recreation. The worker performs a
+one-shot drain; it does not schedule itself. A durable periodic recovery request closes the gap
+between file persistence and a one-time wake-up. Work Data contains only the opaque namespace.
+
+`logging-file` implements `LogSink` with bounded non-blocking admission, one writer on IO and
+bounded rolling files. The single SessionScope owns the writer. Optional crash capture persists
+bounded redacted SDK-attributed reports synchronously at the terminal crash boundary, then always
+delegates the original exception to the previous host handler. Setup, delivery semantics and
+retention limits are specified in [LOGGING.md](LOGGING.md).

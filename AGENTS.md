@@ -1,7 +1,8 @@
 # AGENTS.md
 
 Android SDK starter. Clone it, run `scripts/rename-project.sh`, replace the OTP example with your
-own feature. Published artifacts: `core`, `core-testing`, `otp`, `otp-ui-compose`, `bom`.
+own feature. Published artifacts: `core`, `core-testing`, `otp`, `otp-ui-compose`, `event-logging`,
+`logging-file`, `event-logging-work`, `bom`.
 
 ## Gates — run before saying anything is done
 ```bash

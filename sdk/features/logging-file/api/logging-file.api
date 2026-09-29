@@ -1,0 +1,64 @@
+public final class io/github/thanhng224/sdkbase/logging/file/FileLoggingSdk {
+	public static final field INSTANCE Lio/github/thanhng224/sdkbase/logging/file/FileLoggingSdk;
+	public static final fun start (Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig;Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public static final fun start (Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig;Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig {
+	public final fun getCaptureCrashes ()Z
+	public final fun getDirectory ()Ljava/io/File;
+	public final fun getMaxCrashFiles ()I
+	public final fun getMaxFileBytes ()I
+	public final fun getMaxFiles ()I
+	public final fun getMaxRecordBytes ()I
+	public final fun getQueueCapacity ()I
+	public final fun getRedactor ()Lio/github/thanhng224/sdkbase/core/logging/Redactor;
+	public final fun getRetentionMillis ()J
+	public final fun getSdkPackagePrefixes ()Ljava/util/Set;
+}
+
+public final class io/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig$Builder {
+	public fun <init> (Ljava/io/File;)V
+	public final fun build ()Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig;
+	public final fun captureCrashes (Z)Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig$Builder;
+	public final fun maxCrashFiles (I)Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig$Builder;
+	public final fun maxFileBytes (I)Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig$Builder;
+	public final fun maxFiles (I)Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig$Builder;
+	public final fun maxRecordBytes (I)Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig$Builder;
+	public final fun queueCapacity (I)Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig$Builder;
+	public final fun redactor (Lio/github/thanhng224/sdkbase/core/logging/Redactor;)Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig$Builder;
+	public final fun retentionMillis (J)Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig$Builder;
+	public final fun sdkPackagePrefixes (Ljava/util/Set;)Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig$Builder;
+}
+
+public final class io/github/thanhng224/sdkbase/logging/file/crash/CrashReport {
+	public fun <init> (Ljava/lang/String;Ljava/lang/String;)V
+	public final fun getId ()Ljava/lang/String;
+	public final fun getText ()Ljava/lang/String;
+}
+
+public final class io/github/thanhng224/sdkbase/logging/file/error/FileLoggingErrors {
+	public static final field CRASH_HANDLER_UNAVAILABLE I
+	public static final field DIRECTORY_IN_USE I
+	public static final field INSTANCE Lio/github/thanhng224/sdkbase/logging/file/error/FileLoggingErrors;
+	public static final field INVALID_CONFIG I
+	public static final field INVALID_CRASH_ID I
+	public static final field STORAGE_FAILURE I
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/logging/file/session/FileLoggingSession : io/github/thanhng224/sdkbase/core/logging/LogSink, io/github/thanhng224/sdkbase/core/session/SdkSession {
+	public abstract fun acknowledgeCrash (Ljava/lang/String;Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public abstract fun acknowledgeCrash (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun flush (Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public abstract fun flush (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public abstract fun pendingCrashes (Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public abstract fun pendingCrashes (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/thanhng224/sdkbase/logging/file/session/FileLoggingState {
+	public fun <init> (JJJ)V
+	public final fun getDropped ()J
+	public final fun getStorageFailures ()J
+	public final fun getWritten ()J
+}
+

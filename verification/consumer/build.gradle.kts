@@ -35,9 +35,17 @@ subprojects {
                 .mapNotNull { it.id as? org.gradle.api.artifacts.component.ModuleComponentIdentifier }
             val stdlib = modules.single { it.group == "org.jetbrains.kotlin" && it.module == "kotlin-stdlib" }
             check(stdlib.version == floor) { "${project.path}: stdlib ${stdlib.version}, expected $floor" }
-            if (project.name == "headless") {
+            if (project.name in setOf("headless", "logging")) {
                 check(modules.none { it.group.startsWith("androidx.compose") }) {
                     "Headless consumer unexpectedly resolves Compose"
+                }
+            }
+            if (project.name == "headless") {
+                check(modules.none { it.group == "androidx.work" }) { "Core/OTP headless consumer unexpectedly resolves WorkManager" }
+            }
+            if (project.name == "logging") {
+                check(modules.any { it.group == "androidx.work" && it.module == "work-runtime" }) {
+                    "Optional logging adapter did not resolve WorkManager"
                 }
             }
             println("${project.path}: stdlib ${stdlib.version}; Compose ${modules.any { it.group.startsWith("androidx.compose") }}")
