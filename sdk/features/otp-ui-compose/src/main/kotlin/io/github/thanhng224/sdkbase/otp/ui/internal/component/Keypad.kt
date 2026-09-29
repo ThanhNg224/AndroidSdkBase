@@ -8,8 +8,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.thanhng224.sdkbase.otp.session.OtpCommand
+import io.github.thanhng224.sdkbase.otp.ui.R
 
 /** The digit pad the host UI drives [OtpCommand]s from. */
 @Composable
@@ -34,10 +38,11 @@ internal fun Keypad(onCommand: (OtpCommand) -> Unit, enabled: Boolean) {
                 enabled = enabled,
                 modifier = Modifier.size(56.dp),
             ) { Text("0") }
+            val backspace = stringResource(R.string.sdk_otp_ui_compose_backspace)
             TextButton(
                 onClick = { onCommand(OtpCommand.DeleteDigit) },
                 enabled = enabled,
-                modifier = Modifier.size(56.dp),
+                modifier = Modifier.size(56.dp).semantics { contentDescription = backspace },
             ) { Text("⌫") }
         }
     }

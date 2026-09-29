@@ -18,12 +18,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import io.github.thanhng224.sdkbase.otp.session.OtpCommand
 import io.github.thanhng224.sdkbase.otp.session.OtpState
 import io.github.thanhng224.sdkbase.otp.ui.internal.component.CodeCells
 import io.github.thanhng224.sdkbase.otp.ui.internal.component.Keypad
+import io.github.thanhng224.sdkbase.otp.ui.internal.text.errorMessageRes
 import io.github.thanhng224.sdkbase.otp.ui.internal.theme.LocalOtpColors
 
 /**
@@ -49,7 +51,7 @@ public fun OtpScreen(
         Spacer(Modifier.weight(1f))
 
         Text(
-            text = "Enter the ${state.codeLength}-digit code",
+            text = stringResource(R.string.sdk_otp_ui_compose_enter_code, state.codeLength),
             textAlign = TextAlign.Center,
             modifier = Modifier.fillMaxWidth(),
         )
@@ -68,13 +70,17 @@ public fun OtpScreen(
             // Verified must be checked before the expiry fallback, or the screen falls through to
             // a frozen "Expires in Ns" and never tells the user the flow succeeded.
             state.phase == OtpState.Phase.Verified ->
-                Text(text = "Verified", color = colors.accent, textAlign = TextAlign.Center)
+                Text(text = stringResource(R.string.sdk_otp_ui_compose_verified), color = colors.accent, textAlign = TextAlign.Center)
 
             error != null ->
-                Text(text = error.reason, color = colors.error, textAlign = TextAlign.Center)
+                Text(
+                    text = stringResource(errorMessageRes(error)),
+                    color = colors.error,
+                    textAlign = TextAlign.Center,
+                )
 
             state.secondsUntilExpiry > 0 ->
-                Text(text = "Expires in ${state.secondsUntilExpiry}s")
+                Text(text = stringResource(R.string.sdk_otp_ui_compose_expires_in, state.secondsUntilExpiry))
         }
 
         // Primary actions live in the bottom half — thumb-zone ergonomics.
@@ -85,7 +91,7 @@ public fun OtpScreen(
             enabled = state.canSubmit,
             modifier = Modifier.fillMaxWidth().height(56.dp),
         ) {
-            Text("Verify")
+            Text(stringResource(R.string.sdk_otp_ui_compose_verify))
         }
 
         Spacer(Modifier.size(8.dp))
@@ -96,8 +102,8 @@ public fun OtpScreen(
             modifier = Modifier.fillMaxWidth().height(48.dp),
         ) {
             Text(
-                if (state.canResend) "Resend code"
-                else "Resend in ${state.secondsUntilResend}s"
+                if (state.canResend) stringResource(R.string.sdk_otp_ui_compose_resend)
+                else stringResource(R.string.sdk_otp_ui_compose_resend_in, state.secondsUntilResend)
             )
         }
 

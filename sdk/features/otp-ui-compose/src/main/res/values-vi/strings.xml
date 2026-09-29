@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="sdk_otp_ui_compose_enter_code">Nhập mã gồm %1$d chữ số</string>
+    <string name="sdk_otp_ui_compose_verified">Đã xác thực</string>
+    <string name="sdk_otp_ui_compose_expires_in">Hết hạn sau %1$d giây</string>
+    <string name="sdk_otp_ui_compose_verify">Xác nhận</string>
+    <string name="sdk_otp_ui_compose_resend">Gửi lại mã</string>
+    <string name="sdk_otp_ui_compose_resend_in">Gửi lại sau %1$d giây</string>
+    <string name="sdk_otp_ui_compose_backspace">Xóa chữ số cuối</string>
+    <string name="sdk_otp_ui_compose_error_invalid">Mã không đúng</string>
+    <string name="sdk_otp_ui_compose_error_expired">Mã đã hết hạn. Vui lòng yêu cầu mã mới.</string>
+    <string name="sdk_otp_ui_compose_error_attempts_exceeded">Nhập sai quá nhiều lần</string>
+    <string name="sdk_otp_ui_compose_error_resend_too_soon">Vui lòng đợi trước khi yêu cầu mã mới</string>
+    <string name="sdk_otp_ui_compose_error_network">Không có kết nối. Kiểm tra mạng và thử lại.</string>
+    <string name="sdk_otp_ui_compose_error_timeout">Yêu cầu quá thời gian. Vui lòng thử lại.</string>
+    <string name="sdk_otp_ui_compose_error_generic">Đã có lỗi xảy ra. Vui lòng thử lại.</string>
+</resources>
