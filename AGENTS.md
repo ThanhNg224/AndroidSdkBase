@@ -1,7 +1,7 @@
 # AGENTS.md
 
 Android SDK starter. Clone it, run `scripts/rename-project.sh`, replace the OTP example with your
-own feature. Published artifacts: `core`, `otp`, `otp-ui-compose`, `bom`.
+own feature. Published artifacts: `core`, `core-testing`, `otp`, `otp-ui-compose`, `bom`.
 
 ## Gates — run before saying anything is done
 ```bash
@@ -12,7 +12,7 @@ own feature. Published artifacts: `core`, `otp`, `otp-ui-compose`, `bom`.
 ```
 
 ## Layout
-- `sdk/core` — Android library toolkit shared by every feature: `result/`, `error/`, `call/` (`safeCall`, `RetryPolicy`), `time/` (`Clock`, `IdGenerator`), `concurrency/`, `logging/` (`SdkLogger`, `TaggedLogger`), `telemetry/`, `gateway/`.
+- `sdk/core` — Android library toolkit shared by every feature: `result/`, `error/`, `call/` (`safeCall`, `RetryPolicy`), `time/` (`Clock`, `IdGenerator`), `concurrency/`, `logging/` (`SdkLogger`, `TaggedLogger`), `telemetry/` (`emitSafely`), `gateway/` (`awaitCallback`), `environment/` (`SdkEnvironment`), `session/` (`SessionScope`, `StateStore`, `SdkSessionBase`), `config/` (`validateConfig`).
 - `sdk/core-testing` — published test kit: fakes (`FakeClock`, `SequentialIdGenerator`, `TestDispatcherProvider`), recording sinks (`RecordingLogSink`, `RecordingTelemetrySink`) and `SdkResult` assertions. Consumed via `testImplementation`; only `bom` and `app` may target it in a non-test configuration.
 - `sdk/features/<name>` — one published artifact per feature; scaffold a new one with `./scripts/new-feature.sh <name>` (registers it, generates the entry point/config/gateway/error catalog plus a session built on the core kit — a `SdkSession`-extending interface, a plain state class, a runtime on `SdkSessionBase` — dumps its initial ABI). Engine code lives in `internal/` and is Kotlin `internal`.
 - `sdk/features/<name>-ui-compose` — optional UI artifact. Compose never enters a non-UI module.
