@@ -50,7 +50,7 @@ Core technical logging remains lightweight. Add `event-logging` for durable stru
 for network-constrained background recovery. The host supplies the transport; no HTTP client
 enters core or either logging feature. See [logging contracts and setup](docs/LOGGING.md).
 
-The publication gate also builds a separate Java/Kotlin logging consumer under R8. The core/OTP
+The publication gate also builds a separate Java/Kotlin logging consumer under R8. The core/OTP/remote-config
 headless consumer verifies that neither Compose nor WorkManager becomes a mandatory dependency.
 
 ## Start a new SDK
@@ -72,10 +72,15 @@ headless consumer verifies that neither Compose nor WorkManager becomes a mandat
 The script creates a registered, green feature scaffold and its initial ABI baseline. Follow the
 [feature recipe](docs/RECIPES.md#add-a-feature) to replace its stubs and verify the implementation.
 
-## Remove the example
+OTP demonstrates a session; `remote-config` demonstrates a one-shot fetch without a session.
+See [the one-shot recipe](docs/RECIPES.md#add-a-one-shot-feature-no-session).
 
-Delete `sdk/features/otp*`, their entries in `gradle/module-topology.gradle.kts`, and the
-demo/consumer code that uses them. Keep in `sdk/core` only the gateway-agnostic parts you still
+## Remove the examples
+
+Delete `sdk/features/otp*`, `sdk/features/remote-config` and the OTP-dependent
+`sdk/adapters/otp-fake-sms`, their entries in `gradle/module-topology.gradle.kts`, and the
+demo/consumer code and coordinate dependencies that use them. Remove their error ledger/reference rows and API baselines
+as permitted by the pre-release policy. Keep in `sdk/core` only the gateway-agnostic parts you still
 need — `SdkResult`, `SdkError`/`SdkErrors`, `SdkLogger`.
 
 ## Versioning

@@ -8,9 +8,11 @@ file still fails the guard. If this document and the code disagree, trust the co
 
 Root Spotless formats Kotlin in `sdk/`, `apps/`, `build-logic/src/`, and recursive `*.gradle.kts`
 files; it excludes the separate `verification/` build. Rules come from `.editorconfig`, including
-ktlint settings; there is no second style definition. Structural ktlint rules (signature and
-argument wrapping, import ordering) are disabled there to keep the baseline small, so the gate enforces
-whitespace, braces, trailing commas, explicit imports and the 120-column limit.
+ktlint settings; there is no second style definition. Argument-list wrapping and function-literal
+formatting are enabled after individual churn measurements.
+Signature/expression wrapping, chain continuation, import ordering and blank-line rules remain disabled
+where they exceed 10 changed files or fail automatic formatting; `.editorconfig` records each reason.
+The gate also enforces whitespace, braces, trailing commas, explicit imports and the 120-column limit.
 
 ## Zones
 
@@ -21,7 +23,7 @@ Every included module is registered in exactly one zone:
 | `core` | `:sdk:core` | *(nothing)* |
 | `testing` | `:sdk:core-testing` | `core` |
 | `ui` | `:sdk:core-ui-compose` | `core` |
-| `feature` | `otp`, `otp-ui-compose`, `event-logging`, `logging-file` | `core`; another `feature` only as its UI module; `ui` only from a `<name>-ui-<toolkit>` module |
+| `feature` | `otp`, `otp-ui-compose`, `event-logging`, `logging-file`, `remote-config` | `core`; another `feature` only as its UI module; `ui` only from a `<name>-ui-<toolkit>` module |
 | `composition` | *(none yet)* | `core`, `feature` |
 | `adapter` | `:sdk:adapters:event-logging-work`, `:sdk:adapters:otp-fake-sms` | `core`, `feature`, `vendor` |
 | `vendor` | `:sdk:vendor:fake-sms-vendor` | *(no project)* |
@@ -195,7 +197,10 @@ to an `SdkError` — nothing the host throws or hangs on ever reaches the engine
 `./scripts/new-feature.sh <name>` scaffolds the session interface, plain state, config, gateway,
 error catalog, runtime, tests, registration, and initial ABI. Replace the stubs with the feature's
 behavior; use [the feature and operation recipes](RECIPES.md#add-a-feature) and `sdk/features/otp`
-as the worked example. Public signatures and errors follow the compatibility policy in
+as the worked example. For a single request with no ongoing state, `sdk/features/remote-config` is the one-shot example:
+its config owns the host gateway/environment, `fetch` uses `safeCall`, and the Java twin uses
+`launchCallback`. It owns no session or coroutine scope.
+Public signatures and errors follow the compatibility policy in
 [AGENTS.md](../AGENTS.md#pre-release-breaking-changes-are-allowed).
 
 ## Optional logging pipelines

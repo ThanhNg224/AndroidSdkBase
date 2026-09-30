@@ -70,6 +70,7 @@ From the first tagged release the rules above apply in full.
 | `3203` | features/logging-file | `DIRECTORY_IN_USE` | `DIALOG_RETRY` | yes | active |
 | `3204` | features/logging-file | `CRASH_HANDLER_UNAVAILABLE` | `DIALOG_TERMINAL` | no | active |
 | `3205` | features/logging-file | `INVALID_CRASH_ID` | `DIALOG_TERMINAL` | no | active |
+| `3301` | features/remote-config | `INVALID_RESPONSE` | `DIALOG_TERMINAL` | no | active |
 | `4000` | core | `NOT_STARTED` | `SILENT` | no | active |
 | `4001` | core | `ALREADY_RUNNING` | `SILENT` | no | active |
 | `4002` | core | `SESSION_CLOSED` | `SILENT` | no | active |

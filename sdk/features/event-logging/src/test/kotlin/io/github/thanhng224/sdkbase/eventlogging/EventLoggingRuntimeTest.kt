@@ -402,8 +402,14 @@ class EventLoggingRuntimeTest {
             .idGenerator(SequentialIdGenerator("event-")).build()
         val scope = SessionScope(dispatchers, environment.logger.tagged("test"))
         val runtime = EventLoggingRuntime(
-            cfg, EventLoggingGateway { SdkResult.Success(Unit) },
-            environment, scope, "test-session", 100L, stored.load().getOrNull()!!, false,
+            cfg,
+            EventLoggingGateway { SdkResult.Success(Unit) },
+            environment,
+            scope,
+            "test-session",
+            100L,
+            stored.load().getOrNull()!!,
+            false,
         )
         runtime.start()
         try {

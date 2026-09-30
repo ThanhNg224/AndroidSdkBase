@@ -1,0 +1,48 @@
+public final class io/github/thanhng224/sdkbase/remoteconfig/RemoteConfigSdk {
+	public static final field INSTANCE Lio/github/thanhng224/sdkbase/remoteconfig/RemoteConfigSdk;
+	public static final fun fetch (Lio/github/thanhng224/sdkbase/remoteconfig/config/RemoteConfigSdkConfig;Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public static final fun fetch (Lio/github/thanhng224/sdkbase/remoteconfig/config/RemoteConfigSdkConfig;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/thanhng224/sdkbase/remoteconfig/config/RemoteConfigSdkConfig {
+	public final fun getEnvironment ()Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;
+	public final fun getGateway ()Lio/github/thanhng224/sdkbase/remoteconfig/gateway/RemoteConfigGateway;
+	public final fun getGatewayTimeoutMillis ()J
+}
+
+public final class io/github/thanhng224/sdkbase/remoteconfig/config/RemoteConfigSdkConfig$Builder {
+	public fun <init> (Lio/github/thanhng224/sdkbase/remoteconfig/gateway/RemoteConfigCallbackGateway;)V
+	public fun <init> (Lio/github/thanhng224/sdkbase/remoteconfig/gateway/RemoteConfigGateway;)V
+	public final fun build ()Lio/github/thanhng224/sdkbase/core/result/SdkResult;
+	public final fun environment (Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;)Lio/github/thanhng224/sdkbase/remoteconfig/config/RemoteConfigSdkConfig$Builder;
+	public final fun gatewayTimeoutMillis (J)Lio/github/thanhng224/sdkbase/remoteconfig/config/RemoteConfigSdkConfig$Builder;
+}
+
+public final class io/github/thanhng224/sdkbase/remoteconfig/error/RemoteConfigErrors {
+	public static final field INSTANCE Lio/github/thanhng224/sdkbase/remoteconfig/error/RemoteConfigErrors;
+	public static final field INVALID_RESPONSE I
+	public final fun all ()Ljava/util/List;
+	public final fun invalidResponse ()Lio/github/thanhng224/sdkbase/core/error/SdkError;
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/remoteconfig/gateway/RemoteConfigCallbackGateway {
+	public abstract fun fetch (Lio/github/thanhng224/sdkbase/core/gateway/GatewayCallback;)V
+}
+
+public final class io/github/thanhng224/sdkbase/remoteconfig/gateway/RemoteConfigCallbackGatewayKt {
+	public static final fun asGateway (Lio/github/thanhng224/sdkbase/remoteconfig/gateway/RemoteConfigCallbackGateway;)Lio/github/thanhng224/sdkbase/remoteconfig/gateway/RemoteConfigGateway;
+}
+
+public abstract interface class io/github/thanhng224/sdkbase/remoteconfig/gateway/RemoteConfigGateway {
+	public abstract fun fetch (Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+}
+
+public final class io/github/thanhng224/sdkbase/remoteconfig/snapshot/RemoteConfig {
+	public fun <init> (Ljava/lang/String;Ljava/util/Map;)V
+	public fun equals (Ljava/lang/Object;)Z
+	public final fun getRevision ()Ljava/lang/String;
+	public final fun getValues ()Ljava/util/Map;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+

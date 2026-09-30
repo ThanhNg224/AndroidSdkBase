@@ -77,7 +77,10 @@ public fun findViolations(
 
     if (zone in OWN_SCOPE_ZONES) {
         violations += matches(
-            code, OWN_COROUTINE_SCOPE, "own-coroutine-scope", "use SessionScope.coroutineScope / launch",
+            code,
+            OWN_COROUTINE_SCOPE,
+            "own-coroutine-scope",
+            "use SessionScope.coroutineScope / launch",
         )
     }
 
@@ -87,7 +90,9 @@ public fun findViolations(
 
     if (isUiModule) {
         violations += matches(
-            code, COLOR_LITERAL_KOTLIN, "ui-color-literal",
+            code,
+            COLOR_LITERAL_KOTLIN,
+            "ui-color-literal",
             "take colours from the theme tokens (SdkColors / MaterialTheme), never a literal",
         )
     }
@@ -102,7 +107,9 @@ public fun findViolations(
 public fun findResourceViolations(text: String): List<Violation> {
     val code = XML_COMMENT.replace(text) { match -> match.value.filter { it == '\n' } }
     return matches(
-        code, COLOR_LITERAL_XML, "ui-color-literal",
+        code,
+        COLOR_LITERAL_XML,
+        "ui-color-literal",
         "take colours from the theme tokens (SdkColors / MaterialTheme), never a resource literal",
     ).sortedBy { it.line }
 }

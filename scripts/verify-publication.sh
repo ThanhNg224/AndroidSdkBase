@@ -105,7 +105,7 @@ case "$MODE" in
   --poms) check_poms; exit $? ;;
   --floor)
     echo "==> Compiling consumers with Kotlin $COMPILER and stdlib $FLOOR"
-    consumer_gradle :app:compileReleaseKotlin :logging:compileReleaseKotlin
+    consumer_gradle :app:compileReleaseKotlin :headless:compileReleaseKotlin :logging:compileReleaseKotlin
     exit $? ;;
   --consumer-check)
     echo "==> Checking $MODULE consumer runtime contracts"
@@ -127,6 +127,7 @@ done
 
 echo "==> Building external consumers (compiler $COMPILER, stdlib $FLOOR, release, R8)"
 consumer_gradle :app:verifyRuntimeContracts :headless:verifyRuntimeContracts :logging:verifyRuntimeContracts \
+  :headless:testDebugUnitTest \
   :app:assembleRelease :headless:assembleRelease :logging:assembleRelease \
   || { echo "FAIL the external consumers did not build or violated a runtime contract"; status=1; }
 

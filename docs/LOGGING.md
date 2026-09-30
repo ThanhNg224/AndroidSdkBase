@@ -156,3 +156,7 @@ Java/Kotlin host callbacks, an Application restoration provider and the optional
 worker under R8 on floor/current compilers. Unit tests cover queue persistence/order, competing
 drainers, cancellation, input privacy, storage errors, byte limits, file rotation and crash handler
 ownership. Build/consumer tests do not prove Android OS scheduling on a real device.
+
+Worker restoration was exercised on a physical 2404ARN45A device (Android API 36) on 2026-09-30:
+4 instrumentation tests passed before and after the runtime refactor. These tests invoke `doWork()` directly; WorkManager OS scheduling,
+network constraints, backoff timing and actual process death remain unverified by this run.

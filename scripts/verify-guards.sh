@@ -24,9 +24,10 @@ sync_tree() {
   for dir in "$WORK"/sdk/features/*/; do
     [ -e "$SRC/sdk/features/$(basename "$dir")" ] || rm -rf "$dir"
   done
-  # Generic-module scaffold cases create these two fixture modules only in the scratch tree. Their
-  # excluded build outputs keep them outside rsync's delete pass on repeat runs.
-  rm -rf "$WORK/sdk/adapters/profile-callback" "$WORK/sdk/composition/onboarding"
+  # Generic-module scaffold cases create fixture modules only in scratch. Remove the whole fixtures
+  # so excluded build outputs cannot leave stale module directories across repeated guard runs.
+  rm -rf "$WORK/sdk/adapters/profile-callback" "$WORK/sdk/adapters/unpublished-bridge" \
+    "$WORK/sdk/composition/onboarding" "$WORK/sdk/vendor/local-binary"
   rsync -a --delete --exclude 'build/' --exclude '.gradle/' --exclude '.kotlin/' --exclude '.git/' \
     "$SRC/" "$WORK/"
 }
@@ -202,10 +203,8 @@ run_case zone-vendor-to-core \
   "./gradlew help -q" ":sdk:vendor:fake-sms-vendor \\[vendor\\] -> :sdk:core \\[core\\] is not allowed"
 # Publishing the adapter would drag the unpublished vendor binary into a published graph.
 run_case zone-published-adapter-on-vendor \
-  "edit $TOPO '    \":sdk:bom\",
-)' '    \":sdk:adapters:otp-fake-sms\",
-    \":sdk:bom\",
-)'" \
+  "edit $TOPO '    \":sdk:bom\",' '    \":sdk:adapters:otp-fake-sms\",
+    \":sdk:bom\",'" \
   "./gradlew help -q" ":sdk:adapters:otp-fake-sms is published but depends on unpublished :sdk:vendor:fake-sms-vendor"
 
 # --- Dependency policy (resolves real coordinates: needs network or a warm Gradle cache) ----------
@@ -504,16 +503,75 @@ if [[ "scaffold-new-module-zones-are-green" == "$FILTER"* ]]; then
   fi
 fi
 
+if [[ "scaffold-unpublished-modules-stay-unpublished" == "$FILTER"* ]]; then
+  name=scaffold-unpublished-modules-stay-unpublished
+  log="$LOGS/$name.log"
+  sync_tree
+  rm -rf "$WORK/sdk/adapters/unpublished-bridge" "$WORK/sdk/vendor/local-binary" \
+    "$WORK/.gradle/configuration-cache" "$WORK/build/local-repo"
+  if ( cd "$WORK" &&
+       ./scripts/new-module.sh --zone vendor local-binary &&
+       ./scripts/new-module.sh --zone adapter --unpublished unpublished-bridge &&
+       python3 - <<'PY'
+from pathlib import Path
+path = Path("sdk/adapters/unpublished-bridge/build.gradle.kts")
+text = path.read_text()
+text = text.replace(
+    '    api(project(":sdk:core"))',
+    '    api(project(":sdk:core"))\n    implementation(project(":sdk:vendor:local-binary"))',
+)
+path.write_text(text)
+topology = Path("gradle/module-topology.gradle.kts").read_text()
+published = topology.split('extra["publishedArtifacts"] = listOf(', 1)[1].split("\n)", 1)[0]
+assert '":sdk:vendor:local-binary"' not in published
+assert '":sdk:adapters:unpublished-bridge"' not in published
+assert '":sdk:vendor:local-binary"' in topology
+assert '":sdk:adapters:unpublished-bridge"' in topology
+PY
+       ./gradlew spotlessCheck \
+         :sdk:vendor:local-binary:check \
+         :sdk:adapters:unpublished-bridge:check \
+         -Psdkbase.warningsAsErrors=true --no-configuration-cache -q &&
+       ./gradlew publishAllPublicationsToLocalTestRepository --no-configuration-cache -q &&
+       python3 - <<'PY'
+from pathlib import Path
+repo = Path("build/local-repo")
+if not repo.is_dir():
+    raise SystemExit(f"local publication repository was not created: {repo}")
+for module in ("local-binary", "unpublished-bridge"):
+    matches = list(repo.rglob(f"*{module}*"))
+    if matches:
+        raise SystemExit(f"unpublished module {module} has local publication artifacts: {matches}")
+poms = list(repo.rglob("*.pom"))
+if not poms:
+    raise SystemExit("local publication repository contains no POMs to inspect")
+for pom in poms:
+    text = pom.read_text()
+    for module in ("local-binary", "unpublished-bridge"):
+        if module in text:
+            raise SystemExit(f"published POM {pom} mentions unpublished module {module}")
+PY
+       ) >"$log" 2>&1; then
+    echo "ok    $name"
+  else
+    echo "FAIL  $name — unpublished scaffolds, dependency, or publication proof failed (see $log)"
+    failures=$((failures + 1))
+  fi
+fi
+
 if [[ "scaffold-new-module-rejects-invalid-input" == "$FILTER"* ]]; then
   name=scaffold-new-module-rejects-invalid-input
   log="$LOGS/$name.log"
   sync_tree
+  topology_before="$(shasum -a 256 "$WORK/gradle/module-topology.gradle.kts")"
   ok=true
   invalid_args=(
     "--zone unknown profile-callback"
     "--zone adapter Face_Match"
     "--zone ui missing-feature"
     "--zone adapter event-logging-work"
+    "--zone ui --unpublished face-match"
+    "--zone adapter --unknown profile-callback"
   )
   for args in "${invalid_args[@]}"; do
     read -r -a command_args <<< "$args"
@@ -528,8 +586,11 @@ if [[ "scaffold-new-module-rejects-invalid-input" == "$FILTER"* ]]; then
       fi
     fi
   done
-  if [ -n "$(cd "$WORK" && git status --porcelain -- gradle/module-topology.gradle.kts)" ]; then
-    echo "module topology changed despite every input being refused" >>"$log"
+  topology_after="$(shasum -a 256 "$WORK/gradle/module-topology.gradle.kts")"
+  if [ "$topology_before" != "$topology_after" ] || \
+     [ -e "$WORK/sdk/features/face-match-ui-compose" ] || \
+     [ -e "$WORK/sdk/adapters/profile-callback" ]; then
+    echo "module topology or module files changed despite every input being refused" >>"$log"
     ok=false
   fi
   if $ok; then
@@ -546,7 +607,7 @@ if [[ "scaffold-new-feature-protects-dirty-topology" == "$FILTER"* ]]; then
   sync_tree
   rm -rf "$WORK/.git" "$WORK/sdk/features/face-match"
   ok=true
-  if ! ( cd "$WORK" && git init -q && git add gradle/module-topology.gradle.kts &&
+  if ! ( cd "$WORK" && git init -q && git config core.hooksPath /dev/null && git add gradle/module-topology.gradle.kts &&
          git -c user.name='SDK verification' -c user.email='sdk-verification@example.invalid' \
            commit -qm 'Registry baseline' --no-gpg-sign &&
          printf '\n// User edit retained by the scaffold guard.\n' >> gradle/module-topology.gradle.kts ); then

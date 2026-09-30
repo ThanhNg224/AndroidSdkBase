@@ -13,16 +13,25 @@ max_line_length = 120
 ktlint_code_style = android_studio
 ktlint_function_naming_ignore_when_annotated_with = Composable
 ktlint_ignore_back_ticked_identifier = true
-# Keep existing layout/import groups; enforce whitespace and the 120-column line limit.
+# Measured separately on 2026-09-30; retain rules that exceed 10 changed files or fail auto-format.
+# Enabled: argument wrapping and function literals (10 and 0 changed files).
+ktlint_standard_function-literal = enabled
+ktlint_standard_argument-list-wrapping = enabled
+# 32 files changed; keep disabled to limit formatting churn.
 ktlint_standard_function-signature = disabled
+# Individual auto-format run failed; retain the existing layout.
 ktlint_standard_function-expression-body = disabled
+# 16 files changed; keep disabled to limit formatting churn.
 ktlint_standard_class-signature = disabled
+# Individual auto-format run failed; retain the existing layout.
 ktlint_standard_multiline-expression-wrapping = disabled
+# Individual auto-format run failed; retain the existing layout.
 ktlint_standard_chain-method-continuation = disabled
+# 85 files changed; keep disabled to limit formatting churn.
 ktlint_standard_no-empty-first-line-in-class-body = disabled
-ktlint_standard_function-literal = disabled
-ktlint_standard_argument-list-wrapping = disabled
+# 21 files changed; keep disabled to limit formatting churn.
 ktlint_standard_import-ordering = disabled
+# 23 files changed; keep disabled to limit formatting churn.
 ktlint_standard_blank-line-before-declaration = disabled
 ij_kotlin_allow_trailing_comma = true
 ij_kotlin_allow_trailing_comma_on_call_site = true

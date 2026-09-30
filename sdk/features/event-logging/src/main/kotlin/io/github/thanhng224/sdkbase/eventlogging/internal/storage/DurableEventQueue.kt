@@ -203,7 +203,14 @@ internal class DurableEventQueue(
                     val safeAction = redact(action.take(config.maxActionLength)).take(config.maxActionLength)
                     val safeScreen = screen?.let { redact(it.take(MAX_SCREEN_LENGTH)).take(MAX_SCREEN_LENGTH) }
                     events += EventLoggingRecord(
-                        id, sessionId, timestamp, elapsed, safeAction, level, safeScreen, attributes,
+                        id,
+                        sessionId,
+                        timestamp,
+                        elapsed,
+                        safeAction,
+                        level,
+                        safeScreen,
+                        attributes,
                     )
                 }
                 if (input.available() != 0) throw InvalidQueueFileException("trailing queue bytes")

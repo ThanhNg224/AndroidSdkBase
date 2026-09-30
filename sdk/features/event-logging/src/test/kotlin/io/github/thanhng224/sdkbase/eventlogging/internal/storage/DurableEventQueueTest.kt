@@ -113,7 +113,8 @@ class DurableEventQueueTest {
         val clock = FakeClock(10)
         val queue = DurableEventQueue(
             config(root, retention = 100),
-            TestDispatcherProvider(StandardTestDispatcher(testScheduler)), clock::nowMillis,
+            TestDispatcherProvider(StandardTestDispatcher(testScheduler)),
+            clock::nowMillis,
         )
         queue.append(record("expired", 10))
         clock.advanceBy(1000)
@@ -180,7 +181,13 @@ class DurableEventQueueTest {
         val queue = DurableEventQueue(cfg, dispatchers) { 10 }
         queue.append(
             EventLoggingRecord(
-                "one", "session", 10, 0, "host-action", "info", "host-screen",
+                "one",
+                "session",
+                10,
+                0,
+                "host-action",
+                "info",
+                "host-screen",
                 mapOf("outcome" to "host-ok"),
             ),
         )

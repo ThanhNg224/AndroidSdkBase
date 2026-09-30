@@ -15,6 +15,7 @@ extra["zones"] = mapOf(
         ":sdk:features:otp-ui-compose",
         ":sdk:features:event-logging",
         ":sdk:features:logging-file",
+        ":sdk:features:remote-config",
     ),
     // Wires several features into one flow (e.g. OTP + KYC + payment). The only SDK zone that may
     // see more than one feature.
@@ -45,6 +46,7 @@ extra["publishedArtifacts"] = listOf(
     ":sdk:features:otp-ui-compose",
     ":sdk:features:event-logging",
     ":sdk:features:logging-file",
+    ":sdk:features:remote-config",
     ":sdk:adapters:event-logging-work",
     ":sdk:bom",
 )

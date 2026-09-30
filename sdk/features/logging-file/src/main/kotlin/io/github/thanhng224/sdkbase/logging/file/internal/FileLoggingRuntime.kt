@@ -67,7 +67,8 @@ internal class FileLoggingRuntime private constructor(
                                 states.withLock {
                                     update {
                                         FileLoggingState(
-                                            it.written + if (failed) 0 else 1, dropped.get(),
+                                            it.written + if (failed) 0 else 1,
+                                            dropped.get(),
                                             it.storageFailures + if (failed) 1 else 0,
                                         )
                                     }
@@ -177,7 +178,12 @@ internal class FileLoggingRuntime private constructor(
                 val lock = file.channel.tryLock() ?: throw java.nio.channels.OverlappingFileLockException()
                 val scope = SessionScope(environment.dispatchers, environment.logger.tagged("FileLogging"))
                 val runtime = FileLoggingRuntime(
-                    config, environment, scope, StateStore(FileLoggingState(0, 0, 0)), file, lock,
+                    config,
+                    environment,
+                    scope,
+                    StateStore(FileLoggingState(0, 0, 0)),
+                    file,
+                    lock,
                 )
                 try {
                     runtime.storage.prepare(environment.clock.nowMillis())

@@ -29,7 +29,12 @@ gradle.projectsEvaluated {
         ZoneModule(source.path, source.name, edges, source.tasks.names)
     }
     val violations = findZoneViolations(
-        zones, modules, rootProject.allprojects.map { it.path }.toSet(), published, policed, sourceRuled,
+        zones,
+        modules,
+        rootProject.allprojects.map { it.path }.toSet(),
+        published,
+        policed,
+        sourceRuled,
     )
     if (violations.isNotEmpty()) {
         throw GradleException(

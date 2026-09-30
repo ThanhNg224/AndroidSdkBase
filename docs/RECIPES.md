@@ -121,6 +121,21 @@ Gradle project path. The base is Android-only; it does not target Kotlin Multipl
 - **If skipped:** the UI zone guard or source rule fails, a string may be missing for a locale, or a
   published resource name changes without being recorded.
 
+## Add a one-shot feature (no session)
+
+- **When:** a request returns a result once, with no ongoing state, commands or subscriptions. Use
+  the OTP/session shape when callers need a state stream or session-owned background work.
+- **Example:** `sdk/features/remote-config` fetches an immutable revision/value snapshot. Its config
+  validates a positive gateway timeout; a blank response revision returns business error 3301.
+- **Steps:** scaffold with `./scripts/new-feature.sh <name>`, then remove the session/state/runtime
+  stubs and their tests. Keep the host gateway and environment in one config with `validateConfig`.
+  Put suspend host calls through `safeCall`; implement the Java gateway with `awaitCallback` and
+  a builder constructor overload. Implement the outbound Java twin with `launchCallback` returning
+  `Cancellable`; cancellation suppresses delivery. Do not create a feature-owned coroutine scope.
+- **Verify:** dump the new API at the end, register any business error and reference row, add the
+  changelog entry, and run Tier 3. Add Java/Kotlin coordinate usage to the headless consumer so both
+  floor/current publication modes compile and execute the new API.
+
 ## Add a composition, adapter, or vendor binary
 
 - **When:** multiple features need orchestration, a host opts into a concrete library bridge, or a
@@ -140,14 +155,17 @@ Gradle project path. The base is Android-only; it does not target Kotlin Multipl
   Both module scaffolds add the module to its zone and `publishedArtifacts`, then dump the ABI baseline.
   Keep an adapter's dependency graph publishable before including it as a Maven artifact.
 
-  A host-owned adapter on a vendor binary is never published, so it has no scaffold: copy the shape of
-  `sdk/adapters/otp-fake-sms/build.gradle.kts` (only `sdkbase.android.library`, no `sdkbase.abi` or
-  `sdkbase.publishing`) and `sdk/vendor/fake-sms-vendor`, then register each without the published list:
+  Scaffold a local binary wrapper and its host-owned adapter without adding either to the published list:
 
   ```bash
-  python3 scripts/register-module.py vendor :sdk:vendor:<vendor-name> unpublished
-  python3 scripts/register-module.py adapter :sdk:adapters:<adapter-name> unpublished
+  ./scripts/new-module.sh --zone vendor <vendor-name>
+  ./scripts/new-module.sh --zone adapter --unpublished <adapter-name>
   ```
+
+  Drop `.jar`/`.aar` files into the vendor's `libs/` directory (see its generated README), then add
+  `implementation(project(":sdk:vendor:<vendor-name>"))` to the adapter. Both modules apply only
+  `sdkbase.android.library`, have no ABI/publication plugin, and skip `apiDump`.
+  `--unpublished` is accepted only for adapters; vendor modules are always unpublished.
 
   For composition/adapter integration, run Tier 3's `./scripts/verify-integration.sh`. If a published
   POM or Kotlin floor is affected, also run both publication modes:

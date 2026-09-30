@@ -28,7 +28,12 @@ public object EventLoggingErrors {
         SdkError.System(SCHEDULER_FAILURE, "Event delivery scheduling failed", cause, isRetryable = true)
 
     public fun all(): List<Int> = listOf(
-        INVALID_EVENT, STORAGE_FAILURE, QUEUE_FULL, DELIVERY_IN_PROGRESS, DELIVERY_FAILURE, SCHEDULER_FAILURE,
+        INVALID_EVENT,
+        STORAGE_FAILURE,
+        QUEUE_FULL,
+        DELIVERY_IN_PROGRESS,
+        DELIVERY_FAILURE,
+        SCHEDULER_FAILURE,
     )
 }
 

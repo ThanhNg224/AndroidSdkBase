@@ -25,3 +25,4 @@ features/logging-file INVALID_CRASH_ID 3205
 core NOT_STARTED 4000
 core ALREADY_RUNNING 4001
 core SESSION_CLOSED 4002
+features/remote-config INVALID_RESPONSE 3301

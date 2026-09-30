@@ -27,15 +27,19 @@ def main() -> None:
     build_file.parent.mkdir(parents=True, exist_ok=True)
     build_file.write_text(content)
 
-    for source_template in template.parent.glob("*.kt"):
-        source_name = source_template.name.replace("{pascal}", pascal)
-        package_path = Path(*namespace.split("."))
-        source = module_path / "src/main/kotlin" / package_path / source_name
-        source.parent.mkdir(parents=True, exist_ok=True)
+    for source_template in template.parent.rglob("*"):
+        if not source_template.is_file() or source_template.name == "build.gradle.kts":
+            continue
+        relative = source_template.relative_to(template.parent)
+        relative = Path(str(relative).replace("{pascal}", pascal))
+        if source_template.suffix == ".kt":
+            relative = Path("src/main/kotlin") / Path(*namespace.split(".")) / relative
+        destination = module_path / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
         source_content = re.sub(
             r"\{\{([a-z_]+)\}\}", lambda match: values[match.group(1)], source_template.read_text()
         )
-        source.write_text(source_content)
+        destination.write_text(source_content)
 
 
 if __name__ == "__main__":

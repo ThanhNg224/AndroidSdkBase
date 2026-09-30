@@ -20,6 +20,11 @@ All notable changes to this project are documented here. The format follows
   (3201) is removed from the constant, ledger and reference together.
 
 ### Added
+- `remote-config`: a published one-shot feature example with an immutable revision/value snapshot,
+  host-owned suspend/Java callback gateways, timeout containment and no session. Error 3301 rejects
+  a blank revision; Java/Kotlin coordinate consumers exercise both entry points on floor/current compilers.
+- Tooling: `new-module.sh --zone adapter --unpublished <name>` and `--zone vendor <name>`
+  scaffold local-only bridges and binary wrappers; guards verify their build and publication absence.
 - `assertValueSemantics` in `core-testing` checks the hand-written `equals`/`hashCode` of a public plain class
   property by property; `OtpState` and `OtpChallenge` tests use it.
 - Build tooling: extracted feature templates, registry-derived inclusion and UI/adapter/composition scaffolds; tested

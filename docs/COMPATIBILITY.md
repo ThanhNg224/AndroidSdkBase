@@ -40,7 +40,7 @@ floor on top only risks being wrong in one direction or the other.
 
 ### Verified consumer profiles
 
-The headless core/OTP, OTP + Compose UI, and optional logging consumers build a minified release
+The headless core/OTP/remote-config, OTP + Compose UI, and optional logging consumers build a minified release
 with Java and Kotlin call sites on this matrix:
 
 | Compiler profile | AGP | Kotlin compiler | Runtime stdlib | compileSdk / minSdk |
@@ -50,9 +50,11 @@ with Java and Kotlin call sites on this matrix:
 
 `./scripts/verify-publication.sh` runs Floor; `--current` runs Current. Each checks the selected
 Kotlin Gradle plugin, resolved runtime stdlib, fresh R8 mapping and retained SDK classes. The
-headless core/OTP runtime graph must contain neither Compose nor WorkManager; the logging
+headless core/OTP/remote-config runtime graph must contain neither Compose nor WorkManager; the logging
 consumer explicitly opts into WorkManager and remains Compose-free. CI runs both profiles on every PR.
-These are build/consumer guarantees, not proof for older AGP/Kotlin hosts or runtime devices.
+The headless profile also executes Java callback and Kotlin suspend remote-config call sites in
+local unit tests against the published coordinates. These are build/JVM consumer guarantees, not
+proof for older AGP/Kotlin hosts or Android runtime devices.
 
 ## Logging API and R8
 

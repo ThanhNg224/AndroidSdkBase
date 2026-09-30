@@ -10,7 +10,10 @@ import sdkbase.topology.isUiToolkitModule
 class ZoneRulesTest {
 
     private val allTasks = setOf(
-        "checkDependencyPolicy", "checkSourceRules", "apiCheck", "publishAllPublicationsToLocalTestRepository",
+        "checkDependencyPolicy",
+        "checkSourceRules",
+        "apiCheck",
+        "publishAllPublicationsToLocalTestRepository",
     )
     private val policed = setOf("core", "testing", "ui", "feature", "composition")
     private val sourceRuled = policed + "adapter"
@@ -87,8 +90,10 @@ class ZoneRulesTest {
     @Test
     fun compositionCanReachSeveralFeaturesAndAdaptersCanReachVendor() {
         val zones = mapOf(
-            "feature" to listOf(":otp", ":profile"), "composition" to listOf(":flow"),
-            "adapter" to listOf(":bridge"), "vendor" to listOf(":binary"),
+            "feature" to listOf(":otp", ":profile"),
+            "composition" to listOf(":flow"),
+            "adapter" to listOf(":bridge"),
+            "vendor" to listOf(":binary"),
         )
         assertEquals(
             emptyList<String>(),
@@ -103,8 +108,10 @@ class ZoneRulesTest {
     @Test
     fun mainDependenciesOnTestingAreLimitedToBomAndApp() {
         val zones = mapOf(
-            "testing" to listOf(":testing"), "feature" to listOf(":otp"),
-            "bom" to listOf(":bom"), "app" to listOf(":demo"),
+            "testing" to listOf(":testing"),
+            "feature" to listOf(":otp"),
+            "bom" to listOf(":bom"),
+            "app" to listOf(":demo"),
         )
         assertEquals(
             emptyList<String>(),
@@ -148,7 +155,8 @@ class ZoneRulesTest {
             listOf(":bridge is published but depends on unpublished :binary"),
             check(
                 mapOf("adapter" to listOf(":bridge"), "vendor" to listOf(":binary")),
-                listOf(module(":bridge", ":binary")), setOf(":bridge"),
+                listOf(module(":bridge", ":binary")),
+                setOf(":bridge"),
             ),
         )
     }

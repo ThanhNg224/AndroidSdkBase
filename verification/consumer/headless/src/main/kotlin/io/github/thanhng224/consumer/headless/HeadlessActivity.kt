@@ -14,6 +14,7 @@ class HeadlessActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         /* SDK_CALLS_BEGIN */
+        check(RemoteConfigJavaConsumer.fetch().revision == "java-v1")
         val config = JavaConsumer.buildConfigWithLogger().getOrNull() ?: return
         OtpSdk.start(config, object : ResultCallback<OtpSession> {
             override fun onSuccess(value: OtpSession) {

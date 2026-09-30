@@ -1,29 +1,45 @@
 #!/usr/bin/env bash
-# Scaffolds a registered Compose UI, adapter, or composition module.
+# Scaffolds a registered Compose UI, adapter, composition, or vendor module.
 #
 #   ./scripts/new-module.sh --zone ui <feature-name>
 #   ./scripts/new-module.sh --zone adapter <name>
+#   ./scripts/new-module.sh --zone adapter --unpublished <name>
 #   ./scripts/new-module.sh --zone composition <name>
+#   ./scripts/new-module.sh --zone vendor <name>
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 ZONE=""
+UNPUBLISHED=false
 while [ $# -gt 0 ]; do
   case "$1" in
     --zone)
-      [ -z "$ZONE" ] && [ $# -ge 2 ] || { echo "usage: $0 --zone ui|adapter|composition <name>" >&2; exit 2; }
+      [ -z "$ZONE" ] && [ $# -ge 2 ] || { echo "usage: $0 --zone ui|adapter|composition|vendor [--unpublished] <name>" >&2; exit 2; }
       ZONE="$2"
       shift 2
+      ;;
+    --unpublished)
+      [ "$UNPUBLISHED" = false ] || { echo "usage: $0 --zone ui|adapter|composition|vendor [--unpublished] <name>" >&2; exit 2; }
+      UNPUBLISHED=true
+      shift
+      ;;
+    --*)
+      echo "refusing: unknown option '$1'" >&2
+      exit 2
       ;;
     *) break ;;
   esac
 done
 NAME="${1:-}"
-[ $# -eq 1 ] && [ -n "$ZONE" ] || { echo "usage: $0 --zone ui|adapter|composition <name>" >&2; exit 2; }
+[ $# -eq 1 ] && [ -n "$ZONE" ] || { echo "usage: $0 --zone ui|adapter|composition|vendor [--unpublished] <name>" >&2; exit 2; }
 case "$ZONE" in
-  ui|adapter|composition) ;;
-  *) echo "refusing: unsupported zone '$ZONE' (expected ui, adapter, or composition)" >&2; exit 2 ;;
+  ui|adapter|composition|vendor) ;;
+  *) echo "refusing: unsupported zone '$ZONE' (expected ui, adapter, composition, or vendor)" >&2; exit 2 ;;
 esac
+if [ "$UNPUBLISHED" = true ] && [ "$ZONE" != adapter ]; then
+  echo "refusing: --unpublished is supported only for the adapter zone" >&2
+  exit 2
+fi
 if ! [[ "$NAME" =~ ^[a-z][a-z0-9]*(-[a-z0-9]+)*$ ]]; then
   echo "refusing: '$NAME' is not a valid name (expected e.g. 'face-match')" >&2
   exit 2
@@ -63,13 +79,17 @@ case "$ZONE" in
     TOPO_ZONE=feature
     NAMESPACE="$FEATURE_NAMESPACE.ui"
     ;;
-  composition|adapter)
+  composition|adapter|vendor)
     OWNER=""
     MODULE_NAME="$NAME"
     if [ "$ZONE" = composition ]; then
       MODULE_DIR="sdk/composition/$MODULE_NAME"
       NAMESPACE="$CORE_NAMESPACE.$JOINED"
       TOPO_ZONE=composition
+    elif [ "$ZONE" = vendor ]; then
+      MODULE_DIR="sdk/vendor/$MODULE_NAME"
+      NAMESPACE="$CORE_NAMESPACE.vendor.$JOINED"
+      TOPO_ZONE=vendor
     else
       MODULE_DIR="sdk/adapters/$MODULE_NAME"
       NAMESPACE="$CORE_NAMESPACE.$JOINED"
@@ -95,8 +115,22 @@ done < <(find sdk -name build.gradle.kts -print0)
 
 # The renderer writes only the new module; registry registration appends to one existing zone list.
 # This allows a feature scaffold and its optional UI module to be generated in one working tree.
-python3 scripts/render-module.py "$ZONE" "$MODULE_DIR" "$MODULE_NAME" "$NAMESPACE" "$PROJECT_NAME" "$OWNER"
-python3 scripts/register-module.py "$TOPO_ZONE" "$MODULE_PATH" published
-./gradlew ":${MODULE_DIR//\//:}:apiDump" -q
+RENDER_ZONE="$ZONE"
+PUBLICATION=published
+if [ "$ZONE" = vendor ]; then
+  PUBLICATION=unpublished
+elif [ "$ZONE" = adapter ] && [ "$UNPUBLISHED" = true ]; then
+  RENDER_ZONE=adapter-unpublished
+  PUBLICATION=unpublished
+fi
+python3 scripts/render-module.py "$RENDER_ZONE" "$MODULE_DIR" "$MODULE_NAME" "$NAMESPACE" "$PROJECT_NAME" "$OWNER"
+python3 scripts/register-module.py "$TOPO_ZONE" "$MODULE_PATH" "$PUBLICATION"
+if [ "$PUBLICATION" = published ]; then
+  ./gradlew ":${MODULE_DIR//\//:}:apiDump" -q
+fi
 
-echo "Done. $MODULE_DIR is registered and has an ABI baseline."
+if [ "$PUBLICATION" = published ]; then
+  echo "Done. $MODULE_DIR is registered and has an ABI baseline."
+else
+  echo "Done. $MODULE_DIR is registered as unpublished."
+fi

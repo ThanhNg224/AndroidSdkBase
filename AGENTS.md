@@ -1,7 +1,7 @@
 # AGENTS.md
 
-Android SDK starter. Clone it, run `scripts/rename-project.sh`, replace the OTP example with your
-own feature. Published artifacts: `core`, `core-testing`, `core-ui-compose`, `otp`, `otp-ui-compose`, `event-logging`,
+Android SDK starter. Clone it, run `scripts/rename-project.sh`, replace the OTP and remote-config examples with your
+own feature. Published artifacts: `core`, `core-testing`, `core-ui-compose`, `otp`, `otp-ui-compose`, `remote-config`, `event-logging`,
 `logging-file`, `event-logging-work`, `bom`.
 
 ## Local gates
@@ -25,13 +25,14 @@ See [`docs/RECIPES.md`](docs/RECIPES.md) for task steps and verification.
 - `sdk/core` — shared Android toolkit: result/error, calls, time, concurrency, logging, telemetry, gateway, environment, session, and config.
 - `sdk/core-testing` — published fakes and assertions; use via `testImplementation`; only `bom` and `app` may target it outside tests.
 - `sdk/core-ui-compose` — shared Compose tokens, spacing, contrast, error text and locale; only named feature UI modules plus `bom`/`app` may depend on it; see `docs/THEMING.md`.
+- `sdk/features/remote-config` — one-shot example: a host gateway returns an immutable snapshot, with no session.
 - `sdk/features/<name>` — one headless feature artifact; scaffold with `./scripts/new-feature.sh <name>`; implementation in `internal/`.
 - `sdk/features/<name>-ui-compose` — optional UI artifact; Compose never enters a non-UI module.
 - `sdk/composition/<flow>` — the only place multiple features meet.
 - `sdk/adapters/<feature>-<lib>` — optional host bridge; only SDK zone allowed HTTP clients/DI, and nothing depends on it.
 - `sdk/vendor/<name>` — local binary wrapper, never published; only adapters may depend on it. `fake-sms-vendor`/`otp-fake-sms` are examples.
 - `apps/demo` is manual-only. `verification/consumer` is a separate coordinate-only build.
-- Register modules in `gradle/module-topology.gradle.kts`; Settings derives includes. Scaffold other zones with `./scripts/new-module.sh --zone ui|adapter|composition <name>` (UI takes its feature name).
+- Register modules in `gradle/module-topology.gradle.kts`; Settings derives includes. Scaffold other zones with `./scripts/new-module.sh --zone ui|adapter|composition|vendor <name>` (UI takes its feature name; adapter supports `--unpublished`; vendor is always unpublished).
 
 ## Package rules
 - The entry point (e.g. `OtpSdk`) sits at the module's package root; other public types get a named sub-package (`config/`, `gateway/`, `session/`…), never a grab-bag.

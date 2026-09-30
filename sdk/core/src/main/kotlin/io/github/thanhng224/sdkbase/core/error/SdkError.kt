@@ -27,7 +27,11 @@ public sealed class SdkError(
         isRetryable: Boolean = false,
         disposition: Disposition? = null,
     ) : SdkError(
-        code, reason, cause, isRetryable, disposition ?: defaultDisposition(isRetryable, lifecycle = false),
+        code,
+        reason,
+        cause,
+        isRetryable,
+        disposition ?: defaultDisposition(isRetryable, lifecycle = false),
     )
 
     public class System @JvmOverloads constructor(
@@ -37,7 +41,11 @@ public sealed class SdkError(
         isRetryable: Boolean = false,
         disposition: Disposition? = null,
     ) : SdkError(
-        code, reason, cause, isRetryable, disposition ?: defaultDisposition(isRetryable, lifecycle = false),
+        code,
+        reason,
+        cause,
+        isRetryable,
+        disposition ?: defaultDisposition(isRetryable, lifecycle = false),
     )
 
     public class Business @JvmOverloads constructor(
@@ -47,7 +55,11 @@ public sealed class SdkError(
         isRetryable: Boolean = false,
         disposition: Disposition? = null,
     ) : SdkError(
-        code, reason, cause, isRetryable, disposition ?: defaultDisposition(isRetryable, lifecycle = false),
+        code,
+        reason,
+        cause,
+        isRetryable,
+        disposition ?: defaultDisposition(isRetryable, lifecycle = false),
     )
 
     public class Lifecycle @JvmOverloads constructor(
@@ -57,7 +69,11 @@ public sealed class SdkError(
         isRetryable: Boolean = false,
         disposition: Disposition? = null,
     ) : SdkError(
-        code, reason, cause, isRetryable, disposition ?: defaultDisposition(isRetryable, lifecycle = true),
+        code,
+        reason,
+        cause,
+        isRetryable,
+        disposition ?: defaultDisposition(isRetryable, lifecycle = true),
     )
 
     override fun toString(): String =
