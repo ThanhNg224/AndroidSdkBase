@@ -24,6 +24,9 @@ sync_tree() {
   for dir in "$WORK"/sdk/features/*/; do
     [ -e "$SRC/sdk/features/$(basename "$dir")" ] || rm -rf "$dir"
   done
+  # Generic-module scaffold cases create these two fixture modules only in the scratch tree. Their
+  # excluded build outputs keep them outside rsync's delete pass on repeat runs.
+  rm -rf "$WORK/sdk/adapters/profile-callback" "$WORK/sdk/composition/onboarding"
   rsync -a --delete --exclude 'build/' --exclude '.gradle/' --exclude '.kotlin/' --exclude '.git/' \
     "$SRC/" "$WORK/"
 }
@@ -398,6 +401,11 @@ run_case consumer-runtime-stdlib-upgraded \
   "add_dep verification/consumer/headless/build.gradle.kts 'implementation(\"org.jetbrains.kotlin:kotlin-stdlib:2.4.20\")'" \
   "$PUB --consumer-check headless" "stdlib 2.4.20, expected 2.2.21"
 
+# --- Formatter (root check must include spotlessCheck) -----------------------------------------
+run_case spotless-unformatted \
+  "printf 'package io.github.thanhng224.sdkbase.core.logging\n\ninternal object FormatViolation {\ninternal val value = 1\n}\n' > $CORE/logging/FormatViolation.kt" \
+  "./gradlew check -Psdkbase.warningsAsErrors=true -q" "spotlessKotlinCheck"
+
 # --- Scaffold (scripts/new-feature.sh) self-test ------------------------------------------------
 # Positive checks: the scaffold script and the gate it hands off to must SUCCEED — the opposite of
 # every case above, whose gate must FAIL on a real violation. Written by hand rather than through
@@ -413,7 +421,7 @@ if [[ "scaffold-new-feature-is-green" == "$FILTER"* ]]; then
   # plugin's generated consumer-rules.pro is still on disk. Clear both so the case is repeatable.
   rm -rf "$WORK/sdk/features/face-match" "$WORK/.gradle/configuration-cache"
   if ( cd "$WORK" && ./scripts/new-feature.sh face-match &&
-       ./gradlew check -Psdkbase.warningsAsErrors=true -q ) >"$log" 2>&1; then
+       ./gradlew spotlessCheck check -Psdkbase.warningsAsErrors=true -q ) >"$log" 2>&1; then
     echo "ok    $name"
   else
     echo "FAIL  $name — new-feature.sh face-match, then check, did not both succeed (see $log)"
@@ -429,7 +437,7 @@ if [[ "scaffold-twice-is-green" == "$FILTER"* ]]; then
   sync_tree
   rm -rf "$WORK/sdk/features/face-match" "$WORK/sdk/features/pay-link" "$WORK/.gradle/configuration-cache"
   if ( cd "$WORK" && ./scripts/new-feature.sh face-match && ./scripts/new-feature.sh pay-link &&
-       ./gradlew check -Psdkbase.warningsAsErrors=true -q ) >"$log" 2>&1; then
+       ./gradlew spotlessCheck check -Psdkbase.warningsAsErrors=true -q ) >"$log" 2>&1; then
     echo "ok    $name"
   else
     echo "FAIL  $name — two consecutive scaffolds, then check, did not all succeed (see $log)"
@@ -462,6 +470,100 @@ if [[ "scaffold-rejects-bad-names" == "$FILTER"* ]]; then
     echo "settings.gradle.kts or module-topology.gradle.kts changed despite every name being refused" >>"$log"
     ok=false
   fi
+  if $ok; then
+    echo "ok    $name"
+  else
+    echo "FAIL  $name — see $log"
+    failures=$((failures + 1))
+  fi
+fi
+
+# --- Generic module scaffolds (positive gate: each zone is included and green) ----------------
+if [[ "scaffold-new-module-zones-are-green" == "$FILTER"* ]]; then
+  name=scaffold-new-module-zones-are-green
+  log="$LOGS/$name.log"
+  sync_tree
+  rm -rf "$WORK/sdk/features/face-match" "$WORK/sdk/features/face-match-ui-compose" \
+    "$WORK/sdk/adapters/profile-callback" "$WORK/sdk/composition/onboarding" \
+    "$WORK/.gradle/configuration-cache"
+  if ( cd "$WORK" &&
+       ./scripts/new-feature.sh face-match &&
+       ./scripts/new-module.sh --zone ui face-match &&
+       ./scripts/new-module.sh --zone adapter profile-callback &&
+       ./scripts/new-module.sh --zone composition onboarding &&
+       ./gradlew spotlessCheck \
+         :sdk:features:face-match:check \
+         :sdk:features:face-match-ui-compose:check \
+         :sdk:adapters:profile-callback:check \
+         :sdk:composition:onboarding:check \
+         -Psdkbase.warningsAsErrors=true -q ) >"$log" 2>&1; then
+    echo "ok    $name"
+  else
+    echo "FAIL  $name — feature, UI, adapter, composition scaffold or check failed (see $log)"
+    failures=$((failures + 1))
+  fi
+fi
+
+if [[ "scaffold-new-module-rejects-invalid-input" == "$FILTER"* ]]; then
+  name=scaffold-new-module-rejects-invalid-input
+  log="$LOGS/$name.log"
+  sync_tree
+  ok=true
+  invalid_args=(
+    "--zone unknown profile-callback"
+    "--zone adapter Face_Match"
+    "--zone ui missing-feature"
+    "--zone adapter event-logging-work"
+  )
+  for args in "${invalid_args[@]}"; do
+    read -r -a command_args <<< "$args"
+    if ( cd "$WORK" && ./scripts/new-module.sh "${command_args[@]}" ) >>"$log" 2>&1; then
+      echo "new-module.sh $args unexpectedly succeeded" >>"$log"
+      ok=false
+    else
+      status=$?
+      if [ "$status" -ne 2 ]; then
+        echo "new-module.sh $args exited $status, expected 2" >>"$log"
+        ok=false
+      fi
+    fi
+  done
+  if [ -n "$(cd "$WORK" && git status --porcelain -- gradle/module-topology.gradle.kts)" ]; then
+    echo "module topology changed despite every input being refused" >>"$log"
+    ok=false
+  fi
+  if $ok; then
+    echo "ok    $name"
+  else
+    echo "FAIL  $name — see $log"
+    failures=$((failures + 1))
+  fi
+fi
+
+if [[ "scaffold-new-feature-protects-dirty-topology" == "$FILTER"* ]]; then
+  name=scaffold-new-feature-protects-dirty-topology
+  log="$LOGS/$name.log"
+  sync_tree
+  rm -rf "$WORK/.git" "$WORK/sdk/features/face-match"
+  ok=true
+  if ! ( cd "$WORK" && git init -q && git add gradle/module-topology.gradle.kts &&
+         git -c user.name='SDK verification' -c user.email='sdk-verification@example.invalid' \
+           commit -qm 'Registry baseline' --no-gpg-sign &&
+         printf '\n// User edit retained by the scaffold guard.\n' >> gradle/module-topology.gradle.kts ); then
+    echo "could not prepare scratch registry edit" >>"$log"
+    ok=false
+  elif ( cd "$WORK" && ./scripts/new-feature.sh face-match ) >>"$log" 2>&1; then
+    echo "new-feature.sh unexpectedly accepted a dirty topology" >>"$log"
+    ok=false
+  else
+    status=$?
+    if [ "$status" -ne 2 ] || [ -e "$WORK/sdk/features/face-match" ] || \
+       ! grep -Fq 'User edit retained by the scaffold guard.' "$WORK/gradle/module-topology.gradle.kts"; then
+      echo "dirty topology was not refused before writing, or its edit was not retained" >>"$log"
+      ok=false
+    fi
+  fi
+  rm -rf "$WORK/.git"
   if $ok; then
     echo "ok    $name"
   else

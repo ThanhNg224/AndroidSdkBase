@@ -54,7 +54,7 @@ public abstract class CheckDependencyPolicyTask : DefaultTask() {
                 "${projectPath.get()} reaches a forbidden dependency:\n" +
                     violations.joinToString("\n") { "  - $it" } + "\n\n" +
                     "The host owns networking and DI: declare a gateway interface instead, or move the " +
-                    "bridge into an adapter-zone module (docs/ARCHITECTURE.md)."
+                    "bridge into an adapter-zone module (docs/ARCHITECTURE.md).",
             )
         }
         result.get().asFile.writeText("ok\n")

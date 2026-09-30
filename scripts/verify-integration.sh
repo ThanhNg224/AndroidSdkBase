@@ -115,16 +115,11 @@ for folder in (root / "sdk/features/profile", root / "sdk/composition/onboarding
         path.write_text(text)
 PY
 
-python3 - "$SOURCE/settings.gradle.kts" "$SOURCE/gradle/module-topology.gradle.kts" <<'PY'
+# Settings derives included modules from this registry after their build files exist.
+python3 - "$SOURCE/gradle/module-topology.gradle.kts" <<'PY'
 from pathlib import Path
 import re, sys
-settings, topology = map(Path, sys.argv[1:])
-s = settings.read_text()
-needle = 'include(":sdk:features:otp")\n'
-if s.count(needle) != 1:
-    raise SystemExit("FAIL expected exactly one OTP include in settings.gradle.kts")
-s = s.replace(needle, needle + 'include(":sdk:features:profile")\ninclude(":sdk:composition:onboarding")\ninclude(":sdk:adapters:profile-callback")\n')
-settings.write_text(s)
+topology = Path(sys.argv[1])
 t = topology.read_text()
 
 def append_to_list(text, header, item):

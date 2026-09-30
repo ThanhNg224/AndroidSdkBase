@@ -12,6 +12,7 @@ public interface FileLoggingSession : SdkSession<FileLoggingState>, LogSink {
     /** Fences prior writes and reports any storage failure observed so far in this session. */
     public suspend fun flush(): SdkResult<Unit>
     public fun flush(callback: ResultCallback<Unit>): Cancellable
+
     /** Read/ack explicitly: the host chooses whether/how to upload these reports. */
     public suspend fun pendingCrashes(): SdkResult<List<CrashReport>>
     public fun pendingCrashes(callback: ResultCallback<List<CrashReport>>): Cancellable

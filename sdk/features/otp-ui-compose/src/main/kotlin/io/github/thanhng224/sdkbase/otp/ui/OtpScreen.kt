@@ -72,7 +72,11 @@ public fun OtpScreen(
             // Verified must be checked before the expiry fallback, or the screen falls through to
             // a frozen "Expires in Ns" and never tells the user the flow succeeded.
             state.phase == OtpState.Phase.Verified ->
-                Text(text = stringResource(R.string.sdk_otp_ui_compose_verified), color = colors.accent, textAlign = TextAlign.Center)
+                Text(
+                    text = stringResource(R.string.sdk_otp_ui_compose_verified),
+                    color = colors.accent,
+                    textAlign = TextAlign.Center,
+                )
 
             error != null ->
                 Text(
@@ -104,8 +108,11 @@ public fun OtpScreen(
             modifier = Modifier.fillMaxWidth().height(SdkDimens.MinTouchTarget),
         ) {
             Text(
-                if (state.canResend) stringResource(R.string.sdk_otp_ui_compose_resend)
-                else stringResource(R.string.sdk_otp_ui_compose_resend_in, state.secondsUntilResend)
+                if (state.canResend) {
+                    stringResource(R.string.sdk_otp_ui_compose_resend)
+                } else {
+                    stringResource(R.string.sdk_otp_ui_compose_resend_in, state.secondsUntilResend)
+                },
             )
         }
 

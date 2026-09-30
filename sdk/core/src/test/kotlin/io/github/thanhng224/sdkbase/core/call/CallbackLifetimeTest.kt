@@ -15,8 +15,8 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
 import org.junit.Assert.assertThrows
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -119,9 +119,13 @@ class CallbackLifetimeTest {
                 launchCallback(dispatchers, Callback(), parent) {
                     throw AssertionError("uncaught block failure")
                 }
-                MutableStateFlow(0).observe(dispatchers, StateListener {
-                    throw AssertionError("uncaught listener failure")
-                }, parent)
+                MutableStateFlow(0).observe(
+                    dispatchers,
+                    StateListener {
+                        throw AssertionError("uncaught listener failure")
+                    },
+                    parent,
+                )
                 advanceUntilIdle()
                 assertTrue(parent.isActive)
                 assertTrue(sibling.isActive)

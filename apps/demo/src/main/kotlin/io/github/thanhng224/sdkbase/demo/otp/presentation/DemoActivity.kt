@@ -30,7 +30,9 @@ internal class DemoActivity : ComponentActivity() {
                 val uiState by viewModel.uiState.collectAsStateWithLifecycle()
                 when (val current = uiState) {
                     is DemoUiState.Starting -> Text("Starting…")
+
                     is DemoUiState.Failed -> Text("Could not start: ${current.reason}")
+
                     is DemoUiState.Ready -> {
                         val state by current.session.state.collectAsStateWithLifecycle()
                         OtpTheme {

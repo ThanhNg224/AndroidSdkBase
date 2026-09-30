@@ -17,12 +17,12 @@ import io.github.thanhng224.sdkbase.otp.config.OtpSdkConfig
 import io.github.thanhng224.sdkbase.otp.gateway.OtpChallenge
 import io.github.thanhng224.sdkbase.otp.gateway.OtpGateway
 import io.github.thanhng224.sdkbase.otp.session.OtpState
-import java.io.IOException
 import kotlinx.coroutines.awaitCancellation
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.io.IOException
 
 /**
  * [OtpSdk.start], [OtpSession.submit] and [OtpSession.resend] are business logic — validation,
@@ -123,8 +123,11 @@ class OtpSdkTest {
         val gateway = FakeGateway(
             challenge = OtpChallenge("ch-1", 6, 60, 0),
             requestResult = {
-                if (calls++ == 0) SdkResult.Success(OtpChallenge("ch-1", 6, 60, 0))
-                else SdkResult.Failure(SdkErrors.networkUnavailable())
+                if (calls++ == 0) {
+                    SdkResult.Success(OtpChallenge("ch-1", 6, 60, 0))
+                } else {
+                    SdkResult.Failure(SdkErrors.networkUnavailable())
+                }
             },
         )
         val session = OtpSdk.start(configOf(gateway)).getOrNull()!!

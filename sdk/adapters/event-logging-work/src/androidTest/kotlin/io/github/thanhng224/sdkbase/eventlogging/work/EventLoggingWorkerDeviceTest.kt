@@ -17,16 +17,19 @@ import io.github.thanhng224.sdkbase.eventlogging.gateway.EventLoggingGateway
 import io.github.thanhng224.sdkbase.eventlogging.work.internal.EventLoggingWorker
 import io.github.thanhng224.sdkbase.eventlogging.work.provider.EventLoggingWorkConfiguration
 import io.github.thanhng224.sdkbase.eventlogging.work.provider.EventLoggingWorkProvider
-import java.io.File
-import java.io.IOException
-import java.util.UUID
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeout
-import org.junit.Assert.*
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Test
 import org.junit.runner.RunWith
+import java.io.File
+import java.io.IOException
+import java.util.UUID
 
 @RunWith(AndroidJUnit4::class)
 class EventLoggingWorkerDeviceTest {
@@ -65,15 +68,23 @@ class EventLoggingWorkerDeviceTest {
             var resolutions = 0
             val freshHost = RestoredHost(app) { namespace ->
                 resolutions++
-                EventLoggingWorkConfiguration(config(root, namespace),
-                    EventLoggingGateway { delivered += it.action; SdkResult.Success(Unit) }, environment)
+                EventLoggingWorkConfiguration(
+                    config(root, namespace),
+                    EventLoggingGateway {
+                        delivered += it.action
+                        SdkResult.Success(Unit)
+                    },
+                    environment,
+                )
             }
             assertEquals(ListenableWorker.Result.success(), restoredDelivery(freshHost))
             assertEquals(listOf("first", "second"), delivered)
             assertEquals(ListenableWorker.Result.success(), restoredDelivery(freshHost))
             assertEquals(2, resolutions)
             assertEquals(2, delivered.size)
-        } finally { root.deleteRecursively() }
+        } finally {
+            root.deleteRecursively()
+        }
     }
 
     @Test fun wrongNamespaceMappingNeverDrainsAnotherQueue() = runBlocking {
@@ -81,12 +92,20 @@ class EventLoggingWorkerDeviceTest {
         try {
             var delivered = false
             val host = RestoredHost(app) {
-                EventLoggingWorkConfiguration(config(root, "another-queue"),
-                    EventLoggingGateway { delivered = true; SdkResult.Success(Unit) }, SdkEnvironment.Default)
+                EventLoggingWorkConfiguration(
+                    config(root, "another-queue"),
+                    EventLoggingGateway {
+                        delivered = true
+                        SdkResult.Success(Unit)
+                    },
+                    SdkEnvironment.Default,
+                )
             }
             assertEquals(ListenableWorker.Result.failure(), worker(host).doWork())
             assertFalse(delivered)
-        } finally { root.deleteRecursively() }
+        } finally {
+            root.deleteRecursively()
+        }
     }
 
     @Test fun transientRestorationFailureRequestsRetry() = runBlocking {
@@ -96,7 +115,9 @@ class EventLoggingWorkerDeviceTest {
 
     @Test fun restorationCancellationPropagates() = runBlocking {
         val host = RestoredHost(app) { throw CancellationException("cancel restoration") }
-        try { worker(host).doWork(); fail("Cancellation was swallowed") }
-        catch (_: CancellationException) { }
+        try {
+            worker(host).doWork()
+            fail("Cancellation was swallowed")
+        } catch (_: CancellationException) { }
     }
 }

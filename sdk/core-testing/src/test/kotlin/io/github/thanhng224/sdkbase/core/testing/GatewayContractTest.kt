@@ -3,12 +3,12 @@ package io.github.thanhng224.sdkbase.core.testing
 import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import io.github.thanhng224.sdkbase.core.gateway.CompletionCallback
 import io.github.thanhng224.sdkbase.core.result.SdkResult
-import kotlin.concurrent.thread
 import kotlinx.coroutines.delay
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Test
+import kotlin.concurrent.thread
 
 class GatewayContractTest {
 
@@ -50,7 +50,10 @@ class GatewayContractTest {
     @Test
     fun `assertReturns fails when the call hangs`() {
         assertFailsWith("gateway did not return within 200 ms") {
-            GatewayContract.assertReturns<Unit>(timeoutMillis = 200) { delay(60_000); SdkResult.Success(Unit) }
+            GatewayContract.assertReturns<Unit>(timeoutMillis = 200) {
+                delay(60_000)
+                SdkResult.Success(Unit)
+            }
         }
     }
 
@@ -58,7 +61,10 @@ class GatewayContractTest {
 
     @Test
     fun `assertCancellable passes a call that cooperates with cancellation`() {
-        GatewayContract.assertCancellable { delay(60_000); SdkResult.Success(Unit) }
+        GatewayContract.assertCancellable {
+            delay(60_000)
+            SdkResult.Success(Unit)
+        }
     }
 
     @Test
@@ -118,7 +124,10 @@ class GatewayContractTest {
         assertFailsWith("gateway called back 2 times") {
             GatewayContract.assertCallsBackOnce<String>(settleMillis = 300) { callback ->
                 callback.onSuccess("a")
-                thread { Thread.sleep(50); callback.onFailure(SdkErrors.unknown()) }
+                thread {
+                    Thread.sleep(50)
+                    callback.onFailure(SdkErrors.unknown())
+                }
             }
         }
     }

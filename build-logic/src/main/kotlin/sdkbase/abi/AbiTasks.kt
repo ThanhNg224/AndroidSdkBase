@@ -110,7 +110,9 @@ public abstract class CheckAbiTask : DefaultTask() {
         val baselineFile = baseline.singleFile
         val path = projectPath.get()
         if (!baselineFile.exists()) {
-            throw GradleException("Missing ABI baseline api/${baselineName.get()}. Run ./gradlew $path:apiDump and commit it.")
+            throw GradleException(
+                "Missing ABI baseline api/${baselineName.get()}. Run ./gradlew $path:apiDump and commit it.",
+            )
         }
         val expected = baselineFile.readText().replace("\r\n", "\n").trimEnd().lines()
         val actual = current.get().asFile.readText().trimEnd().lines()
@@ -120,7 +122,7 @@ public abstract class CheckAbiTask : DefaultTask() {
                     lineDiff(expected, actual).joinToString("\n") { "  $it" } + "\n\n" +
                     "Removing or changing a line is a breaking change; so is adding an abstract member to an " +
                     "interface hosts implement, or a subtype to a sealed type (docs/COMPATIBILITY.md).\n" +
-                    "If the change is intended, run ./gradlew $path:apiDump and commit the new baseline with it."
+                    "If the change is intended, run ./gradlew $path:apiDump and commit the new baseline with it.",
             )
         }
         result.get().asFile.writeText("ok\n")

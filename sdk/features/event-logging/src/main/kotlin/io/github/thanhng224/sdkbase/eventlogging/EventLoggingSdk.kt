@@ -30,7 +30,8 @@ public object EventLoggingSdk {
         config: EventLoggingConfig,
         gateway: EventLoggingGateway,
         environment: SdkEnvironment,
-    ): SdkResult<EventLoggingSession> = startInternal(config, gateway, environment, scheduleEnabled = true, bootstrap = true)
+    ): SdkResult<EventLoggingSession> =
+        startInternal(config, gateway, environment, scheduleEnabled = true, bootstrap = true)
 
     /** Starts using a Java-friendly callback gateway. */
     @JvmStatic
@@ -154,6 +155,7 @@ public object EventLoggingSdk {
             try {
                 when (val scheduled = runtime.bootstrap()) {
                     is SdkResult.Success -> Unit
+
                     is SdkResult.Failure -> {
                         session.close()
                         return scheduled

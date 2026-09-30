@@ -92,7 +92,10 @@ class OtpCallbackGatewayTest {
         val gateway = object : OtpCallbackGateway {
             override fun requestOtp(destination: String, callback: GatewayCallback<OtpChallenge>) = error("unused")
             override fun verifyOtp(challengeId: String, code: String, callback: CompletionCallback) {
-                Thread { callback.onSuccess(); callback.onSuccess() }.start()
+                Thread {
+                    callback.onSuccess()
+                    callback.onSuccess()
+                }.start()
             }
         }
         assertEquals(SdkResult.Success(Unit), gateway.asGateway().verifyOtp("c", "1"))

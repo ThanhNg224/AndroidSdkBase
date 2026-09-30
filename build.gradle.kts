@@ -16,155 +16,50 @@ plugins {
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.dokka) apply false
     alias(libs.plugins.maven.publish) apply false
-    alias(libs.plugins.dependency.analysis)
+    alias(libs.plugins.spotless)
     id("sdkbase.error-catalog")
+    id("sdkbase.zone-guard")
 }
 
 apply(from = "gradle/module-topology.gradle.kts")
+
+spotless {
+    // Filter within each tree so configuration-cache inputs exclude build outputs.
+    kotlin {
+        target(
+            fileTree(rootDir) {
+                include("sdk/**/*.kt", "apps/**/*.kt", "build-logic/src/**/*.kt")
+                exclude("**/build/**", "verification/**")
+            },
+        )
+        ktlint(libs.versions.ktlint.get()).setEditorConfigPath(file(".editorconfig").path)
+    }
+    kotlinGradle {
+        target(
+            fileTree(rootDir) {
+                include("**/*.gradle.kts")
+                exclude("**/build/**", "verification/**", ".git/**", ".gradle/**")
+            },
+        )
+        ktlint(libs.versions.ktlint.get()).setEditorConfigPath(file(".editorconfig").path)
+    }
+}
 
 subprojects {
     group = providers.gradleProperty("sdkbase.group").get()
     version = providers.gradleProperty("sdkbase.version").get()
 }
 
-tasks.register<Delete>("clean") {
+tasks.named<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }
 
-// The root project has no `check` task of its own — `./gradlew check` already reaches every
-// subproject's `check` because Gradle selects same-named tasks across the whole build. Registering
-// one here only to carry this one dependency joins that same selection, so `:build-logic:test`
-// (SourceRulesTest — the source-rules gate's own unit tests) always runs alongside it.
-tasks.register("check") {
+// Spotless applies the base plugin, which supplies root clean/check tasks. Unqualified `check`
+// also selects every subproject's check; add build-logic tests and the error catalog at the root.
+tasks.named("check") {
     group = "verification"
-    description = "Runs build-logic's own unit tests and the error-catalog guard alongside every module's check."
+    description = "Runs formatting, build-logic tests and the error catalog alongside every module's check."
     dependsOn(gradle.includedBuild("build-logic").task(":test"))
     dependsOn("checkErrorCatalog")
-}
-
-// ---------------------------------------------------------------------------------------------
-// Zone guard: module boundaries are enforced here, at configuration time, not by review.
-// Rules: (1) every included module is registered; (2) dependency and constraint edges only go to
-// allowed zones, across every non-test configuration (compileOnly, runtimeOnly and variant-specific
-// ones included); (3) a feature depends on another feature only as that feature's UI module;
-// (4) a published module depends only on published modules; (5) a published module has an ABI check
-// and a local publication; (6) every core/testing/ui/feature/composition module runs
-// checkDependencyPolicy; (7) the shared UI toolkit (zone `ui`) is used only by
-// <name>-ui-<toolkit> modules, never by a headless feature.
-// ---------------------------------------------------------------------------------------------
-
-@Suppress("UNCHECKED_CAST")
-val zones = rootProject.extra["zones"] as Map<String, List<String>>
-
-@Suppress("UNCHECKED_CAST")
-val publishedArtifacts = (rootProject.extra["publishedArtifacts"] as List<String>).toSet()
-
-val zoneByPath: Map<String, String> =
-    zones.flatMap { (zone, paths) -> paths.map { it to zone } }.toMap()
-
-val allowedTargets: Map<String, Set<String>> = mapOf(
-    "core" to emptySet(),
-    "testing" to setOf("core"),
-    "ui" to setOf("core"),
-    // feature -> feature is narrowed further by isOwnUiModule below, feature -> ui by isUiToolkitModule.
-    "feature" to setOf("core", "feature", "ui"),
-    "composition" to setOf("core", "feature"),
-    "adapter" to setOf("core", "feature", "vendor"),
-    "vendor" to emptySet(),
-    "bom" to setOf("core", "feature", "composition", "adapter", "testing", "ui"),
-    "app" to setOf("core", "feature", "composition", "adapter", "app", "testing", "ui"),
-)
-
-@Suppress("UNCHECKED_CAST")
-val policedZones = (rootProject.extra["dependencyPolicedZones"] as List<String>).toSet()
-
-@Suppress("UNCHECKED_CAST")
-val sourceRuledZones = (rootProject.extra["sourceRuledZones"] as List<String>).toSet()
-
-// `otp-ui-compose` -> `otp` is the one allowed feature -> feature edge: a UI module on top of the
-// feature it renders. Two different features are wired together only in a composition module.
-fun isOwnUiModule(sourceName: String, targetName: String): Boolean =
-    Regex("${Regex.escape(targetName)}-ui(-[a-z0-9]+)*").matches(sourceName)
-
-// Only a `<name>-ui-<toolkit>` module may use the shared UI toolkit: Compose must not reach a headless feature.
-fun isUiToolkitModule(name: String): Boolean = Regex(".+-ui(-[a-z0-9]+)+").matches(name)
-
-fun isTestConfiguration(name: String): Boolean = name.contains("test", ignoreCase = true)
-
-fun projectEdges(project: Project): Set<String> {
-    val projectsByCoordinates = rootProject.subprojects.associateBy {
-        it.group.toString() to it.name
-    }
-    return project.configurations
-        .filterNot { isTestConfiguration(it.name) }
-        .flatMap { configuration ->
-            val dependencyPaths = configuration.dependencies
-                .withType(ProjectDependency::class.java)
-                .map { it.path }
-            val constrainedProjectPaths = configuration.dependencyConstraints
-                .mapNotNull { constraint ->
-                    projectsByCoordinates[constraint.group to constraint.name]?.path
-                }
-            dependencyPaths + constrainedProjectPaths
-        }
-        .toSet()
-}
-
-gradle.projectsEvaluated {
-    val violations = mutableListOf<String>()
-
-    (zones.keys - allowedTargets.keys).forEach { violations += "unknown zone '$it' in the registry" }
-    zoneByPath.keys.filter { rootProject.findProject(it) == null }
-        .forEach { violations += "$it is registered but not included in settings.gradle.kts" }
-
-    // Parent projects implied by nested paths (`:sdk`, `:sdk:features`) have no build file.
-    rootProject.subprojects.filter { it.buildFile.exists() }.forEach { source ->
-        val sourceZone = zoneByPath[source.path]
-        if (sourceZone == null) {
-            violations += "${source.path} is not registered in gradle/module-topology.gradle.kts"
-            return@forEach
-        }
-        val allowed = allowedTargets[sourceZone].orEmpty()
-        val published = source.path in publishedArtifacts
-        projectEdges(source).forEach { target ->
-            val targetZone = zoneByPath[target] ?: "unregistered"
-            if (targetZone !in allowed) {
-                violations += "${source.path} [$sourceZone] -> $target [$targetZone] is not allowed"
-            } else if (sourceZone == "feature" && targetZone == "feature" &&
-                !isOwnUiModule(source.name, target.substringAfterLast(':'))
-            ) {
-                violations += "${source.path} [feature] -> $target [feature] is not allowed: a feature " +
-                    "depends on another feature only as its UI module (<name>-ui-<toolkit> -> <name>); " +
-                    "wire different features together in a composition module"
-            }
-            if (sourceZone == "feature" && targetZone == "ui" && !isUiToolkitModule(source.name)) {
-                violations += "${source.path} [feature] -> $target [ui] is not allowed: only " +
-                    "<name>-ui-<toolkit> modules may use the shared UI toolkit"
-            }
-            if (published && target !in publishedArtifacts) {
-                violations += "${source.path} is published but depends on unpublished $target"
-            }
-        }
-        if (sourceZone in policedZones && source.tasks.findByName("checkDependencyPolicy") == null) {
-            violations += "${source.path} [$sourceZone] has no checkDependencyPolicy (apply sdkbase.android.library)"
-        }
-        if (sourceZone in sourceRuledZones && source.tasks.findByName("checkSourceRules") == null) {
-            violations += "${source.path} [$sourceZone] has no checkSourceRules (apply sdkbase.android.library)"
-        }
-        if (published) {
-            if (sourceZone != "bom" && source.tasks.findByName("apiCheck") == null) {
-                violations += "${source.path} is published but has no apiCheck (apply sdkbase.abi)"
-            }
-            if (source.tasks.findByName("publishAllPublicationsToLocalTestRepository") == null) {
-                violations += "${source.path} is published but has no localTest publication"
-            }
-        }
-    }
-
-    if (violations.isNotEmpty()) {
-        throw GradleException(
-            "Module zone violation(s) — see docs/ARCHITECTURE.md:\n" +
-                violations.joinToString("\n") { " - $it" }
-        )
-    }
+    dependsOn("spotlessCheck")
 }

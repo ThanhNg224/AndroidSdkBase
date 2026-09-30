@@ -27,15 +27,14 @@ dependencyResolutionManagement {
 
 rootProject.name = "AndroidSdkBase"
 
-include(":sdk:core")
-include(":sdk:core-testing")
-include(":sdk:core-ui-compose")
-include(":sdk:features:otp")
-include(":sdk:features:otp-ui-compose")
-include(":sdk:features:event-logging")
-include(":sdk:features:logging-file")
-include(":sdk:adapters:event-logging-work")
-include(":sdk:adapters:otp-fake-sms")
-include(":sdk:vendor:fake-sms-vendor")
-include(":sdk:bom")
-include(":apps:demo")
+// The topology registry is the single source for SDK module inclusion and zone ownership.
+apply(from = "gradle/module-topology.gradle.kts")
+
+@Suppress("UNCHECKED_CAST")
+val registeredModules = (extra["zones"] as Map<String, List<String>>).values.flatten().distinct()
+registeredModules.forEach { modulePath ->
+    val moduleDirectory = modulePath.removePrefix(":").replace(":", "/")
+    if (file("$moduleDirectory/build.gradle.kts").isFile) include(modulePath)
+}
+
+// Verification scripts may append explicit, temporary includes for unregistered guard fixtures.

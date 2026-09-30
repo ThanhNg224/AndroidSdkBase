@@ -40,9 +40,12 @@ internal class EventLoggingWorker(
             }
         ) {
             is SdkResult.Success -> resolved.value
+
             is SdkResult.Failure -> return if (resolved.error.isRetryable) {
                 ListenableWorker.Result.retry()
-            } else ListenableWorker.Result.failure()
+            } else {
+                ListenableWorker.Result.failure()
+            }
         }
 
         // Never let an incorrect host mapping drain another namespace's persisted events.

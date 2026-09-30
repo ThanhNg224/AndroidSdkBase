@@ -88,7 +88,13 @@ class OtpSdkConfigTest {
             override suspend fun verifyOtp(challengeId: String, code: String): SdkResult<Unit> = error("unused")
         }
         assertEquals(30, OtpSdkConfig.Builder("0900", gateway).build().getOrNull()!!.gatewayTimeoutSeconds)
-        assertEquals(SdkErrors.INVALID_CONFIG, OtpSdkConfig.Builder("0900", gateway).gatewayTimeoutSeconds(0).build().errorOrNull()?.code)
-        assertEquals(SdkErrors.INVALID_CONFIG, OtpSdkConfig.Builder("0900", gateway).gatewayTimeoutSeconds(301).build().errorOrNull()?.code)
+        assertEquals(
+            SdkErrors.INVALID_CONFIG,
+            OtpSdkConfig.Builder("0900", gateway).gatewayTimeoutSeconds(0).build().errorOrNull()?.code,
+        )
+        assertEquals(
+            SdkErrors.INVALID_CONFIG,
+            OtpSdkConfig.Builder("0900", gateway).gatewayTimeoutSeconds(301).build().errorOrNull()?.code,
+        )
     }
 }

@@ -40,23 +40,23 @@ internal class DurableEventQueue(
     suspend fun load(): SdkResult<QueueStatus> = locked { readAndExpire() }
 
     suspend fun append(event: EventLoggingRecord): SdkResult<AppendStatus> = locked {
-            val previous = readAndExpire()
-            if (previous is SdkResult.Failure) return@locked previous
-            val old = (previous as SdkResult.Success).value.events
-            if (old.size >= config.maxEvents) return@locked SdkResult.Failure(EventLoggingErrors.queueFull())
-            val encoded = encode(old + event)
-            if (encoded.size > config.maxBytes) return@locked SdkResult.Failure(EventLoggingErrors.queueFull())
-            writeAtomically(encoded)
-            SdkResult.Success(AppendStatus(old.isEmpty(), old.size + 1, encoded.size))
+        val previous = readAndExpire()
+        if (previous is SdkResult.Failure) return@locked previous
+        val old = (previous as SdkResult.Success).value.events
+        if (old.size >= config.maxEvents) return@locked SdkResult.Failure(EventLoggingErrors.queueFull())
+        val encoded = encode(old + event)
+        if (encoded.size > config.maxBytes) return@locked SdkResult.Failure(EventLoggingErrors.queueFull())
+        writeAtomically(encoded)
+        SdkResult.Success(AppendStatus(old.isEmpty(), old.size + 1, encoded.size))
     }
 
     suspend fun remove(id: String): SdkResult<QueueStatus> = locked {
-            val loaded = readAndExpire()
-            if (loaded is SdkResult.Failure) return@locked loaded
-            val old = (loaded as SdkResult.Success).value.events
-            val next = old.filterNot { it.id == id }
-            if (next.size != old.size) writeAtomically(encode(next))
-            SdkResult.Success(QueueStatus(next, fileSize()))
+        val loaded = readAndExpire()
+        if (loaded is SdkResult.Failure) return@locked loaded
+        val old = (loaded as SdkResult.Success).value.events
+        val next = old.filterNot { it.id == id }
+        if (next.size != old.size) writeAtomically(encode(next))
+        SdkResult.Success(QueueStatus(next, fileSize()))
     }
 
     suspend fun acquireDrainLease(): DrainLease? {
@@ -152,7 +152,9 @@ internal class DurableEventQueue(
         try {
             if (content.isEmpty()) throw InvalidQueueFileException("empty queue file")
             DataInputStream(ByteArrayInputStream(content)).use { input ->
-                if (input.readInt() != MAGIC || input.readInt() != FORMAT_VERSION) throw InvalidQueueFileException("unsupported queue format")
+                if (input.readInt() != MAGIC || input.readInt() != FORMAT_VERSION) {
+                    throw InvalidQueueFileException("unsupported queue format")
+                }
                 val count = input.readInt()
                 if (count !in 0..config.maxEvents) throw InvalidQueueFileException("invalid event count")
                 val events = ArrayList<EventLoggingRecord>(count)
@@ -166,7 +168,9 @@ internal class DurableEventQueue(
                     val level = input.readUTF()
                     val screen = if (input.readBoolean()) input.readUTF() else null
                     val attributeCount = input.readInt()
-                    if (attributeCount !in 0..config.maxAttributes) throw InvalidQueueFileException("invalid attribute count")
+                    if (attributeCount !in 0..config.maxAttributes) {
+                        throw InvalidQueueFileException("invalid attribute count")
+                    }
                     val attributes = LinkedHashMap<String, String>(attributeCount)
                     val seenKeys = HashSet<String>(attributeCount)
                     repeat(attributeCount) {
@@ -188,13 +192,19 @@ internal class DurableEventQueue(
                     }
                     if (action.length > MAX_ACTION_LENGTH || screen?.length?.let { it > MAX_SCREEN_LENGTH } == true ||
                         !ids.add(id)
-                    ) throw InvalidQueueFileException("invalid event fields")
+                    ) {
+                        throw InvalidQueueFileException("invalid event fields")
+                    }
                     if (id.length > MAX_IDENTIFIER_LENGTH || sessionId.length > MAX_IDENTIFIER_LENGTH ||
                         level !in ALLOWED_LEVELS
-                    ) throw InvalidQueueFileException("invalid event identity")
+                    ) {
+                        throw InvalidQueueFileException("invalid event identity")
+                    }
                     val safeAction = redact(action.take(config.maxActionLength)).take(config.maxActionLength)
                     val safeScreen = screen?.let { redact(it.take(MAX_SCREEN_LENGTH)).take(MAX_SCREEN_LENGTH) }
-                    events += EventLoggingRecord(id, sessionId, timestamp, elapsed, safeAction, level, safeScreen, attributes)
+                    events += EventLoggingRecord(
+                        id, sessionId, timestamp, elapsed, safeAction, level, safeScreen, attributes,
+                    )
                 }
                 if (input.available() != 0) throw InvalidQueueFileException("trailing queue bytes")
                 return events
@@ -255,7 +265,8 @@ internal class DurableEventQueue(
         if (!directory.isDirectory) throw IOException("event queue path is not a directory")
     }
 
-    private fun fileSize(): Int = if (queueFile.exists()) queueFile.length().coerceAtMost(Int.MAX_VALUE.toLong()).toInt() else 0
+    private fun fileSize(): Int =
+        if (queueFile.exists()) queueFile.length().coerceAtMost(Int.MAX_VALUE.toLong()).toInt() else 0
 
     private companion object {
         private const val MAGIC: Int = 0x45564C47

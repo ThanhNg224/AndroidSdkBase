@@ -125,7 +125,8 @@ class EventLoggingRuntimeTest {
         entered.await()
         delivery.cancelAndJoin()
 
-        val recovered = EventLoggingSdk.deliverPending(config, EventLoggingGateway { SdkResult.Success(Unit) }, baseEnvironment)
+        val recovered =
+            EventLoggingSdk.deliverPending(config, EventLoggingGateway { SdkResult.Success(Unit) }, baseEnvironment)
         assertTrue(recovered is SdkResult.Success)
         dir.deleteRecursively()
     }
@@ -190,27 +191,33 @@ class EventLoggingRuntimeTest {
         val config = config(dir)
         val gateway = EventLoggingCallbackGateway { _, callback -> callback.onSuccess() }
         var opened: EventLoggingSession? = null
-        EventLoggingSdk.start(config, gateway, environment, object : ResultCallback<EventLoggingSession> {
-            override fun onSuccess(value: EventLoggingSession) {
-                opened = value
-            }
+        EventLoggingSdk.start(
+            config, gateway, environment,
+            object : ResultCallback<EventLoggingSession> {
+                override fun onSuccess(value: EventLoggingSession) {
+                    opened = value
+                }
 
-            override fun onFailure(error: SdkError) {
-                error("start failed: ${error.code}")
-            }
-        })
+                override fun onFailure(error: SdkError) {
+                    error("start failed: ${error.code}")
+                }
+            },
+        )
         runCurrent()
         val session = opened!!
         var tracked = false
-        session.track(event("callback-event"), object : ResultCallback<Unit> {
-            override fun onSuccess(value: Unit) {
-                tracked = true
-            }
+        session.track(
+            event("callback-event"),
+            object : ResultCallback<Unit> {
+                override fun onSuccess(value: Unit) {
+                    tracked = true
+                }
 
-            override fun onFailure(error: SdkError) {
-                error("track failed: ${error.code}")
-            }
-        })
+                override fun onFailure(error: SdkError) {
+                    error("track failed: ${error.code}")
+                }
+            },
+        )
         runCurrent()
         assertTrue(tracked)
         session.close()
@@ -244,12 +251,16 @@ class EventLoggingRuntimeTest {
         val release = CompletableDeferred<Unit>()
         var delivered: EventLoggingRecord? = null
         val config = config(dir, allowlist = setOf("password", "outcome"))
-        val session = EventLoggingSdk.start(config, EventLoggingGateway { event ->
-            delivered = event
-            entered.complete(Unit)
-            release.await()
-            SdkResult.Success(Unit)
-        }, environment(testScheduler)).getOrNull()!!
+        val session = EventLoggingSdk.start(
+            config,
+            EventLoggingGateway { event ->
+                delivered = event
+                entered.complete(Unit)
+                release.await()
+                SdkResult.Success(Unit)
+            },
+            environment(testScheduler),
+        ).getOrNull()!!
 
         val event = EventLoggingEvent.Builder("login")
             .attributes(mapOf("password" to " top secret value ", "outcome" to "success"))
@@ -277,8 +288,9 @@ class EventLoggingRuntimeTest {
             .redactor(Redactor { throw IllegalStateException("private-redactor-detail") })
             .build()
             .getOrNull()!!
-        val session = EventLoggingSdk.start(config, EventLoggingGateway { SdkResult.Success(Unit) }, environment(testScheduler))
-            .getOrNull()!!
+        val session =
+            EventLoggingSdk.start(config, EventLoggingGateway { SdkResult.Success(Unit) }, environment(testScheduler))
+                .getOrNull()!!
 
         val result = session.track(event("safe-name"))
 
@@ -321,7 +333,10 @@ class EventLoggingRuntimeTest {
         }
         var cancelled = false
         try {
-            EventLoggingSdk.start(config(dir, scheduler = scheduler), EventLoggingGateway { SdkResult.Success(Unit) }, environment(testScheduler))
+            EventLoggingSdk.start(
+                config(dir, scheduler = scheduler), EventLoggingGateway { SdkResult.Success(Unit) },
+                environment(testScheduler),
+            )
         } catch (_: CancellationException) {
             cancelled = true
         }
@@ -365,15 +380,19 @@ class EventLoggingRuntimeTest {
         stored.append(EventLoggingRecord("accepted", "prior-session", 100L, 0L, "accepted", "info", null, emptyMap()))
         var clockCalls = 0
         val environment = SdkEnvironment.Builder().dispatchers(dispatchers)
-            .clock(Clock {
-                clockCalls++
-                if (clockCalls == 2) throw CancellationException("pre-commit clock cancellation")
-                100L
-            })
+            .clock(
+                Clock {
+                    clockCalls++
+                    if (clockCalls == 2) throw CancellationException("pre-commit clock cancellation")
+                    100L
+                },
+            )
             .idGenerator(SequentialIdGenerator("event-")).build()
         val scope = SessionScope(dispatchers, environment.logger.tagged("test"))
-        val runtime = EventLoggingRuntime(cfg, EventLoggingGateway { SdkResult.Success(Unit) },
-            environment, scope, "test-session", 100L, stored.load().getOrNull()!!, false)
+        val runtime = EventLoggingRuntime(
+            cfg, EventLoggingGateway { SdkResult.Success(Unit) },
+            environment, scope, "test-session", 100L, stored.load().getOrNull()!!, false,
+        )
         runtime.start()
         try {
             assertTrue(runtime.track(event("uncommitted")) is SdkResult.Failure)
@@ -404,11 +423,12 @@ class EventLoggingRuntimeTest {
         .build()
         .getOrNull()!!
 
-    private fun environment(scheduler: kotlinx.coroutines.test.TestCoroutineScheduler): SdkEnvironment = SdkEnvironment.Builder()
-        .dispatchers(TestDispatcherProvider(StandardTestDispatcher(scheduler)))
-        .clock(FakeClock(100L))
-        .idGenerator(SequentialIdGenerator("test-"))
-        .build()
+    private fun environment(scheduler: kotlinx.coroutines.test.TestCoroutineScheduler): SdkEnvironment =
+        SdkEnvironment.Builder()
+            .dispatchers(TestDispatcherProvider(StandardTestDispatcher(scheduler)))
+            .clock(FakeClock(100L))
+            .idGenerator(SequentialIdGenerator("test-"))
+            .build()
 
     private fun event(action: String): EventLoggingEvent = EventLoggingEvent.Builder(action).build()
 }

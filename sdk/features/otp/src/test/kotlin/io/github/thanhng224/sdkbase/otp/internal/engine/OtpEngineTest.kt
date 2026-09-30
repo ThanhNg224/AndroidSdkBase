@@ -49,7 +49,11 @@ class OtpEngineTest {
     private fun scopeWith(dispatchers: DispatcherProvider): SessionScope =
         SessionScope(dispatchers, SdkLogger.NoOp.tagged("Test"))
 
-    private fun engineWith(gateway: OtpGateway, dispatchers: DispatcherProvider, maxAttempts: Int = 3): Pair<SessionScope, OtpEngine> {
+    private fun engineWith(
+        gateway: OtpGateway,
+        dispatchers: DispatcherProvider,
+        maxAttempts: Int = 3,
+    ): Pair<SessionScope, OtpEngine> {
         val scope = scopeWith(dispatchers)
         return scope to OtpEngine(gateway, scope, maxAttempts = maxAttempts)
     }
@@ -113,7 +117,8 @@ class OtpEngineTest {
     @Test
     fun `exhausting attempts ends the session`() = runTest {
         val gateway = FakeGateway(verifyResult = { SdkResult.Failure(OtpErrors.otpInvalid()) })
-        val (scope, engine) = engineWith(gateway, TestDispatcherProvider(StandardTestDispatcher(testScheduler)), maxAttempts = 2)
+        val (scope, engine) =
+            engineWith(gateway, TestDispatcherProvider(StandardTestDispatcher(testScheduler)), maxAttempts = 2)
         engine.start("0900000000")
 
         repeat(2) {
@@ -160,7 +165,10 @@ class OtpEngineTest {
     @Test
     fun `start is honoured once`() = runTest {
         var requests = 0
-        val (scope, engine) = engineWith(requestOtp = { requests++; SdkResult.Success(OtpChallenge("c", 6, 60, 30)) })
+        val (scope, engine) = engineWith(requestOtp = {
+            requests++
+            SdkResult.Success(OtpChallenge("c", 6, 60, 30))
+        })
         engine.start("0900")
         engine.start("0900")
         assertEquals(1, requests)
@@ -174,7 +182,11 @@ class OtpEngineTest {
             val verifies = java.util.concurrent.atomic.AtomicInteger()
             val (scope, engine) = engineWith(
                 requestOtp = { SdkResult.Success(OtpChallenge("c", 4, 60, 30)) },
-                verifyOtp = { verifies.incrementAndGet(); kotlinx.coroutines.yield(); SdkResult.Success(Unit) },
+                verifyOtp = {
+                    verifies.incrementAndGet()
+                    kotlinx.coroutines.yield()
+                    SdkResult.Success(Unit)
+                },
                 dispatchers = realDispatchers,
             )
             engine.start("0900")

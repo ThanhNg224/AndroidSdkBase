@@ -45,7 +45,7 @@ kotlin {
     jvmToolchain(libs.versions.javaToolchain.get().toInt())
     compilerOptions {
         allWarningsAsErrors.set(
-            providers.gradleProperty("sdkbase.warningsAsErrors").map(String::toBoolean).getOrElse(false)
+            providers.gradleProperty("sdkbase.warningsAsErrors").map(String::toBoolean).getOrElse(false),
         )
     }
 }

@@ -1,9 +1,16 @@
 # Architecture
 
 You are here because a build failed with `Module zone violation(s) — see docs/ARCHITECTURE.md`. The
-guard lives in the `gradle.projectsEvaluated` block of root `build.gradle.kts`; the module registry
-it reads is `gradle/module-topology.gradle.kts`. If this document and the code disagree, trust the
-code.
+guard lives in `build-logic/src/main/kotlin/sdkbase.zone-guard.gradle.kts`, with pure rules in
+`sdkbase/zones/ZoneRules.kt`. Its registry is `gradle/module-topology.gradle.kts`; Settings derives
+module includes from registered paths that contain a build file. A registered path without a build
+file still fails the guard. If this document and the code disagree, trust the code.
+
+Root Spotless formats Kotlin in `sdk/`, `apps/`, `build-logic/src/`, and recursive `*.gradle.kts`
+files; it excludes the separate `verification/` build. Rules come from `.editorconfig`, including
+ktlint settings; there is no second style definition. Structural ktlint rules (signature and
+argument wrapping, import ordering) are disabled there to keep the baseline small, so the gate enforces
+whitespace, braces, trailing commas, explicit imports and the 120-column limit.
 
 ## Zones
 
@@ -136,65 +143,26 @@ This must find nothing.
 
 ## Core toolkit
 
-`:sdk:core` gives every feature the same building blocks instead of each reinventing them:
+`core` is an Android-only library; Kotlin Multiplatform is out of scope. Its package map is:
 
-- `result/` — `SdkResult` (`Success`/`Failure`) plus `map`/`flatMap`/`fold`/`onSuccess`/
-  `onFailure`/`getOrNull`/`errorOrNull`; the only type that crosses the public boundary.
-- `call/` — `safeCall(operation, timeoutMillis, mapper, block)` contains host code via its own
-  `withTimeoutOrNull` (an enclosing cancellation still propagates). `RetryPolicy` retries with
-  capped exponential backoff, stopping on success, `maxAttempts`, or when `retryOn` (default
-  `RetryPolicy.TransientErrors`) rejects. `launchCallback(dispatchers, callback, parent, onUndelivered,
-  block)` is the one primitive every Java-callable outbound entry point (`OtpSdk.start`,
-  `OtpSession.submit`/`resend`) is built from: it runs `block` on `dispatchers.default`, delivers to
-  a `ResultCallback` on `dispatchers.main`, and — via one `AtomicBoolean` deciding cancel-vs-deliver
-  — guarantees the callback never fires once cancelled and, if `block` still succeeds after that,
-  hands the value to `onUndelivered` instead of leaking it (e.g. `OtpSdk.start`'s `onUndelivered`
-  closes the session). It is `@SdkInternalApi` (see `annotation/`), so only `sdk/` modules call it
-  directly; a host only ever sees the public callback entry points built on it.
-- `session/` — `StateFlow<S>.observe(dispatchers, listener, parent)` is `launchCallback`'s sibling
-  for a `StateFlow`: delivers the current value then every change to a `StateListener` on
-  `dispatchers.main`, contained the same way, until cancelled. `SdkSession<S>` is the public
-  contract every feature session extends (`state`, `observeState`, `close`). `SessionScope` is the
-  only owner of a session's coroutines: `launch` (fire-and-forget, no-op once closed), `ifOpen`
-  (suspend, `Failure(SdkErrors.sessionClosed())` once closed) and `call` (its Java-callable twin,
-  built on `launchCallback`) all route through it, and `close()` — atomic, idempotent, `true` only
-  for the first caller — cancels every one of them, in flight or not. `StateStore<S>` serializes
-  every state mutation through `withLock`, including timer ticks, so no two transitions can
-  interleave; a nested `withLock` on the same store is detected (via a coroutine-context element
-  keyed to that store) and fails fast with `IllegalStateException` instead of deadlocking, and its
-  `Mutation<S>.update` has no public implementation outside a held lock. `SdkSessionBase<S>`
-  implements `SdkSession`'s three members once on top of a `SessionScope`/`StateStore` pair; `close()`
-  is `final` and calls `onClose()` exactly once, on the call that actually closes the scope.
-- `annotation/` — `@SdkInternalApi` (`@RequiresOptIn`) marks a declaration (`launchCallback`,
-  `observe`) meant only for SDK modules; `sdkbase.android.library` opts every SDK module in via
-  `compilerOptions.optIn`, while `apps/demo` and `verification/consumer` are not opted in, so a host
-  reaching for one gets a normal opt-in compile error.
-- `time/` — `Clock`/`IdGenerator`: injected "now"/id sources so backoff and log timestamps are
-  testable.
-- `logging/` — `SdkLogger` (built via `SdkLogger.Builder`, `NoOp` by default) hands out a
-  `TaggedLogger` (`v`/`d`/`i`/`w`/`e`/`trace`) per tag. A record is redacted by the logger's
-  `Redactor` (`DefaultRedactor` + `mask()`) once, before any `LogSink` sees it; a throwing sink is
-  contained. `LogcatSink` is the one place `android.util.Log` is allowed in `sdk/`.
-- `telemetry/`, `gateway/` — `TelemetrySink` (`None` by default) and the Java-friendly
-  `GatewayCallback`/`CompletionCallback`; host-supplied and always called inside a try/catch via
-  `TelemetrySink.emitSafely(name, attributes)` (`@SdkInternalApi`, catches `Exception`, never
-  `Error`). `gateway/` also has `awaitCallback`/`awaitCompletion` (`@SdkInternalApi`,
-  `suspendCancellableCoroutine`): the suspend side of a `GatewayCallback`/`CompletionCallback`
-  bridge — only the first terminal call resumes the coroutine, from any thread, and a callback that
-  arrives after the awaiting coroutine was cancelled is silently ignored rather than crash.
-- `config/` — `validateConfig(block)` (`@SdkInternalApi`) is the style every feature's
-  `Builder.build()` validates itself in: `block` runs against a `ConfigChecks` receiver whose
-  `ensure(condition, message)` stops validation at the first failing check (`message` is evaluated
-  only on failure, later checks never run) and becomes `Failure(SdkErrors.invalidConfig(message))`;
-  any other `Exception` out of `block` becomes `Failure(SdkErrors.unknown(cause))` instead of
-  crashing the host, and an `Error` is never caught.
-- `environment/` — `SdkEnvironment` (built via `SdkEnvironment.Builder`, `Default` when every field
-  is left at its default) bundles `logger`, `telemetry`, `dispatchers`, `clock` and `idGenerator`
-  into the one instance every feature's config takes (e.g. `OtpSdkConfig.Builder.environment(...)`),
-  instead of each feature config growing its own copies of these builder methods.
+| Package | Purpose | Key symbols |
+|---|---|---|
+| `result/`, `error/` | Typed outcomes and error policy | `SdkResult`, `SdkError`, `SdkErrors`, `Disposition` |
+| `call/` | Host-call containment, retry, Java callbacks | `safeCall`, `RetryPolicy`, `launchCallback`, `ResultCallback` |
+| `time/`, `concurrency/` | Injectable time, IDs, and dispatchers | `Clock`, `IdGenerator`, `DispatcherProvider` |
+| `session/` | Session lifetime, observation, serialized state | `SdkSession`, `SessionScope`, `StateStore`, `SdkSessionBase` |
+| `gateway/` | Java-friendly callback contracts and suspend bridges | `GatewayCallback`, `CompletionCallback`, `awaitCallback` |
+| `logging/`, `telemetry/` | Structured host sinks with containment/redaction | `SdkLogger`, `TaggedLogger`, `DefaultRedactor`, `emitSafely` |
+| `environment/`, `config/` | Shared injected runtime services and validation | `SdkEnvironment`, `validateConfig` |
+| `annotation/` | Opt-in marker for SDK-internal entry points | `SdkInternalApi` |
 
-Package layout rules — entry point at the package root, named sub-packages, `internal/` for
-implementation, no `utils/misc/helpers` — live in AGENTS.md "Package rules".
+Two implementation guarantees matter when extending sessions: `StateStore.withLock` serializes
+mutations and fails fast on re-entry into the same store; `SdkSessionBase.close()` invokes `onClose()`
+once, only for the call that closes the scope. Callback entry points suppress delivery after
+cancellation and pass undelivered values to their `onUndelivered` handler.
+
+Package and file-placement rules are in [AGENTS.md](../AGENTS.md#layout). For adding a feature or
+operation, follow [the change recipes](RECIPES.md).
 
 ## Error codes
 
@@ -224,24 +192,11 @@ to an `SdkError` — nothing the host throws or hangs on ever reaches the engine
 
 ## Building a feature
 
-`./scripts/new-feature.sh <name>` scaffolds a feature on this kit instead of a bare stub: a session
-interface extending `SdkSession<S>`, a plain state class, and a runtime extending `SdkSessionBase`
-— see "Core toolkit" `session/` above. To add an operation:
-
-1. Add whatever fields it needs to `session/*State.kt` (a plain class, not a `data class` —
-   `public-data-class` in "Source rules" above) and a `Phase`/case for it if the flow gains a new
-   state.
-2. Declare it on `session/*Session.kt`: a suspend `fun x(): SdkResult<T>` plus its Java-callable
-   twin `fun x(callback: ResultCallback<T>): Cancellable`.
-3. Implement both on `internal/*SdkRuntime.kt`, routed through the inherited `scope`: a suspend
-   operation through `scope.ifOpen { ... }`, its Java twin through `scope.call(callback) { ... }`,
-   fire-and-forget UI-driven work through `scope.launch { ... }`. Mutate state only inside
-   `store.withLock { update { ... } }` — never by holding a reference to the store's value and
-   writing to it directly.
-4. Wire `*Sdk.kt`'s `start()` to call the gateway, close the `SessionScope` on failure (see
-   `OtpSdk.start`'s try/catch around a mid-start cancellation), and hand back the runtime.
-
-`sdk/features/otp` is the worked example for all four steps.
+`./scripts/new-feature.sh <name>` scaffolds the session interface, plain state, config, gateway,
+error catalog, runtime, tests, registration, and initial ABI. Replace the stubs with the feature's
+behavior; use [the feature and operation recipes](RECIPES.md#add-a-feature) and `sdk/features/otp`
+as the worked example. Public signatures and errors follow the compatibility policy in
+[AGENTS.md](../AGENTS.md#pre-release-breaking-changes-are-allowed).
 
 ## Optional logging pipelines
 

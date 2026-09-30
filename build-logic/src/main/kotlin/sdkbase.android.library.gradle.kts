@@ -29,7 +29,7 @@ kotlin {
 
         // Warnings in a published SDK are future breakage. Treat them as errors in CI.
         allWarningsAsErrors.set(
-            providers.gradleProperty("sdkbase.warningsAsErrors").map(String::toBoolean).getOrElse(false)
+            providers.gradleProperty("sdkbase.warningsAsErrors").map(String::toBoolean).getOrElse(false),
         )
 
         // Every SDK module (core, a feature, a composition) may use `@SdkInternalApi` declarations
@@ -109,6 +109,6 @@ if (!consumerRules.exists()) {
     consumerRules.parentFile.mkdirs()
     consumerRules.writeText(
         "# Keep rules this module needs its CONSUMER's R8 run to apply.\n" +
-            "# Anything reflective, serialized, or reached only from the host belongs here.\n"
+            "# Anything reflective, serialized, or reached only from the host belongs here.\n",
     )
 }

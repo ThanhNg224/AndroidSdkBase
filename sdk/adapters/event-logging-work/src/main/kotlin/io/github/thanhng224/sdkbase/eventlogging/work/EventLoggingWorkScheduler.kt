@@ -20,6 +20,8 @@ import io.github.thanhng224.sdkbase.core.error.SdkErrors
 import io.github.thanhng224.sdkbase.core.result.SdkResult
 import io.github.thanhng224.sdkbase.eventlogging.delivery.EventDeliveryScheduler
 import io.github.thanhng224.sdkbase.eventlogging.work.internal.EventLoggingWorker
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.suspendCancellableCoroutine
 import java.nio.charset.StandardCharsets
 import java.security.MessageDigest
 import java.util.concurrent.ExecutionException
@@ -27,8 +29,6 @@ import java.util.concurrent.Executor
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
-import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.suspendCancellableCoroutine
 
 /**
  * Schedules durable event delivery when a network connection is available.
@@ -53,9 +53,11 @@ public class EventLoggingWorkScheduler @JvmOverloads constructor(
     }
 
     override suspend fun schedule(namespace: String): SdkResult<Unit> {
-        if (!isSafeNamespace(namespace)) return SdkResult.Failure(
-            SdkErrors.invalidConfig("namespace must be a short URL-safe opaque identifier"),
-        )
+        if (!isSafeNamespace(namespace)) {
+            return SdkResult.Failure(
+                SdkErrors.invalidConfig("namespace must be a short URL-safe opaque identifier"),
+            )
+        }
         return try {
             // Calls are coalesced by the feature to durable queue transitions. KEEP limits this
             // to one active one-time request per namespace; the periodic request is the recovery
@@ -88,9 +90,11 @@ public class EventLoggingWorkScheduler @JvmOverloads constructor(
      * before calling this; a live session may schedule delivery again.
      */
     public suspend fun cancel(namespace: String): SdkResult<Unit> {
-        if (!isSafeNamespace(namespace)) return SdkResult.Failure(
-            SdkErrors.invalidConfig("namespace must be a short URL-safe opaque identifier"),
-        )
+        if (!isSafeNamespace(namespace)) {
+            return SdkResult.Failure(
+                SdkErrors.invalidConfig("namespace must be a short URL-safe opaque identifier"),
+            )
+        }
         return try {
             val workManager = WorkManager.getInstance(appContext)
             workManager.cancelUniqueWork(uniqueWorkName(namespace)).result.awaitCompletion()

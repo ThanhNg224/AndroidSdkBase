@@ -59,11 +59,13 @@ public class EventLoggingConfig private constructor(
         public fun commonAttributes(value: Map<String, String>): Builder = apply {
             invalidCommonAttributes = value.size > MAX_ALLOWLIST_KEYS ||
                 value.keys.any { !ATTRIBUTE_KEY_PATTERN.matches(it) }
-            commonAttributes = Collections.unmodifiableMap(LinkedHashMap<String, String>().apply {
-                for ((key, item) in value.entries.take(MAX_ALLOWLIST_KEYS)) {
-                    if (ATTRIBUTE_KEY_PATTERN.matches(key)) put(key, item.take(MAX_VALUE_LENGTH))
-                }
-            })
+            commonAttributes = Collections.unmodifiableMap(
+                LinkedHashMap<String, String>().apply {
+                    for ((key, item) in value.entries.take(MAX_ALLOWLIST_KEYS)) {
+                        if (ATTRIBUTE_KEY_PATTERN.matches(key)) put(key, item.take(MAX_VALUE_LENGTH))
+                    }
+                },
+            )
         }
 
         /** Applies host scrubbing before the mandatory default PII/token redactor. */
@@ -92,7 +94,9 @@ public class EventLoggingConfig private constructor(
         public fun build(): SdkResult<EventLoggingConfig> = validateConfig {
             ensure(NAMESPACE_PATTERN.matches(namespace)) { "namespace must be a short URL-safe opaque identifier" }
             ensure(storageDirectory.path.isNotBlank()) { "storageDirectory must not be blank" }
-            ensure(!invalidAllowlist) { "allowedAttributeKeys must contain at most $MAX_ALLOWLIST_KEYS short non-blank keys" }
+            ensure(!invalidAllowlist) {
+                "allowedAttributeKeys must contain at most $MAX_ALLOWLIST_KEYS short non-blank keys"
+            }
             ensure(allowedAttributeKeys.size <= MAX_ALLOWLIST_KEYS) { "allowedAttributeKeys has too many entries" }
             ensure(allowedAttributeKeys.all { ATTRIBUTE_KEY_PATTERN.matches(it) }) {
                 "allowedAttributeKeys must contain short identifier keys"
@@ -115,7 +119,8 @@ public class EventLoggingConfig private constructor(
                 "retryMaxDelayMillis must be at least retryInitialDelayMillis and at most $MAX_RETRY_DELAY_MILLIS"
             }
             EventLoggingConfig(
-                namespace, storageDirectory, Collections.unmodifiableSet(allowedAttributeKeys.toSet()), commonAttributes, redactor,
+                namespace, storageDirectory, Collections.unmodifiableSet(allowedAttributeKeys.toSet()),
+                commonAttributes, redactor,
                 maxEvents, maxBytes, maxAttributes,
                 maxActionLength, maxValueLength, retentionMillis, gatewayTimeoutMillis,
                 retryInitialDelayMillis, retryMaxDelayMillis, scheduler,

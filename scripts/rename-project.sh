@@ -68,8 +68,11 @@ find . -type d -path "*/$OLD_NS_PATH" -not -path '*/build/*' -not -path './.git/
 done
 find . -type d -empty -not -path './.git/*' -delete
 
+echo "==> Formatting the renamed project"
+./gradlew spotlessApply -q
+
 echo "==> Recording the new project's ABI baselines"
 ./gradlew apiDump -q
 
 echo
-echo "Done. Next: ./gradlew check && ./scripts/verify-publication.sh, then review git diff."
+echo "Done. Next: ./gradlew spotlessCheck check -Psdkbase.warningsAsErrors=true && ./scripts/verify-publication.sh, then review git diff."

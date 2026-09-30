@@ -53,8 +53,10 @@ internal class DemoOtpViewModel : ViewModel() {
 
             when (configResult) {
                 is SdkResult.Failure -> _uiState.value = DemoUiState.Failed(configResult.error.reason)
+
                 is SdkResult.Success -> when (val start = OtpSdk.start(configResult.value)) {
                     is SdkResult.Failure -> _uiState.value = DemoUiState.Failed(start.error.reason)
+
                     is SdkResult.Success -> {
                         session = start.value
                         _uiState.value = DemoUiState.Ready(start.value)

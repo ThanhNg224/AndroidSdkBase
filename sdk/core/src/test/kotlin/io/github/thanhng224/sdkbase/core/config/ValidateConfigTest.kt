@@ -43,7 +43,10 @@ class ValidateConfigTest {
 
         validateConfig {
             ensure(false) { "first failure" }
-            ensure(false) { laterMessageEvaluated = true; "second failure" }
+            ensure(false) {
+                laterMessageEvaluated = true
+                "second failure"
+            }
             "config"
         }
 
@@ -55,7 +58,10 @@ class ValidateConfigTest {
         var passingMessageEvaluated = false
 
         validateConfig {
-            ensure(true) { passingMessageEvaluated = true; "unreachable" }
+            ensure(true) {
+                passingMessageEvaluated = true
+                "unreachable"
+            }
         }
 
         assertTrue("a passing ensure's message lambda must only run on failure", !passingMessageEvaluated)

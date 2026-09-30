@@ -1,4 +1,5 @@
 import sdkbase.sources.CheckSourceRulesTask
+import sdkbase.topology.isUiToolkitModule
 
 // checkSourceRules: bans GlobalScope, android.util.Log (outside LogcatSink.kt in core), a
 // feature/composition module creating its own CoroutineScope, a public multi-property data
@@ -14,8 +15,7 @@ val sourceRuledZones = (rootProject.extra["sourceRuledZones"] as List<String>).t
 
 val moduleZone = zones.entries.firstOrNull { project.path in it.value }?.key
 
-// The UI-module naming convention shared with the zone guard in the root build.
-val moduleIsUi = moduleZone == "ui" || Regex(".+-ui(-[a-z0-9]+)+").matches(project.name)
+val moduleIsUi = moduleZone == "ui" || isUiToolkitModule(project.name)
 
 if (moduleZone in sourceRuledZones) {
     plugins.withId("com.android.library") {

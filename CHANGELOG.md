@@ -7,6 +7,11 @@ All notable changes to this project are documented here. The format follows
 ## [Unreleased]
 
 ### Added
+- Build tooling: extracted feature templates, registry-derived inclusion and UI/adapter/composition scaffolds; tested
+  zone-guard convention and independent CI jobs for check, publication modes, integration and guards.
+- Tooling: root `spotlessCheck` enforces Kotlin and Gradle Kotlin formatting in `check`;
+  `spotlessApply` fixes formatting; `rename-project.sh` formats the renamed tree, and `verify-guards.sh`
+  proves the formatter gate and every scaffold stay format-clean.
 - Zone `vendor` for a local binary with no Maven coordinate: never published, only an adapter may
   depend on it, and `verify-publication.sh` proves neither reaches `build/local-repo`. Worked example:
   `sdk/vendor/fake-sms-vendor` and the unpublished adapter `sdk/adapters/otp-fake-sms`.

@@ -13,7 +13,9 @@ internal class FileStorage(private val config: FileLoggingConfig) {
         if (pending.exists()) {
             if (pending.length() in 1..config.maxRecordBytes.toLong()) {
                 check(pending.renameTo(File(config.directory, "crash-${UUID.randomUUID()}.txt")))
-            } else check(pending.delete())
+            } else {
+                check(pending.delete())
+            }
         }
         prune(now)
     }
@@ -28,10 +30,16 @@ internal class FileStorage(private val config: FileLoggingConfig) {
                 val source = File(config.directory, "$i.log")
                 if (source.exists()) check(source.renameTo(File(config.directory, "${i + 1}.log")))
             }
-            if (config.maxFiles > 1 && active.exists()) check(active.renameTo(File(config.directory, "1.log")))
-            else if (active.exists()) check(active.delete())
+            if (config.maxFiles > 1 && active.exists()) {
+                check(active.renameTo(File(config.directory, "1.log")))
+            } else if (active.exists()) {
+                check(active.delete())
+            }
         }
-        FileOutputStream(active, true).use { it.write(bytes); it.fd.sync() }
+        FileOutputStream(active, true).use {
+            it.write(bytes)
+            it.fd.sync()
+        }
     }
 
     @Synchronized
@@ -41,7 +49,10 @@ internal class FileStorage(private val config: FileLoggingConfig) {
         existing.take((existing.size - config.maxCrashFiles + 1).coerceAtLeast(0)).forEach { check(it.delete()) }
         val file = File(config.directory, "crash-${UUID.randomUUID()}.txt")
         val pending = File(config.directory, "crash.pending")
-        FileOutputStream(pending).use { it.write(bytes); it.fd.sync() }
+        FileOutputStream(pending).use {
+            it.write(bytes)
+            it.fd.sync()
+        }
         check(pending.renameTo(file))
     }
 
@@ -74,7 +85,10 @@ internal class FileStorage(private val config: FileLoggingConfig) {
             val index = it.name.removeSuffix(".log").toIntOrNull()
             val oversized = it.length() > if (it.name.endsWith(".log")) config.maxFileBytes else config.maxRecordBytes
             if (it.lastModified() < now - config.retentionMillis || oversized ||
-                (index != null && index >= config.maxFiles)) check(it.delete())
+                (index != null && index >= config.maxFiles)
+            ) {
+                check(it.delete())
+            }
         }
         val crashes = crashFiles()
         crashes.take((crashes.size - config.maxCrashFiles).coerceAtLeast(0)).forEach { check(it.delete()) }

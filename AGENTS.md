@@ -4,29 +4,34 @@ Android SDK starter. Clone it, run `scripts/rename-project.sh`, replace the OTP 
 own feature. Published artifacts: `core`, `core-testing`, `core-ui-compose`, `otp`, `otp-ui-compose`, `event-logging`,
 `logging-file`, `event-logging-work`, `bom`.
 
-## Gates — run before saying anything is done
-```bash
-./gradlew check -Psdkbase.warningsAsErrors=true   # tests, lint, zone guard, apiCheck, dependency policy, source rules, error catalog
-./scripts/verify-publication.sh                   # local publish, POM checks, floor-Kotlin consumer under R8
-./scripts/verify-publication.sh --current         # same on the current Kotlin compiler (CI runs both)
-./scripts/verify-integration.sh                   # multi-feature composition, optional adapters, coordinate-only consumers (CI runs it)
-./scripts/verify-guards.sh                        # only when you touch a guard: proves each can still fail
-./scripts/new-feature.sh <name>                   # scaffold a new sdk/features/<name>, registered and green
-```
+## Local gates
+
+Use the smallest tier that covers the change. **CI runs every gate on each PR; CI is the merge
+gate.** “Done” means the applicable local tier passed; report the commands that actually ran.
+
+| Tier | When | Run |
+|---|---|---|
+| 1 | One module's implementation only; no public API/build/dependency/topology change | `./gradlew :spotlessCheck :<module>:check` (format with `./gradlew spotlessApply`) |
+| 2 | Public API, error code, UI string, build/dependency/topology change, or gate documentation | `./gradlew check -Psdkbase.warningsAsErrors=true` plus relevant API/error/changelog steps |
+| 3 | Publishing/POM/Kotlin floor/consumer change, guard change, or uncertainty | Tier 2 plus `./scripts/verify-publication.sh` (also `--current`), `./scripts/verify-integration.sh`, and/or `./scripts/verify-guards.sh` as relevant |
+
+When unsure, escalate. Build files, dependencies, topology, `consumer-rules.pro`, `.api`, and
+publishing changes require a higher tier. `spotlessCheck` is part of `check`; run
+`./gradlew spotlessApply` to format. It covers Kotlin in `sdk/`, `apps/`, `build-logic/src/` and
+recursive `*.gradle.kts`; the separate `verification/` build is excluded. Android only; no KMP.
+See [`docs/RECIPES.md`](docs/RECIPES.md) for task steps and verification.
 
 ## Layout
-- `sdk/core` — Android library toolkit shared by every feature: `result/`, `error/`, `call/` (`safeCall`, `RetryPolicy`), `time/` (`Clock`, `IdGenerator`), `concurrency/`, `logging/` (`SdkLogger`, `TaggedLogger`), `telemetry/` (`emitSafely`), `gateway/` (`awaitCallback`), `environment/` (`SdkEnvironment`), `session/` (`SessionScope`, `StateStore`, `SdkSessionBase`), `config/` (`validateConfig`).
-- `sdk/core-testing` — published test kit: fakes (`FakeClock`, `SequentialIdGenerator`, `TestDispatcherProvider`), recording sinks (`RecordingLogSink`, `RecordingTelemetrySink`) and `SdkResult` assertions. Consumed via `testImplementation`; only `bom` and `app` may target it in a non-test configuration.
-- `sdk/core-ui-compose` — the shared Compose toolkit (zone `ui`): `SdkColors`, `SdkSpacing`/`SdkDimens`, `contrastRatio`, `sdkErrorMessage`, `ProvideSdkLocale`. Only `<name>-ui-<toolkit>` modules (and `bom`/`app`) may depend on it; a UI module uses no colour literal (`checkSourceRules`). See `docs/THEMING.md`.
-- `sdk/features/<name>` — one published artifact per feature; scaffold a new one with `./scripts/new-feature.sh <name>` (registers it, generates the entry point/config/gateway/error catalog plus a session built on the core kit — a `SdkSession`-extending interface, a plain state class, a runtime on `SdkSessionBase` — dumps its initial ABI). Engine code lives in `internal/` and is Kotlin `internal`.
-- `sdk/features/<name>-ui-compose` — optional UI artifact. Compose never enters a non-UI module.
-- `sdk/composition/<flow>` — wires several features into one flow; the only place two features meet.
-- `sdk/adapters/<feature>-<lib>` — optional host bridge (e.g. a gateway on OkHttp); the only SDK zone allowed an HTTP client or DI framework, and nothing in the SDK depends on it.
-- `sdk/vendor/<name>` — wraps a local binary with no Maven coordinate (never published; only an adapter may depend on it). `sdk/vendor/fake-sms-vendor` + `sdk/adapters/otp-fake-sms` are the worked example.
-- `sdk/bom` — lists every published module automatically.
-- `apps/demo` — manual testing only; never published.
-- `verification/consumer` — separate build that uses the SDK only by Maven coordinate.
-- Register every new module in `gradle/module-topology.gradle.kts` or the build fails.
+- `sdk/core` — shared Android toolkit: result/error, calls, time, concurrency, logging, telemetry, gateway, environment, session, and config.
+- `sdk/core-testing` — published fakes and assertions; use via `testImplementation`; only `bom` and `app` may target it outside tests.
+- `sdk/core-ui-compose` — shared Compose tokens, spacing, contrast, error text and locale; only named feature UI modules plus `bom`/`app` may depend on it; see `docs/THEMING.md`.
+- `sdk/features/<name>` — one headless feature artifact; scaffold with `./scripts/new-feature.sh <name>`; implementation in `internal/`.
+- `sdk/features/<name>-ui-compose` — optional UI artifact; Compose never enters a non-UI module.
+- `sdk/composition/<flow>` — the only place multiple features meet.
+- `sdk/adapters/<feature>-<lib>` — optional host bridge; only SDK zone allowed HTTP clients/DI, and nothing depends on it.
+- `sdk/vendor/<name>` — local binary wrapper, never published; only adapters may depend on it. `fake-sms-vendor`/`otp-fake-sms` are examples.
+- `apps/demo` is manual-only. `verification/consumer` is a separate coordinate-only build.
+- Register modules in `gradle/module-topology.gradle.kts`; Settings derives includes. Scaffold other zones with `./scripts/new-module.sh --zone ui|adapter|composition <name>` (UI takes its feature name).
 
 ## Package rules
 - The entry point (e.g. `OtpSdk`) sits at the module's package root; other public types get a named sub-package (`config/`, `gateway/`, `session/`…), never a grab-bag.
@@ -39,6 +44,7 @@ own feature. Published artifacts: `core`, `core-testing`, `core-ui-compose`, `ot
 - * Public API is frozen by `api/<module>.api` (exact match). Changing it means running `./gradlew :<module>:apiDump` and committing the diff with the code. Removing or changing a line, adding an abstract member to a host-implemented interface, or adding a sealed subtype is **breaking**.
 - * Consumers may be on Kotlin 2.2: never raise `kotlinStdlibFloor` or add a dependency built with newer Kotlin without asking.
 - * A public `data class` in `sdk/` main sources may have at most one constructor property — `copy`/`componentN` freeze the property list for every consumer (`checkSourceRules`); use a plain class with `equals`/`hashCode`/`toString` for more than one.
+- UI modules use no colour literal (`checkSourceRules`).
 - `explicitApi()` is on: every public declaration is deliberate. Prefer `internal`.
 - * The host owns networking: features declare a gateway interface; no HTTP client or DI framework in a core/feature/composition classpath, transitively (`checkDependencyPolicy`). Call host code only through `safeCall` — it maps exceptions to `SdkError` and applies its own timeout.
 - * No `GlobalScope` in `sdk/`, and a feature/composition module owns no `CoroutineScope` of its own — one `SessionScope` per session owns every coroutine (`checkSourceRules`).

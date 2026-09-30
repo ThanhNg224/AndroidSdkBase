@@ -9,22 +9,32 @@ import io.github.thanhng224.sdkbase.core.testing.TestDispatcherProvider
 import io.github.thanhng224.sdkbase.eventlogging.config.EventLoggingConfig
 import io.github.thanhng224.sdkbase.eventlogging.error.EventLoggingErrors
 import io.github.thanhng224.sdkbase.eventlogging.event.EventLoggingRecord
-import java.io.File
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.*
+import org.junit.Assert.assertArrayEquals
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
+import java.io.File
 
 class DurableEventQueueTest {
     @get:Rule val temp = TemporaryFolder()
-    private fun config(root: File, maxEvents: Int = 100, maxBytes: Int = 1_048_576,
-        keys: Set<String> = setOf("outcome", "token"), retention: Long = 100_000,
-        redactor: Redactor = Redactor.None) = EventLoggingConfig.Builder("test", root)
+    private fun config(
+        root: File,
+        maxEvents: Int = 100,
+        maxBytes: Int = 1_048_576,
+        keys: Set<String> = setOf("outcome", "token"),
+        retention: Long = 100_000,
+        redactor: Redactor = Redactor.None,
+    ) = EventLoggingConfig.Builder("test", root)
         .allowedAttributeKeys(keys).maxEvents(maxEvents).maxBytes(maxBytes)
         .retentionMillis(retention).redactor(redactor).build().getOrNull()!!
     private fun record(id: String, time: Long = 10, attrs: Map<String, String> = emptyMap()) =
@@ -54,7 +64,9 @@ class DurableEventQueueTest {
             other.append(record("tail"))
             assertEquals(listOf("tail"), foreground.remove("head").getOrNull()!!.events.map { it.id })
             assertEquals(listOf("tail"), other.load().getOrNull()!!.events.map { it.id })
-        } finally { foreground.releaseDrainLease(lease) }
+        } finally {
+            foreground.releaseDrainLease(lease)
+        }
     }
 
     @Test fun concurrentWritersNeverOverwriteAcceptedRecords() = runTest {
@@ -67,13 +79,16 @@ class DurableEventQueueTest {
         }
         assertTrue(outcomes.all { it is SdkResult.Success })
         val ids = queues.first().load().getOrNull()!!.events.map { it.id }
-        assertEquals(40, ids.size); assertEquals(40, ids.toSet().size)
+        assertEquals(40, ids.size)
+        assertEquals(40, ids.toSet().size)
     }
 
     @Test fun fullQueueRejectsNewEventWithoutDroppingAcceptedHead() = runTest {
         val root = temp.newFolder()
-        val queue = DurableEventQueue(config(root, maxEvents = 1),
-            TestDispatcherProvider(StandardTestDispatcher(testScheduler))) { 10 }
+        val queue = DurableEventQueue(
+            config(root, maxEvents = 1),
+            TestDispatcherProvider(StandardTestDispatcher(testScheduler)),
+        ) { 10 }
         queue.append(record("head"))
         val failure = queue.append(record("tail")) as SdkResult.Failure
         assertEquals(EventLoggingErrors.QUEUE_FULL, failure.error.code)
@@ -82,8 +97,10 @@ class DurableEventQueueTest {
 
     @Test fun byteLimitRejectsWithoutPartialCommit() = runTest {
         val root = temp.newFolder()
-        val queue = DurableEventQueue(config(root, maxBytes = 1024),
-            TestDispatcherProvider(StandardTestDispatcher(testScheduler))) { 10 }
+        val queue = DurableEventQueue(
+            config(root, maxBytes = 1024),
+            TestDispatcherProvider(StandardTestDispatcher(testScheduler)),
+        ) { 10 }
         val failure = queue.append(record("large", attrs = mapOf("outcome" to "x".repeat(1200)))) as SdkResult.Failure
         assertEquals(EventLoggingErrors.QUEUE_FULL, failure.error.code)
         assertTrue(queue.load().getOrNull()!!.events.isEmpty())
@@ -93,8 +110,10 @@ class DurableEventQueueTest {
     @Test fun retentionExpiresOnlyOldRecords() = runTest {
         val root = temp.newFolder()
         val clock = FakeClock(10)
-        val queue = DurableEventQueue(config(root, retention = 100),
-            TestDispatcherProvider(StandardTestDispatcher(testScheduler)), clock::nowMillis)
+        val queue = DurableEventQueue(
+            config(root, retention = 100),
+            TestDispatcherProvider(StandardTestDispatcher(testScheduler)), clock::nowMillis,
+        )
         queue.append(record("expired", 10))
         clock.advanceBy(1000)
         queue.append(record("fresh", clock.nowMillis()))
@@ -103,8 +122,12 @@ class DurableEventQueueTest {
 
     @Test fun corruptionFailsClosedAndPreservesEvidence() = runTest {
         val root = temp.newFolder()
-        val queue = DurableEventQueue(config(root), TestDispatcherProvider(StandardTestDispatcher(testScheduler))) { 10 }
-        val file = data(root).apply { parentFile!!.mkdirs(); writeText("broken queue") }
+        val queue =
+            DurableEventQueue(config(root), TestDispatcherProvider(StandardTestDispatcher(testScheduler))) { 10 }
+        val file = data(root).apply {
+            parentFile!!.mkdirs()
+            writeText("broken queue")
+        }
         val result = queue.load()
         assertEquals(EventLoggingErrors.STORAGE_FAILURE, result.errorOrNull()?.code)
         assertEquals(false, result.errorOrNull()?.isRetryable)
@@ -113,7 +136,8 @@ class DurableEventQueueTest {
 
     @Test fun truncatedQueueDoesNotBecomeAnEmptyAcceptedQueue() = runTest {
         val root = temp.newFolder()
-        val queue = DurableEventQueue(config(root), TestDispatcherProvider(StandardTestDispatcher(testScheduler))) { 10 }
+        val queue =
+            DurableEventQueue(config(root), TestDispatcherProvider(StandardTestDispatcher(testScheduler))) { 10 }
         assertTrue(queue.append(record("accepted")) is SdkResult.Success)
         val bytes = data(root).readBytes()
         for (length in listOf(0, 3, bytes.size - 1)) {
@@ -153,12 +177,17 @@ class DurableEventQueueTest {
         val cfg = config(root, redactor = Redactor { "host-$it" })
         val dispatchers = TestDispatcherProvider(StandardTestDispatcher(testScheduler))
         val queue = DurableEventQueue(cfg, dispatchers) { 10 }
-        queue.append(EventLoggingRecord("one", "session", 10, 0, "host-action", "info", "host-screen",
-            mapOf("outcome" to "host-ok")))
+        queue.append(
+            EventLoggingRecord(
+                "one", "session", 10, 0, "host-action", "info", "host-screen",
+                mapOf("outcome" to "host-ok"),
+            ),
+        )
         val bytes = data(root).readBytes()
         repeat(5) {
             val value = DurableEventQueue(cfg, dispatchers) { 10 }.load().getOrNull()!!.events.single()
-            assertEquals("host-action", value.action); assertEquals("host-screen", value.screenId)
+            assertEquals("host-action", value.action)
+            assertEquals("host-screen", value.screenId)
             assertEquals("host-ok", value.attributes["outcome"])
         }
         assertArrayEquals(bytes, data(root).readBytes())
@@ -169,7 +198,11 @@ class DurableEventQueueTest {
         val event = record("one", attrs = input)
         input["outcome"] = "changed"
         assertEquals("ok", event.attributes["outcome"])
-        try { (event.attributes as MutableMap)["outcome"] = "bad"; fail("mutable attributes") }
-        catch (_: UnsupportedOperationException) { }
+        try {
+            (event.attributes as MutableMap)["outcome"] = "bad"
+            fail("mutable attributes")
+        } catch (
+            _: UnsupportedOperationException,
+        ) { }
     }
 }

@@ -39,6 +39,7 @@ private val COLOR_LITERAL_KOTLIN = Regex(
         "|\\bColor\\.(?:Black|White|Red|Green|Blue|Yellow|Cyan|Magenta|Gray|LightGray|DarkGray)\\b" +
         "|\\bparseColor\\b",
 )
+
 // A whole-value `#hex` (attribute or element text), so a `#123` inside prose is not a colour.
 private val COLOR_LITERAL_XML =
     Regex("[\"'>]\\s*#(?:[0-9a-fA-F]{8}|[0-9a-fA-F]{6}|[0-9a-fA-F]{3,4})\\s*[\"'<]|@android:color/")
@@ -219,75 +220,139 @@ private fun stripCommentsAndStrings(text: String): String {
         when (val top = stack.last()) {
             is Mode.Code, is Mode.Template -> when {
                 c == '/' && i + 1 < n && text[i + 1] == '/' -> {
-                    out.append(blank(c)).append(blank(text[i + 1])); i += 2
+                    out.append(blank(c)).append(blank(text[i + 1]))
+                    i += 2
                     stack.addLast(Mode.LineComment)
                 }
+
                 c == '/' && i + 1 < n && text[i + 1] == '*' -> {
-                    out.append(blank(c)).append(blank(text[i + 1])); i += 2
+                    out.append(blank(c)).append(blank(text[i + 1]))
+                    i += 2
                     stack.addLast(Mode.BlockComment(1))
                 }
+
                 c == '"' && i + 2 < n && text[i + 1] == '"' && text[i + 2] == '"' -> {
-                    out.append(blank(c)).append(blank(text[i + 1])).append(blank(text[i + 2])); i += 3
+                    out.append(blank(c)).append(blank(text[i + 1])).append(blank(text[i + 2]))
+                    i += 3
                     stack.addLast(Mode.Str(raw = true))
                 }
+
                 c == '"' -> {
-                    out.append(blank(c)); i += 1
+                    out.append(blank(c))
+                    i += 1
                     stack.addLast(Mode.Str(raw = false))
                 }
+
                 c == '\'' -> {
-                    out.append(blank(c)); i += 1
+                    out.append(blank(c))
+                    i += 1
                     stack.addLast(Mode.CharLit)
                 }
+
                 top is Mode.Template && c == '{' -> {
-                    top.braces++; out.append(c); i += 1
+                    top.braces++
+                    out.append(c)
+                    i += 1
                 }
+
                 top is Mode.Template && c == '}' -> {
                     top.braces--
-                    out.append(c); i += 1
+                    out.append(c)
+                    i += 1
                     if (top.braces == 0) {
                         stack.removeLast()
                         stack.addLast(Mode.Str(top.raw))
                     }
                 }
-                else -> { out.append(c); i += 1 }
+
+                else -> {
+                    out.append(c)
+                    i += 1
+                }
             }
+
             is Mode.LineComment -> {
-                if (c == '\n') { out.append('\n'); stack.removeLast() } else out.append(blank(c))
+                if (c == '\n') {
+                    out.append('\n')
+                    stack.removeLast()
+                } else {
+                    out.append(blank(c))
+                }
                 i += 1
             }
+
             is Mode.BlockComment -> when {
                 c == '/' && i + 1 < n && text[i + 1] == '*' -> {
-                    top.depth++; out.append(blank(c)).append(blank(text[i + 1])); i += 2
+                    top.depth++
+                    out.append(blank(c)).append(blank(text[i + 1]))
+                    i += 2
                 }
+
                 c == '*' && i + 1 < n && text[i + 1] == '/' -> {
-                    top.depth--; out.append(blank(c)).append(blank(text[i + 1])); i += 2
+                    top.depth--
+                    out.append(blank(c)).append(blank(text[i + 1]))
+                    i += 2
                     if (top.depth == 0) stack.removeLast()
                 }
-                else -> { out.append(blank(c)); i += 1 }
+
+                else -> {
+                    out.append(blank(c))
+                    i += 1
+                }
             }
+
             is Mode.CharLit -> when {
-                c == '\\' && i + 1 < n -> { out.append(blank(c)).append(blank(text[i + 1])); i += 2 }
-                c == '\'' -> { out.append(blank(c)); i += 1; stack.removeLast() }
-                else -> { out.append(blank(c)); i += 1 }
-            }
-            is Mode.Str -> when {
-                top.raw && c == '"' && i + 2 < n && text[i + 1] == '"' && text[i + 2] == '"' -> {
-                    out.append(blank(c)).append(blank(text[i + 1])).append(blank(text[i + 2])); i += 3
+                c == '\\' && i + 1 < n -> {
+                    out.append(blank(c)).append(blank(text[i + 1]))
+                    i += 2
+                }
+
+                c == '\'' -> {
+                    out.append(blank(c))
+                    i += 1
                     stack.removeLast()
                 }
-                !top.raw && c == '"' -> { out.append(blank(c)); i += 1; stack.removeLast() }
-                !top.raw && c == '\\' && i + 1 < n -> {
-                    out.append(blank(c)).append(blank(text[i + 1])); i += 2
+
+                else -> {
+                    out.append(blank(c))
+                    i += 1
                 }
+            }
+
+            is Mode.Str -> when {
+                top.raw && c == '"' && i + 2 < n && text[i + 1] == '"' && text[i + 2] == '"' -> {
+                    out.append(blank(c)).append(blank(text[i + 1])).append(blank(text[i + 2]))
+                    i += 3
+                    stack.removeLast()
+                }
+
+                !top.raw && c == '"' -> {
+                    out.append(blank(c))
+                    i += 1
+                    stack.removeLast()
+                }
+
+                !top.raw && c == '\\' && i + 1 < n -> {
+                    out.append(blank(c)).append(blank(text[i + 1]))
+                    i += 2
+                }
+
                 c == '$' && i + 1 < n && text[i + 1] == '{' -> {
-                    out.append(blank(c)).append(text[i + 1]); i += 2
+                    out.append(blank(c)).append(text[i + 1])
+                    i += 2
                     stack.removeLast()
                     stack.addLast(Mode.Template(top.raw, braces = 1))
                 }
+
                 c == '$' && i + 1 < n && (text[i + 1].isLetter() || text[i + 1] == '_') -> {
-                    out.append(blank(c)); i += 1
+                    out.append(blank(c))
+                    i += 1
                 }
-                else -> { out.append(blank(c)); i += 1 }
+
+                else -> {
+                    out.append(blank(c))
+                    i += 1
+                }
             }
         }
     }
@@ -334,7 +399,9 @@ public abstract class CheckSourceRulesTask : DefaultTask() {
             val relative = file.relativeTo(root).invariantSeparatorsPath
             findViolations(file.name, file.readText(), z, ui).map { v -> "$relative:${v.line}: ${v.message}" }
         }
-        val resourceViolations = if (!ui) emptyList() else {
+        val resourceViolations = if (!ui) {
+            emptyList()
+        } else {
             val resRoot = resourceRoot.get().asFile
             resourceFiles.files.sortedBy { it.path }.flatMap { file ->
                 val relative = "res/" + file.relativeTo(resRoot).invariantSeparatorsPath
@@ -346,7 +413,7 @@ public abstract class CheckSourceRulesTask : DefaultTask() {
             throw GradleException(
                 "${projectPath.get()} [$z] violates the source rules " +
                     "(docs/ARCHITECTURE.md \"The rules the guard enforces\"):\n" +
-                    violations.joinToString("\n") { "  - $it" }
+                    violations.joinToString("\n") { "  - $it" },
             )
         }
         result.get().asFile.writeText("ok\n")

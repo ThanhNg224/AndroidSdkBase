@@ -79,9 +79,11 @@ public fun checkCatalog(
             recorded == null ->
                 problems += "${entry.module} ${entry.name} = ${entry.code} is not in the ledger; run " +
                     "./gradlew errorCatalogDump and commit sdk/error-codes.ledger with the code"
+
             recorded.code != entry.code ->
                 problems += "${entry.module} ${entry.name} was ${recorded.code} in the ledger but is now " +
                     "${entry.code}: error codes are never renumbered"
+
             recorded.retired ->
                 problems += "${entry.module} ${entry.name} is marked retired in the ledger but is still declared"
         }

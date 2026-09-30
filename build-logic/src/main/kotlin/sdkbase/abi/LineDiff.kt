@@ -13,8 +13,13 @@ internal fun lineDiff(old: List<String>, new: List<String>): List<String> {
     var j = 0
     while (i < old.size && j < new.size) {
         when {
-            old[i] == new[j] -> { i++; j++ }
+            old[i] == new[j] -> {
+                i++
+                j++
+            }
+
             lcs[i + 1][j] >= lcs[i][j + 1] -> out += "- ${old[i++]}"
+
             else -> out += "+ ${new[j++]}"
         }
     }

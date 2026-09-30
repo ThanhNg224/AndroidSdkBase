@@ -22,7 +22,7 @@ internal class FakeOtpGateway : OtpGateway {
                 codeLength = 6,
                 expiresInSeconds = 120,
                 resendAfterSeconds = 15,
-            )
+            ),
         )
     }
 

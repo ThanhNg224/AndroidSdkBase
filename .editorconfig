@@ -10,6 +10,20 @@ indent_size = 4
 max_line_length = 120
 
 [*.{kt,kts}]
+ktlint_code_style = android_studio
+ktlint_function_naming_ignore_when_annotated_with = Composable
+ktlint_ignore_back_ticked_identifier = true
+# Keep existing layout/import groups; enforce whitespace and the 120-column line limit.
+ktlint_standard_function-signature = disabled
+ktlint_standard_function-expression-body = disabled
+ktlint_standard_class-signature = disabled
+ktlint_standard_multiline-expression-wrapping = disabled
+ktlint_standard_chain-method-continuation = disabled
+ktlint_standard_no-empty-first-line-in-class-body = disabled
+ktlint_standard_function-literal = disabled
+ktlint_standard_argument-list-wrapping = disabled
+ktlint_standard_import-ordering = disabled
+ktlint_standard_blank-line-before-declaration = disabled
 ij_kotlin_allow_trailing_comma = true
 ij_kotlin_allow_trailing_comma_on_call_site = true
 ij_kotlin_name_count_to_use_star_import = 2147483647

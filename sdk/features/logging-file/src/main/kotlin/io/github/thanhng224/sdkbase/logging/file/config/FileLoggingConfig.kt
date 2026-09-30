@@ -34,11 +34,16 @@ public class FileLoggingConfig private constructor(
         public fun maxRecordBytes(value: Int): Builder = apply { maxRecordBytes = value }
         public fun retentionMillis(value: Long): Builder = apply { retentionMillis = value }
         public fun captureCrashes(value: Boolean): Builder = apply { captureCrashes = value }
-        public fun sdkPackagePrefixes(value: Set<String>): Builder = apply { sdkPackagePrefixes = Collections.unmodifiableSet(value.toSet()) }
+        public fun sdkPackagePrefixes(value: Set<String>): Builder = apply {
+            sdkPackagePrefixes =
+                Collections.unmodifiableSet(value.toSet())
+        }
         public fun maxCrashFiles(value: Int): Builder = apply { maxCrashFiles = value }
         public fun redactor(value: Redactor): Builder = apply { redactor = value }
-        public fun build(): FileLoggingConfig = FileLoggingConfig(directory, maxFileBytes, maxFiles,
+        public fun build(): FileLoggingConfig = FileLoggingConfig(
+            directory, maxFileBytes, maxFiles,
             queueCapacity, maxRecordBytes, retentionMillis, captureCrashes, sdkPackagePrefixes,
-            maxCrashFiles, redactor)
+            maxCrashFiles, redactor,
+        )
     }
 }

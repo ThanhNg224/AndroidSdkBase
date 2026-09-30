@@ -155,6 +155,7 @@ internal class EventLoggingRuntime(
                 updateQueueFailure(result.error.code)
                 result
             }
+
             is SdkResult.Success -> {
                 enqueuedCount.incrementAndGet()
                 updateQueue(result.value.eventCount, result.value.byteCount)
@@ -230,6 +231,7 @@ internal class EventLoggingRuntime(
                         recordFailure(removed.error.code, delivering = false)
                         return removed
                     }
+
                     is SdkResult.Success -> {
                         deliveredCount.incrementAndGet()
                         updateQueue(removed.value.events.size, removed.value.byteCount, delivering = false)
@@ -243,18 +245,25 @@ internal class EventLoggingRuntime(
 
     private fun sanitize(event: EventLoggingEvent): SdkResult<EventLoggingRecord> {
         return try {
-            if (event.action.isBlank()) return SdkResult.Failure(EventLoggingErrors.invalidEvent("action is blank"))
+            if (event.action.isBlank()) {
+                return SdkResult.Failure(EventLoggingErrors.invalidEvent("action is blank"))
+            }
             val level = event.level.lowercase()
-            if (level !in ALLOWED_LEVELS) return SdkResult.Failure(EventLoggingErrors.invalidEvent("level is unsupported"))
+            if (level !in ALLOWED_LEVELS) {
+                return SdkResult.Failure(EventLoggingErrors.invalidEvent("level is unsupported"))
+            }
             val action = redact(event.action.take(config.maxActionLength)).take(config.maxActionLength)
-            if (action.isBlank()) return SdkResult.Failure(EventLoggingErrors.invalidEvent("action is blank after sanitization"))
+            if (action.isBlank()) {
+                return SdkResult.Failure(EventLoggingErrors.invalidEvent("action is blank after sanitization"))
+            }
             val screen = event.screenId?.let { redact(it.take(MAX_SCREEN_LENGTH)).take(MAX_SCREEN_LENGTH) }
             val attrs = LinkedHashMap<String, String>()
             fun addAttributes(source: Map<String, String>) {
                 for ((key, value) in source) {
                     if (key !in config.allowedAttributeKeys || key.length > MAX_ATTRIBUTE_KEY_LENGTH) continue
                     if (attrs.size >= config.maxAttributes && key !in attrs) continue
-                    val hostRedacted = config.redactor.redact(value.take(config.maxValueLength)).take(config.maxValueLength)
+                    val hostRedacted = config.redactor.redact(value.take(config.maxValueLength))
+                        .take(config.maxValueLength)
                     attrs[key] = EventAttributeRedactor.redact(
                         key,
                         hostRedacted,
@@ -286,6 +295,7 @@ internal class EventLoggingRuntime(
             val event = EventLoggingEvent.Builder(name).attributes(attributes).build()
             val record = when (val result = sanitize(event)) {
                 is SdkResult.Success -> result.value
+
                 is SdkResult.Failure -> {
                     rejectedCount.incrementAndGet()
                     updateRejected()
@@ -318,7 +328,8 @@ internal class EventLoggingRuntime(
     private fun updateRejected() {
         mutableDiagnostics.update { current ->
             EventLoggingDiagnostics(
-                current.pendingEvents, current.pendingBytes, enqueuedCount.get(), deliveredCount.get(), rejectedCount.get(),
+                current.pendingEvents, current.pendingBytes, enqueuedCount.get(),
+                deliveredCount.get(), rejectedCount.get(),
                 failures.get(), current.lastFailureCode, current.isDelivering,
             )
         }
@@ -328,7 +339,8 @@ internal class EventLoggingRuntime(
         failures.incrementAndGet()
         mutableDiagnostics.update { current ->
             EventLoggingDiagnostics(
-                current.pendingEvents, current.pendingBytes, enqueuedCount.get(), deliveredCount.get(), rejectedCount.get(),
+                current.pendingEvents, current.pendingBytes, enqueuedCount.get(),
+                deliveredCount.get(), rejectedCount.get(),
                 failures.get(), code, delivering,
             )
         }

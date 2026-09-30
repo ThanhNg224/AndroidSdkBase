@@ -9,16 +9,18 @@ import io.github.thanhng224.sdkbase.core.result.SdkResult
  */
 public fun <T> SdkResult<T>.assertSuccess(): T = when (this) {
     is SdkResult.Success -> value
+
     is SdkResult.Failure -> throw AssertionError(
-        "expected SdkResult.Success but was Failure(code=${error.code}, reason=${error.reason})"
+        "expected SdkResult.Success but was Failure(code=${error.code}, reason=${error.reason})",
     )
 }
 
 /** Asserts this is a [SdkResult.Failure] and returns its [SdkError]. */
 public fun SdkResult<*>.assertFailure(): SdkError = when (this) {
     is SdkResult.Failure -> error
+
     is SdkResult.Success -> throw AssertionError(
-        "expected SdkResult.Failure but was Success(value=$value)"
+        "expected SdkResult.Failure but was Success(value=$value)",
     )
 }
 
@@ -27,7 +29,7 @@ public fun SdkResult<*>.assertFailure(expectedCode: Int): SdkError {
     val error = assertFailure()
     if (error.code != expectedCode) {
         throw AssertionError(
-            "expected failure code $expectedCode but was ${error.code} (${error.reason})"
+            "expected failure code $expectedCode but was ${error.code} (${error.reason})",
         )
     }
     return error

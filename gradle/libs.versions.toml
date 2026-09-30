@@ -12,7 +12,6 @@ kotlinStdlibFloor = "2.2.21"
 
 # --- Runtime libraries
 coroutines = "1.11.0"
-serialization = "1.11.0"
 androidxWork = "2.10.5"
 androidxAnnotation = "1.10.0"
 androidxLifecycle = "2.11.0"
@@ -31,7 +30,8 @@ androidxTestRunner = "1.7.0"
 # --- Build plugins
 dokka = "2.2.0"
 mavenPublish = "0.37.0"
-dependencyAnalysis = "3.19.2"
+spotless = "8.10.2"
+ktlint = "1.8.0"
 
 [libraries]
 androidx-work-runtime = { module = "androidx.work:work-runtime", version.ref = "androidxWork" }
@@ -42,7 +42,6 @@ androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-ru
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
-serialization-json = { module = "org.jetbrains.kotlinx:kotlinx-serialization-json", version.ref = "serialization" }
 
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-ui = { module = "androidx.compose.ui:ui" }
@@ -83,4 +82,4 @@ android-application = { id = "com.android.application", version.ref = "agp" }
 compose-compiler = { id = "org.jetbrains.kotlin.plugin.compose", version.ref = "kotlin" }
 dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 maven-publish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
-dependency-analysis = { id = "com.autonomousapps.dependency-analysis", version.ref = "dependencyAnalysis" }
+spotless = { id = "com.diffplug.spotless", version.ref = "spotless" }

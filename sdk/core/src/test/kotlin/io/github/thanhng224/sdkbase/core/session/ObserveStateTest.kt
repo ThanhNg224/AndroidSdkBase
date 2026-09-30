@@ -1,10 +1,6 @@
 package io.github.thanhng224.sdkbase.core.session
 
 import io.github.thanhng224.sdkbase.core.concurrency.DispatcherProvider
-import java.util.concurrent.CountDownLatch
-import java.util.concurrent.ExecutorService
-import java.util.concurrent.Executors
-import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.asCoroutineDispatcher
@@ -13,6 +9,10 @@ import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 /** [StateFlow.observe] delivers on a real main-like dispatcher thread, proven the same way [launchCallback] is. */
 class ObserveStateTest {
@@ -38,12 +38,15 @@ class ObserveStateTest {
         val firstLatch = CountDownLatch(1)
         val latch = CountDownLatch(2)
 
-        val cancellable = state.observe(dispatchers, StateListener {
-            received += it
-            threads += Thread.currentThread().name
-            firstLatch.countDown()
-            latch.countDown()
-        })
+        val cancellable = state.observe(
+            dispatchers,
+            StateListener {
+                received += it
+                threads += Thread.currentThread().name
+                firstLatch.countDown()
+                latch.countDown()
+            },
+        )
         // Waits for the current-value delivery before mutating, otherwise state.value = 2 can race
         // ahead of collect() actually subscribing and the "1" emission is lost, not just delayed.
         assertTrue(firstLatch.await(2, TimeUnit.SECONDS))
@@ -62,12 +65,15 @@ class ObserveStateTest {
         val firstLatch = CountDownLatch(1)
         val latch = CountDownLatch(2)
 
-        val cancellable = state.observe(dispatchers, StateListener {
-            received += it
-            firstLatch.countDown()
-            latch.countDown()
-            error("listener boom")
-        })
+        val cancellable = state.observe(
+            dispatchers,
+            StateListener {
+                received += it
+                firstLatch.countDown()
+                latch.countDown()
+                error("listener boom")
+            },
+        )
         assertTrue(firstLatch.await(2, TimeUnit.SECONDS))
         state.value = 2
 
@@ -82,10 +88,13 @@ class ObserveStateTest {
         val received = mutableListOf<Int>()
         val firstLatch = CountDownLatch(1)
 
-        val cancellable = state.observe(dispatchers, StateListener {
-            received += it
-            firstLatch.countDown()
-        })
+        val cancellable = state.observe(
+            dispatchers,
+            StateListener {
+                received += it
+                firstLatch.countDown()
+            },
+        )
         assertTrue(firstLatch.await(2, TimeUnit.SECONDS))
         cancellable.cancel()
 

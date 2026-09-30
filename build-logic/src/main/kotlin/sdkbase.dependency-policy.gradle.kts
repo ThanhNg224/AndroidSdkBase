@@ -27,8 +27,14 @@ if (zone in policedZones) {
         components.onVariants(components.selector().withBuildType("release")) { variant ->
             checkDependencyPolicy.configure {
                 // Compile as well as runtime: a compileOnly client is still a hard requirement on the host.
-                graphs.put("releaseCompileClasspath", variant.compileConfiguration.incoming.resolutionResult.rootComponent)
-                graphs.put("releaseRuntimeClasspath", variant.runtimeConfiguration.incoming.resolutionResult.rootComponent)
+                graphs.put(
+                    "releaseCompileClasspath",
+                    variant.compileConfiguration.incoming.resolutionResult.rootComponent,
+                )
+                graphs.put(
+                    "releaseRuntimeClasspath",
+                    variant.runtimeConfiguration.incoming.resolutionResult.rootComponent,
+                )
             }
         }
     }

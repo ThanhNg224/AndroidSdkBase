@@ -37,14 +37,20 @@ class SdkLoggerTest {
     fun `the message lambda is never invoked below minLevel`() {
         var invoked = false
         val logger = SdkLogger.Builder().minLevel(LogLevel.ERROR).sink(RecordingLogSink()).build()
-        logger.tagged("T").d { invoked = true; "message" }
+        logger.tagged("T").d {
+            invoked = true
+            "message"
+        }
         assertFalse(invoked)
     }
 
     @Test
     fun `NoOp never invokes the message lambda`() {
         var invoked = false
-        SdkLogger.NoOp.tagged("T").e { invoked = true; "message" }
+        SdkLogger.NoOp.tagged("T").e {
+            invoked = true
+            "message"
+        }
         assertFalse(invoked)
     }
 
@@ -189,7 +195,9 @@ class SdkLoggerTest {
 
         logger.tagged("T").e(chain) { "deep" }
 
-        val rendered = java.io.StringWriter().also { sink.records.single().throwable!!.printStackTrace(java.io.PrintWriter(it)) }.toString()
+        val rendered = java.io.StringWriter().also {
+            sink.records.single().throwable!!.printStackTrace(java.io.PrintWriter(it))
+        }.toString()
         assertTrue(rendered.contains("<truncated>"))
     }
 
@@ -242,10 +250,12 @@ class SdkLoggerTest {
     fun `redactor failure while processing throwable drops record without escaping`() {
         val sink = RecordingLogSink()
         val logger = SdkLogger.Builder().sink(sink)
-            .redactor(Redactor { value ->
-                if (value.contains("THROWABLE_CANARY")) error("redactor failed")
-                value
-            }).build()
+            .redactor(
+                Redactor { value ->
+                    if (value.contains("THROWABLE_CANARY")) error("redactor failed")
+                    value
+                },
+            ).build()
 
         logger.tagged("T").e(IllegalStateException("THROWABLE_CANARY")) { "safe message" }
 

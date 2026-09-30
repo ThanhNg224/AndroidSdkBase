@@ -52,7 +52,8 @@ class OtpSdkRuntimeTest {
     @Test
     fun `submit clears a stale partially entered code before submitting the caller's code`() = runTest {
         val gateway = FakeGateway()
-        val scope = SessionScope(TestDispatcherProvider(StandardTestDispatcher(testScheduler)), SdkLogger.NoOp.tagged("Test"))
+        val scope =
+            SessionScope(TestDispatcherProvider(StandardTestDispatcher(testScheduler)), SdkLogger.NoOp.tagged("Test"))
         val engine = OtpEngine(gateway, scope)
         val config = OtpSdkConfig.Builder("0900000000", gateway).build().getOrNull()!!
         engine.start("0900000000")

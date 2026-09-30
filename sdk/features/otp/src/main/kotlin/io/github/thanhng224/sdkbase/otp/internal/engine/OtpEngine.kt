@@ -160,6 +160,7 @@ internal class OtpEngine(
         }
         when (val result = safeCall("verifyOtp", gatewayTimeoutMillis) { gateway.verifyOtp(id, code) }) {
             is SdkResult.Success -> update { OtpStateMachine.onVerified(it) }
+
             is SdkResult.Failure -> update {
                 OtpStateMachine.onVerificationFailed(it, result.error)
             }

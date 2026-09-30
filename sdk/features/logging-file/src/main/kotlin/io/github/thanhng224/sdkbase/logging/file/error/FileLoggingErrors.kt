@@ -9,6 +9,8 @@ public object FileLoggingErrors {
     public const val CRASH_HANDLER_UNAVAILABLE: Int = 3204
     public const val INVALID_CRASH_ID: Int = 3205
     internal fun invalid(): SdkError = SdkError.Business(INVALID_CONFIG, "Invalid file logging configuration")
-    internal fun storage(): SdkError = SdkError.System(STORAGE_FAILURE, "File logging storage failed", isRetryable = true)
-    internal fun busy(): SdkError = SdkError.Business(DIRECTORY_IN_USE, "File logging directory is in use", isRetryable = true)
+    internal fun storage(): SdkError =
+        SdkError.System(STORAGE_FAILURE, "File logging storage failed", isRetryable = true)
+    internal fun busy(): SdkError =
+        SdkError.Business(DIRECTORY_IN_USE, "File logging directory is in use", isRetryable = true)
 }

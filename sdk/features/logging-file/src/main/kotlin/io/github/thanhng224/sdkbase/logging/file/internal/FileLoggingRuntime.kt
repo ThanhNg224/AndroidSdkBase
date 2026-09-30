@@ -43,8 +43,12 @@ internal class FileLoggingRuntime private constructor(
     private var released = false
 
     fun start(): SdkError? {
-        if (config.captureCrashes && !crash.install()) return SdkError.Business(
-            FileLoggingErrors.CRASH_HANDLER_UNAVAILABLE, "SDK crash capture handler unavailable")
+        if (config.captureCrashes && !crash.install()) {
+            return SdkError.Business(
+                FileLoggingErrors.CRASH_HANDLER_UNAVAILABLE,
+                "SDK crash capture handler unavailable",
+            )
+        }
         started = true
         val writer = scope.coroutineScope.launch {
             try {
@@ -53,22 +57,41 @@ internal class FileLoggingRuntime private constructor(
                         when (write) {
                             is Write.Record -> {
                                 var failed = false
-                                try { storage.append(write.bytes, environment.clock.nowMillis()) }
-                                catch (_: Exception) { failed = true }
-                                states.withLock { update {
-                                    FileLoggingState(it.written + if (failed) 0 else 1, dropped.get(),
-                                        it.storageFailures + if (failed) 1 else 0)
-                                } }
+                                try {
+                                    storage.append(write.bytes, environment.clock.nowMillis())
+                                } catch (
+                                    _: Exception,
+                                ) {
+                                    failed = true
+                                }
+                                states.withLock {
+                                    update {
+                                        FileLoggingState(
+                                            it.written + if (failed) 0 else 1, dropped.get(),
+                                            it.storageFailures + if (failed) 1 else 0,
+                                        )
+                                    }
+                                }
                             }
+
                             is Write.Fence -> {
-                                states.withLock { update { FileLoggingState(it.written, dropped.get(), it.storageFailures) } }
-                                write.result.complete(if (states.current.storageFailures == 0L) SdkResult.Success(Unit)
-                                    else SdkResult.Failure(FileLoggingErrors.storage()))
+                                states.withLock {
+                                    update { FileLoggingState(it.written, dropped.get(), it.storageFailures) }
+                                }
+                                write.result.complete(
+                                    if (states.current.storageFailures == 0L) {
+                                        SdkResult.Success(Unit)
+                                    } else {
+                                        SdkResult.Failure(FileLoggingErrors.storage())
+                                    },
+                                )
                             }
                         }
                     }
                 }
-            } finally { releaseLease() }
+            } finally {
+                releaseLease()
+            }
         }
         writer.invokeOnCompletion { releaseLease() }
         return null
@@ -87,7 +110,10 @@ internal class FileLoggingRuntime private constructor(
                 record.sessionId?.let { append(" session=").append(it.take(128)) }
             }
             boundedBytes(redactForStorage(config, text), config.maxRecordBytes - 1) + byteArrayOf(10)
-        } catch (_: Exception) { dropped.incrementAndGet(); return }
+        } catch (_: Exception) {
+            dropped.incrementAndGet()
+            return
+        }
         if (!channel.trySend(Write.Record(bytes)).isSuccess) dropped.incrementAndGet()
     }
 
@@ -99,31 +125,48 @@ internal class FileLoggingRuntime private constructor(
     override fun flush(callback: ResultCallback<Unit>): Cancellable = scope.call(callback) { flush() }
     override suspend fun pendingCrashes(): SdkResult<List<CrashReport>> = scope.ifOpen {
         withContext(environment.dispatchers.io) {
-            try { SdkResult.Success(storage.crashes(environment.clock.nowMillis())) }
-            catch (_: Exception) { SdkResult.Failure(FileLoggingErrors.storage()) }
+            try {
+                SdkResult.Success(storage.crashes(environment.clock.nowMillis()))
+            } catch (
+                _: Exception,
+            ) {
+                SdkResult.Failure(FileLoggingErrors.storage())
+            }
         }
     }
-    override fun pendingCrashes(callback: ResultCallback<List<CrashReport>>): Cancellable = scope.call(callback) { pendingCrashes() }
+    override fun pendingCrashes(callback: ResultCallback<List<CrashReport>>): Cancellable =
+        scope.call(callback) { pendingCrashes() }
     override suspend fun acknowledgeCrash(id: String): SdkResult<Unit> = scope.ifOpen {
         withContext(environment.dispatchers.io) {
-            try { storage.acknowledge(id); SdkResult.Success(Unit) }
-            catch (_: IllegalArgumentException) { SdkResult.Failure(SdkError.Business(FileLoggingErrors.INVALID_CRASH_ID, "Invalid crash ID")) }
-            catch (_: Exception) { SdkResult.Failure(FileLoggingErrors.storage()) }
+            try {
+                storage.acknowledge(id)
+                SdkResult.Success(Unit)
+            } catch (_: IllegalArgumentException) {
+                SdkResult.Failure(SdkError.Business(FileLoggingErrors.INVALID_CRASH_ID, "Invalid crash ID"))
+            } catch (_: Exception) {
+                SdkResult.Failure(FileLoggingErrors.storage())
+            }
         }
     }
-    override fun acknowledgeCrash(id: String, callback: ResultCallback<Unit>): Cancellable = scope.call(callback) { acknowledgeCrash(id) }
+    override fun acknowledgeCrash(id: String, callback: ResultCallback<Unit>): Cancellable =
+        scope.call(callback) { acknowledgeCrash(id) }
 
     override fun onClose() {
         crash.uninstall()
         channel.cancel()
         if (!started) releaseLease()
     }
+
     @Synchronized
     private fun releaseLease() {
         if (released) return
         released = true
         crash.uninstall()
-        try { if (lease.isValid) lease.release() } finally { leaseFile.close() }
+        try {
+            if (lease.isValid) lease.release()
+        } finally {
+            leaseFile.close()
+        }
     }
 
     companion object {
@@ -133,11 +176,22 @@ internal class FileLoggingRuntime private constructor(
             try {
                 val lock = file.channel.tryLock() ?: throw java.nio.channels.OverlappingFileLockException()
                 val scope = SessionScope(environment.dispatchers, environment.logger.tagged("FileLogging"))
-                val runtime = FileLoggingRuntime(config, environment, scope, StateStore(FileLoggingState(0, 0, 0)), file, lock)
-                try { runtime.storage.prepare(environment.clock.nowMillis()) }
-                catch (e: Exception) { runtime.close(); throw e }
+                val runtime = FileLoggingRuntime(
+                    config, environment, scope, StateStore(FileLoggingState(0, 0, 0)), file, lock,
+                )
+                try {
+                    runtime.storage.prepare(environment.clock.nowMillis())
+                } catch (
+                    e: Exception,
+                ) {
+                    runtime.close()
+                    throw e
+                }
                 return runtime
-            } catch (e: Exception) { file.close(); throw e }
+            } catch (e: Exception) {
+                file.close()
+                throw e
+            }
         }
     }
 }

@@ -50,7 +50,7 @@ public abstract class CheckErrorCatalogTask : DefaultTask() {
         if (problems.isNotEmpty()) {
             throw GradleException(
                 "Error catalog is inconsistent (docs/ERROR_CODE_REFERENCE.md \"Rules\"):\n" +
-                    problems.joinToString("\n") { "  - $it" }
+                    problems.joinToString("\n") { "  - $it" },
             )
         }
         result.get().asFile.writeText("ok\n")
@@ -76,7 +76,7 @@ public abstract class ErrorCatalogDumpTask : DefaultTask() {
         val outcome = dumpLedger(declaredCodes(errorSources.files, sdkRoot.get().asFile), current)
         if (outcome.problems.isNotEmpty()) {
             throw GradleException(
-                "Refusing to update the ledger:\n" + outcome.problems.joinToString("\n") { "  - $it" }
+                "Refusing to update the ledger:\n" + outcome.problems.joinToString("\n") { "  - $it" },
             )
         }
         file.writeText(outcome.ledger)
@@ -86,7 +86,7 @@ public abstract class ErrorCatalogDumpTask : DefaultTask() {
             logger.lifecycle(
                 "Added to sdk/error-codes.ledger:\n" +
                     outcome.added.joinToString("\n") { "  ${it.module} ${it.name} ${it.code}" } +
-                    "\nNow add a matching row to docs/ERROR_CODE_REFERENCE.md."
+                    "\nNow add a matching row to docs/ERROR_CODE_REFERENCE.md.",
             )
         }
     }

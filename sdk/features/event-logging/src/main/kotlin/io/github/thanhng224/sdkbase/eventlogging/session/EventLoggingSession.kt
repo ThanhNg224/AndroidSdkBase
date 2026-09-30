@@ -33,7 +33,8 @@ public class EventLoggingSession internal constructor(
     /** Drains persisted records in order until empty or the first gateway failure. */
     public suspend fun flush(): SdkResult<Unit> = scope.ifOpen { runtime.flush() }
 
-    override fun observeState(listener: StateListener<EventLoggingDiagnostics>): Cancellable = scope.observe(state, listener)
+    override fun observeState(listener: StateListener<EventLoggingDiagnostics>): Cancellable =
+        scope.observe(state, listener)
 
     /** Java-callable form of [track]. */
     public fun track(event: EventLoggingEvent, callback: ResultCallback<Unit>): Cancellable =

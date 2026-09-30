@@ -19,7 +19,7 @@ val registered = (rootProject.extra["publishedArtifacts"] as List<String>).toSet
 if (project.path !in registered) {
     throw GradleException(
         "${project.path} applies sdkbase.publishing but is not in publishedArtifacts " +
-            "(gradle/module-topology.gradle.kts)"
+            "(gradle/module-topology.gradle.kts)",
     )
 }
 
