@@ -19,7 +19,6 @@ features/otp OTP_ATTEMPTS_EXCEEDED 3002
 features/otp OTP_RESEND_TOO_SOON 3003
 features/event-logging INVALID_EVENT 3101
 features/event-logging QUEUE_FULL 3103
-features/logging-file INVALID_CONFIG 3201
 features/logging-file DIRECTORY_IN_USE 3203
 features/logging-file CRASH_HANDLER_UNAVAILABLE 3204
 features/logging-file INVALID_CRASH_ID 3205

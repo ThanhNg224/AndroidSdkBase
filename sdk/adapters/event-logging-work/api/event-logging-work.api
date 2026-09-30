@@ -9,15 +9,7 @@ public final class io/github/thanhng224/sdkbase/eventlogging/work/EventLoggingWo
 	public fun schedule (Ljava/lang/String;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
-public final class io/github/thanhng224/sdkbase/eventlogging/work/provider/EventLoggingWorkConfiguration {
-	public fun <init> (Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig;Lio/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingCallbackGateway;Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;)V
-	public fun <init> (Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig;Lio/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingGateway;Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;)V
-	public final fun getConfig ()Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig;
-	public final fun getEnvironment ()Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;
-	public final fun getGateway ()Lio/github/thanhng224/sdkbase/eventlogging/gateway/EventLoggingGateway;
-}
-
 public abstract interface class io/github/thanhng224/sdkbase/eventlogging/work/provider/EventLoggingWorkProvider {
-	public abstract fun resolve (Ljava/lang/String;)Lio/github/thanhng224/sdkbase/eventlogging/work/provider/EventLoggingWorkConfiguration;
+	public abstract fun resolve (Ljava/lang/String;)Lio/github/thanhng224/sdkbase/eventlogging/config/EventLoggingConfig;
 }
 

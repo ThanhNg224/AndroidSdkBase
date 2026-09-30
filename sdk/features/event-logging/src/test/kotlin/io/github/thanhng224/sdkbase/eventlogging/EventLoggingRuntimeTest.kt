@@ -55,7 +55,7 @@ class EventLoggingRuntimeTest {
             delivered += event.action
             SdkResult.Success(Unit)
         }
-        val session = EventLoggingSdk.start(config(dir), gateway, environment(testScheduler)).getOrNull()!!
+        val session = EventLoggingSdk.start(config(dir, gateway, environment(testScheduler))).getOrNull()!!
 
         assertTrue(session.track(event("first")) is SdkResult.Success)
         runCurrent()
@@ -80,9 +80,7 @@ class EventLoggingRuntimeTest {
             if (calls < 3) SdkResult.Failure(SdkErrors.networkUnavailable()) else SdkResult.Success(Unit)
         }
         val session = EventLoggingSdk.start(
-            config(dir, retryInitialMillis = 10L, retryMaxMillis = 20L),
-            gateway,
-            environment(testScheduler),
+            config(dir, gateway, environment(testScheduler), retryInitialMillis = 10L, retryMaxMillis = 20L),
         ).getOrNull()!!
 
         assertTrue(session.track(event("retry-me")) is SdkResult.Success)
@@ -105,12 +103,11 @@ class EventLoggingRuntimeTest {
     @Test
     fun `cancelling one shot delivery releases the process drain lease`() = runTest {
         val dir = Files.createTempDirectory("event-logging-cancel").toFile()
-        val config = config(dir)
         val baseEnvironment = environment(testScheduler)
         val rejecting = EventLoggingGateway {
             SdkResult.Failure(SdkError.Business(3999, "rejected", isRetryable = false))
         }
-        val session = EventLoggingSdk.start(config, rejecting, baseEnvironment).getOrNull()!!
+        val session = EventLoggingSdk.start(config(dir, rejecting, baseEnvironment)).getOrNull()!!
         assertTrue(session.track(event("persist-first")) is SdkResult.Success)
         runCurrent()
         session.close()
@@ -120,13 +117,14 @@ class EventLoggingRuntimeTest {
             entered.complete(Unit)
             kotlinx.coroutines.awaitCancellation()
         }
-        val delivery = async { EventLoggingSdk.deliverPending(config, blocking, baseEnvironment) }
+        val delivery = async { EventLoggingSdk.deliverPending(config(dir, blocking, baseEnvironment)) }
         runCurrent()
         entered.await()
         delivery.cancelAndJoin()
 
-        val recovered =
-            EventLoggingSdk.deliverPending(config, EventLoggingGateway { SdkResult.Success(Unit) }, baseEnvironment)
+        val recovered = EventLoggingSdk.deliverPending(
+            config(dir, EventLoggingGateway { SdkResult.Success(Unit) }, baseEnvironment),
+        )
         assertTrue(recovered is SdkResult.Success)
         dir.deleteRecursively()
     }
@@ -136,12 +134,15 @@ class EventLoggingRuntimeTest {
         val dir = Files.createTempDirectory("event-logging-telemetry").toFile()
         val received = mutableListOf<EventLoggingRecord>()
         val session = EventLoggingSdk.start(
-            config(dir, allowlist = setOf("token", "outcome", "sdk_version")),
-            EventLoggingGateway { event ->
-                received += event
-                SdkResult.Success(Unit)
-            },
-            environment(testScheduler),
+            config(
+                dir,
+                EventLoggingGateway { event ->
+                    received += event
+                    SdkResult.Success(Unit)
+                },
+                environment(testScheduler),
+                allowlist = setOf("token", "outcome", "sdk_version"),
+            ),
         ).getOrNull()!!
 
         repeat(40) { index ->
@@ -174,9 +175,12 @@ class EventLoggingRuntimeTest {
             SdkResult.Failure(SdkErrors.networkUnavailable())
         }
         val result = EventLoggingSdk.start(
-            config(dir, scheduler = scheduler),
-            EventLoggingGateway { SdkResult.Success(Unit) },
-            environment(testScheduler),
+            config(
+                dir,
+                EventLoggingGateway { SdkResult.Success(Unit) },
+                environment(testScheduler),
+                scheduler = scheduler,
+            ),
         )
         assertEquals(1, scheduled)
         assertTrue(result is SdkResult.Failure)
@@ -187,12 +191,14 @@ class EventLoggingRuntimeTest {
     @Test
     fun `Java callback gateway and callback session methods deliver results`() = runTest {
         val dir = Files.createTempDirectory("event-logging-callback").toFile()
-        val environment = environment(testScheduler)
-        val config = config(dir)
         val gateway = EventLoggingCallbackGateway { _, callback -> callback.onSuccess() }
+        val config = EventLoggingConfig.Builder("test_queue", dir, gateway)
+            .environment(environment(testScheduler))
+            .build()
+            .getOrNull()!!
         var opened: EventLoggingSession? = null
         EventLoggingSdk.start(
-            config, gateway, environment,
+            config,
             object : ResultCallback<EventLoggingSession> {
                 override fun onSuccess(value: EventLoggingSession) {
                     opened = value
@@ -229,7 +235,7 @@ class EventLoggingRuntimeTest {
     fun `validated allowlist cannot be changed through caller owned sets`() = runTest {
         val directory = Files.createTempDirectory("event-logging-allowlist").toFile()
         val inputKeys = mutableSetOf("outcome")
-        val built = EventLoggingConfig.Builder("allowlist", directory)
+        val built = EventLoggingConfig.Builder("allowlist", directory, EventLoggingGateway { SdkResult.Success(Unit) })
             .allowedAttributeKeys(inputKeys)
             .build()
             .getOrNull()!!
@@ -250,9 +256,8 @@ class EventLoggingRuntimeTest {
         val entered = CompletableDeferred<Unit>()
         val release = CompletableDeferred<Unit>()
         var delivered: EventLoggingRecord? = null
-        val config = config(dir, allowlist = setOf("password", "outcome"))
-        val session = EventLoggingSdk.start(
-            config,
+        val config = config(
+            dir,
             EventLoggingGateway { event ->
                 delivered = event
                 entered.complete(Unit)
@@ -260,7 +265,9 @@ class EventLoggingRuntimeTest {
                 SdkResult.Success(Unit)
             },
             environment(testScheduler),
-        ).getOrNull()!!
+            allowlist = setOf("password", "outcome"),
+        )
+        val session = EventLoggingSdk.start(config).getOrNull()!!
 
         val event = EventLoggingEvent.Builder("login")
             .attributes(mapOf("password" to " top secret value ", "outcome" to "success"))
@@ -283,14 +290,13 @@ class EventLoggingRuntimeTest {
     @Test
     fun `a throwing host redactor is contained and its exception text is not exposed`() = runTest {
         val dir = Files.createTempDirectory("event-logging-redactor").toFile()
-        val config = EventLoggingConfig.Builder("redactor", dir)
+        val config = EventLoggingConfig.Builder("redactor", dir, EventLoggingGateway { SdkResult.Success(Unit) })
+            .environment(environment(testScheduler))
             .allowedAttributeKeys(setOf("outcome"))
             .redactor(Redactor { throw IllegalStateException("private-redactor-detail") })
             .build()
             .getOrNull()!!
-        val session =
-            EventLoggingSdk.start(config, EventLoggingGateway { SdkResult.Success(Unit) }, environment(testScheduler))
-                .getOrNull()!!
+        val session = EventLoggingSdk.start(config).getOrNull()!!
 
         val result = session.track(event("safe-name"))
 
@@ -315,9 +321,7 @@ class EventLoggingRuntimeTest {
             .build()
 
         val result = EventLoggingSdk.start(
-            config(dir, scheduler = scheduler),
-            EventLoggingGateway { SdkResult.Success(Unit) },
-            environment,
+            config(dir, EventLoggingGateway { SdkResult.Success(Unit) }, environment, scheduler = scheduler),
         )
 
         assertEquals(EventLoggingErrors.INVALID_EVENT, result.errorOrNull()?.code)
@@ -334,8 +338,12 @@ class EventLoggingRuntimeTest {
         var cancelled = false
         try {
             EventLoggingSdk.start(
-                config(dir, scheduler = scheduler), EventLoggingGateway { SdkResult.Success(Unit) },
-                environment(testScheduler),
+                config(
+                    dir,
+                    EventLoggingGateway { SdkResult.Success(Unit) },
+                    environment(testScheduler),
+                    scheduler = scheduler,
+                ),
             )
         } catch (_: CancellationException) {
             cancelled = true
@@ -354,12 +362,16 @@ class EventLoggingRuntimeTest {
         }
         val delivered = mutableListOf<String>()
         val session = EventLoggingSdk.start(
-            config(dir, allowlist = setOf("outcome"), scheduler = scheduler),
-            EventLoggingGateway { event ->
-                delivered += event.action
-                SdkResult.Success(Unit)
-            },
-            environment(testScheduler),
+            config(
+                dir,
+                EventLoggingGateway { event ->
+                    delivered += event.action
+                    SdkResult.Success(Unit)
+                },
+                environment(testScheduler),
+                allowlist = setOf("outcome"),
+                scheduler = scheduler,
+            ),
         ).getOrNull()!!
 
         assertTrue(session.track(event("durable-first")) is SdkResult.Success)
@@ -374,8 +386,8 @@ class EventLoggingRuntimeTest {
     @Test
     fun `cancellation before append commit never reports success and keeps actor usable`() = runTest {
         val dir = Files.createTempDirectory("event-logging-pre-commit-cancel").toFile()
-        val cfg = config(dir)
         val dispatchers = TestDispatcherProvider(StandardTestDispatcher(testScheduler))
+        val cfg = config(dir, EventLoggingGateway { SdkResult.Success(Unit) }, environment(testScheduler))
         val stored = DurableEventQueue(cfg, dispatchers) { 100L }
         stored.append(EventLoggingRecord("accepted", "prior-session", 100L, 0L, "accepted", "info", null, emptyMap()))
         var clockCalls = 0
@@ -409,13 +421,16 @@ class EventLoggingRuntimeTest {
 
     private fun config(
         directory: java.io.File,
+        gateway: EventLoggingGateway,
+        environment: SdkEnvironment,
         namespace: String = "test_queue",
         allowlist: Set<String> = emptySet(),
         scheduler: io.github.thanhng224.sdkbase.eventlogging.delivery.EventDeliveryScheduler =
             io.github.thanhng224.sdkbase.eventlogging.delivery.EventDeliveryScheduler.None,
         retryInitialMillis: Long = 5L,
         retryMaxMillis: Long = 20L,
-    ): EventLoggingConfig = EventLoggingConfig.Builder(namespace, directory)
+    ): EventLoggingConfig = EventLoggingConfig.Builder(namespace, directory, gateway)
+        .environment(environment)
         .allowedAttributeKeys(allowlist)
         .scheduler(scheduler)
         .retryInitialDelayMillis(retryInitialMillis)

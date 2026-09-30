@@ -63,3 +63,7 @@ public final class io/github/thanhng224/sdkbase/core/testing/TestDispatcherProvi
 	public fun getMain ()Lkotlinx/coroutines/CoroutineDispatcher;
 }
 
+public final class io/github/thanhng224/sdkbase/core/testing/ValueSemanticsAssertionsKt {
+	public static final fun assertValueSemantics (Lkotlin/jvm/functions/Function0;[Ljava/lang/Object;)V
+}
+

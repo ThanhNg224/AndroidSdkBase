@@ -15,17 +15,18 @@ artifacts into the host automatically.
 ## Business events
 
 ```kotlin
-val config = EventLoggingConfig.Builder("business-events", context.noBackupFilesDir)
+val gateway = EventLoggingGateway { record ->
+    // Host HTTP implementation. Send record.id as an idempotency key.
+    api.deliver(record)
+}
+val config = EventLoggingConfig.Builder("business-events", context.noBackupFilesDir, gateway)
+    .environment(environment)
     .allowedAttributeKeys(setOf("sdk_version", "app_version", "outcome", "duration_ms"))
     .commonAttributes(mapOf("sdk_version" to sdkVersion, "app_version" to appVersion))
     .maxEvents(500)
     .maxBytes(1_048_576)
     .build().getOrNull() ?: return
-val gateway = EventLoggingGateway { record ->
-    // Host HTTP implementation. Send record.id as an idempotency key.
-    api.deliver(record)
-}
-val session = EventLoggingSdk.start(config, gateway, environment).getOrNull() ?: return
+val session = EventLoggingSdk.start(config).getOrNull() ?: return
 session.track(EventLoggingEvent.Builder("sdk_started")
     .screenId("entry")
     .attributes(mapOf("outcome" to "success"))
@@ -63,8 +64,8 @@ at the source and use the custom redactor for host-specific formats.
 
 Queue diagnostics expose counts, byte totals, failure codes and delivery state. They do not
 contain event values, gateway responses or exception messages. Both entry points and session
-operations have callback twins for Java; `EventLoggingCallbackGateway` adapts a callback HTTP
-client without a Java `Continuation`. The external consumer contains working call sites.
+operations have callback twins for Java; pass an `EventLoggingCallbackGateway` to the
+`EventLoggingConfig.Builder` overload to use a callback HTTP client without a Java `Continuation`. The external consumer contains working call sites.
 
 To route feature telemetry to the queue, pass `session.telemetrySink` to
 `SdkEnvironment.Builder().telemetry(...)` for those features. This bridge uses bounded,
@@ -83,8 +84,8 @@ loss or filesystem-failure guarantee is claimed.
 ## Background recovery
 
 Implement `EventLoggingWorkProvider` on your Application. `resolve(namespace)` reconstructs the
-same config, host gateway and environment from a fresh process; it must be bounded and must not
-perform blocking network work. Unknown namespaces return null. Configure
+same config (which carries the host gateway and environment) from a fresh process; it must be
+bounded and must not perform blocking network work. Unknown namespaces return null. Configure
 `EventLoggingWorkScheduler(context)` on the foreground event config. The provider may return a
 config with that same scheduler: the one-shot worker bypasses scheduling.
 
@@ -119,8 +120,9 @@ val fileConfig = FileLoggingConfig.Builder(File(context.noBackupFilesDir, "sdk-f
     .maxFileBytes(262_144)
     .maxRecordBytes(16_384)
     .captureCrashes(false)
-    .build()
-val files = FileLoggingSdk.start(fileConfig, environment).getOrNull() ?: return
+    .environment(environment)
+    .build().getOrNull() ?: return
+val files = FileLoggingSdk.start(fileConfig).getOrNull() ?: return
 val logger = SdkLogger.Builder().sink(files).build()
 logger.tagged("SdkFlow").i { "started" }
 files.flush()

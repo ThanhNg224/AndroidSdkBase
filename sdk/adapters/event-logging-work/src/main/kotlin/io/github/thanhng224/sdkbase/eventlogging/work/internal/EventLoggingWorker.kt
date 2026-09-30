@@ -26,16 +26,16 @@ internal class EventLoggingWorker(
         val provider = applicationContext as? EventLoggingWorkProvider
             ?: return ListenableWorker.Result.failure()
 
-        val dependencies = when (
+        val config = when (
             val resolved = safeCall(
                 operation = "restore event logging configuration",
                 timeoutMillis = PROVIDER_TIMEOUT_MILLIS,
             ) {
-                val configuration = withContext(Dispatchers.IO) { provider.resolve(namespace) }
-                if (configuration == null) {
+                val resolvedConfig = withContext(Dispatchers.IO) { provider.resolve(namespace) }
+                if (resolvedConfig == null) {
                     SdkResult.Failure(SdkErrors.invalidConfig("No event logging configuration for this queue"))
                 } else {
-                    SdkResult.Success(configuration)
+                    SdkResult.Success(resolvedConfig)
                 }
             }
         ) {
@@ -49,13 +49,9 @@ internal class EventLoggingWorker(
         }
 
         // Never let an incorrect host mapping drain another namespace's persisted events.
-        if (dependencies.config.namespace != namespace) return ListenableWorker.Result.failure()
+        if (config.namespace != namespace) return ListenableWorker.Result.failure()
 
-        val delivery = EventLoggingSdk.deliverPending(
-            dependencies.config,
-            dependencies.gateway,
-            dependencies.environment,
-        )
+        val delivery = EventLoggingSdk.deliverPending(config)
         return when (deliveryDecision(delivery)) {
             WorkDeliveryDecision.SUCCESS -> ListenableWorker.Result.success()
             WorkDeliveryDecision.RETRY -> ListenableWorker.Result.retry()

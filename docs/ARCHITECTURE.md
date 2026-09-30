@@ -168,7 +168,7 @@ operation, follow [the change recipes](RECIPES.md).
 
 `SdkErrors` (`:sdk:core`) owns the shared common/system/lifecycle codes; each feature owns its own
 catalog in a block no other module uses (the logging features hold 2101–2104, 2201, 3101/3103 and
-3201/3203–3205). Families: 1xxx common, 2xxx system, 3xxx business, 4xxx lifecycle. Hosts branch on
+3203–3205). Families: 1xxx common, 2xxx system, 3xxx business, 4xxx lifecycle. Hosts branch on
 `SdkError.code`, never on `.reason`. Every error also carries a `Disposition` (`INLINE_RETRY`,
 `DIALOG_RETRY`, `DIALOG_TERMINAL`, `SILENT`) that tells a UI how to present it, independent of
 `isRetryable`.

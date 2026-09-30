@@ -1,14 +1,22 @@
 package io.github.thanhng224.sdkbase.eventlogging.config
 
 import io.github.thanhng224.sdkbase.core.config.validateConfig
+import io.github.thanhng224.sdkbase.core.environment.SdkEnvironment
 import io.github.thanhng224.sdkbase.core.logging.DefaultRedactor
 import io.github.thanhng224.sdkbase.core.logging.Redactor
 import io.github.thanhng224.sdkbase.core.result.SdkResult
 import io.github.thanhng224.sdkbase.eventlogging.delivery.EventDeliveryScheduler
+import io.github.thanhng224.sdkbase.eventlogging.gateway.EventLoggingCallbackGateway
+import io.github.thanhng224.sdkbase.eventlogging.gateway.EventLoggingGateway
+import io.github.thanhng224.sdkbase.eventlogging.gateway.asGateway
 import java.io.File
 import java.util.Collections
 
-/** Storage, privacy, queue, and retry limits for a named durable event stream. */
+/**
+ * Everything the host supplies for a named durable event stream: its [gateway] and [environment],
+ * plus storage, privacy, queue, and retry limits. Like every feature config it is validated once, in
+ * [Builder.build].
+ */
 public class EventLoggingConfig private constructor(
     public val namespace: String,
     public val storageDirectory: File,
@@ -25,6 +33,8 @@ public class EventLoggingConfig private constructor(
     public val retryInitialDelayMillis: Long,
     public val retryMaxDelayMillis: Long,
     public val scheduler: EventDeliveryScheduler,
+    public val gateway: EventLoggingGateway,
+    public val environment: SdkEnvironment,
 ) {
     public val allowedAttributeKeys: Set<String> = Collections.unmodifiableSet(LinkedHashSet(allowedAttributeKeys))
 
@@ -32,7 +42,16 @@ public class EventLoggingConfig private constructor(
     public class Builder(
         private val namespace: String,
         private val storageDirectory: File,
+        private val gateway: EventLoggingGateway,
     ) {
+        /** Java-friendly form of the constructor for a callback transport; see [asGateway]. */
+        public constructor(
+            namespace: String,
+            storageDirectory: File,
+            gateway: EventLoggingCallbackGateway,
+        ) : this(namespace, storageDirectory, gateway.asGateway())
+
+        private var environment: SdkEnvironment = SdkEnvironment.Default
         private var allowedAttributeKeys: Set<String> = emptySet()
         private var invalidAllowlist: Boolean = false
         private var commonAttributes: Map<String, String> = emptyMap()
@@ -91,6 +110,8 @@ public class EventLoggingConfig private constructor(
 
         public fun scheduler(value: EventDeliveryScheduler): Builder = apply { scheduler = value }
 
+        public fun environment(value: SdkEnvironment): Builder = apply { environment = value }
+
         public fun build(): SdkResult<EventLoggingConfig> = validateConfig {
             ensure(NAMESPACE_PATTERN.matches(namespace)) { "namespace must be a short URL-safe opaque identifier" }
             ensure(storageDirectory.path.isNotBlank()) { "storageDirectory must not be blank" }
@@ -123,7 +144,7 @@ public class EventLoggingConfig private constructor(
                 commonAttributes, redactor,
                 maxEvents, maxBytes, maxAttributes,
                 maxActionLength, maxValueLength, retentionMillis, gatewayTimeoutMillis,
-                retryInitialDelayMillis, retryMaxDelayMillis, scheduler,
+                retryInitialDelayMillis, retryMaxDelayMillis, scheduler, gateway, environment,
             )
         }
 

@@ -67,7 +67,6 @@ From the first tagged release the rules above apply in full.
 | `3003` | features/otp | `OTP_RESEND_TOO_SOON` | `INLINE_RETRY` | no | active |
 | `3101` | features/event-logging | `INVALID_EVENT` | `DIALOG_TERMINAL` | no | active |
 | `3103` | features/event-logging | `QUEUE_FULL` | `DIALOG_RETRY` | yes | active |
-| `3201` | features/logging-file | `INVALID_CONFIG` | `DIALOG_TERMINAL` | no | active |
 | `3203` | features/logging-file | `DIRECTORY_IN_USE` | `DIALOG_RETRY` | yes | active |
 | `3204` | features/logging-file | `CRASH_HANDLER_UNAVAILABLE` | `DIALOG_TERMINAL` | no | active |
 | `3205` | features/logging-file | `INVALID_CRASH_ID` | `DIALOG_TERMINAL` | no | active |

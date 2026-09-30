@@ -1,12 +1,13 @@
 public final class io/github/thanhng224/sdkbase/logging/file/FileLoggingSdk {
 	public static final field INSTANCE Lio/github/thanhng224/sdkbase/logging/file/FileLoggingSdk;
-	public static final fun start (Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig;Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
-	public static final fun start (Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig;Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+	public static final fun start (Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig;Lio/github/thanhng224/sdkbase/core/call/ResultCallback;)Lio/github/thanhng224/sdkbase/core/call/Cancellable;
+	public static final fun start (Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
 }
 
 public final class io/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig {
 	public final fun getCaptureCrashes ()Z
 	public final fun getDirectory ()Ljava/io/File;
+	public final fun getEnvironment ()Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;
 	public final fun getMaxCrashFiles ()I
 	public final fun getMaxFileBytes ()I
 	public final fun getMaxFiles ()I
@@ -19,8 +20,9 @@ public final class io/github/thanhng224/sdkbase/logging/file/config/FileLoggingC
 
 public final class io/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig$Builder {
 	public fun <init> (Ljava/io/File;)V
-	public final fun build ()Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig;
+	public final fun build ()Lio/github/thanhng224/sdkbase/core/result/SdkResult;
 	public final fun captureCrashes (Z)Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig$Builder;
+	public final fun environment (Lio/github/thanhng224/sdkbase/core/environment/SdkEnvironment;)Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig$Builder;
 	public final fun maxCrashFiles (I)Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig$Builder;
 	public final fun maxFileBytes (I)Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig$Builder;
 	public final fun maxFiles (I)Lio/github/thanhng224/sdkbase/logging/file/config/FileLoggingConfig$Builder;
@@ -41,7 +43,6 @@ public final class io/github/thanhng224/sdkbase/logging/file/error/FileLoggingEr
 	public static final field CRASH_HANDLER_UNAVAILABLE I
 	public static final field DIRECTORY_IN_USE I
 	public static final field INSTANCE Lio/github/thanhng224/sdkbase/logging/file/error/FileLoggingErrors;
-	public static final field INVALID_CONFIG I
 	public static final field INVALID_CRASH_ID I
 	public static final field STORAGE_FAILURE I
 }

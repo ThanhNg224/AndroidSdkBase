@@ -50,6 +50,8 @@ Gradle project path. The base is Android-only; it does not target Kotlin Multipl
   If the session interface changes, run `./gradlew :sdk:features:<name>:apiDump` first, then
   `./gradlew check -Psdkbase.warningsAsErrors=true` and complete the
   [public API checklist](#public-api-change-checklist).
+  A new public state or value class with hand-written `equals`/`hashCode` adds a test using
+  `assertValueSemantics` with one differing instance per property.
 - **Tier:** 1 for implementation only; Tier 2 for a public signature change.
 - **If skipped:** state transitions may race or survive session close, Java callers may lack a
   callback twin, and public ABI changes remain unreviewed.
@@ -85,6 +87,9 @@ Gradle project path. The base is Android-only; it does not target Kotlin Multipl
   ./gradlew :sdk:features:<name>:apiDump
   ./gradlew check -Psdkbase.warningsAsErrors=true
   ```
+
+  The gateway lives in the feature's config; a Java callback form is a `Builder` constructor overload
+  that calls `asGateway()`, not another entry-point overload.
 
   Test `GatewayContract` for suspend gateways and `assertCallsBackOnce` or
   `assertCompletesOnce` for callback gateways. A new abstract method on a host-implemented interface

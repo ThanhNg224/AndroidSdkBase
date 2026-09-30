@@ -12,8 +12,8 @@ class LoggingActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         JavaLoggingConsumer.startFiles(noBackupFilesDir)
-        val dependencies = (application as LoggingApplication).resolve("consumer-logging") ?: return
-        EventLoggingSdk.start(dependencies.config, dependencies.gateway, dependencies.environment,
+        val config = (application as LoggingApplication).resolve("consumer-logging") ?: return
+        EventLoggingSdk.start(config,
             object : ResultCallback<EventLoggingSession> {
                 override fun onSuccess(value: EventLoggingSession) {
                     JavaLoggingConsumer.track(value, EventLoggingEvent.Builder("consumer_started")

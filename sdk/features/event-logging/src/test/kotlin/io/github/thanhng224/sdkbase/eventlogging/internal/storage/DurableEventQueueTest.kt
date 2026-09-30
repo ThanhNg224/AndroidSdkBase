@@ -9,6 +9,7 @@ import io.github.thanhng224.sdkbase.core.testing.TestDispatcherProvider
 import io.github.thanhng224.sdkbase.eventlogging.config.EventLoggingConfig
 import io.github.thanhng224.sdkbase.eventlogging.error.EventLoggingErrors
 import io.github.thanhng224.sdkbase.eventlogging.event.EventLoggingRecord
+import io.github.thanhng224.sdkbase.eventlogging.gateway.EventLoggingGateway
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.coroutineScope
@@ -34,7 +35,7 @@ class DurableEventQueueTest {
         keys: Set<String> = setOf("outcome", "token"),
         retention: Long = 100_000,
         redactor: Redactor = Redactor.None,
-    ) = EventLoggingConfig.Builder("test", root)
+    ) = EventLoggingConfig.Builder("test", root, EventLoggingGateway { SdkResult.Success(Unit) })
         .allowedAttributeKeys(keys).maxEvents(maxEvents).maxBytes(maxBytes)
         .retentionMillis(retention).redactor(redactor).build().getOrNull()!!
     private fun record(id: String, time: Long = 10, attrs: Map<String, String> = emptyMap()) =

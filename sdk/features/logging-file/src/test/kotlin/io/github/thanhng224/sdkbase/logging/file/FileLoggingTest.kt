@@ -35,14 +35,19 @@ class FileLoggingTest {
     private fun TestScope.environment(clock: FakeClock = FakeClock(System.currentTimeMillis())): SdkEnvironment =
         SdkEnvironment.Builder().dispatchers(TestDispatcherProvider(StandardTestDispatcher(testScheduler)))
             .clock(clock).build()
+    private suspend fun start(config: FileLoggingConfig.Builder, env: SdkEnvironment): SdkResult<FileLoggingSession> =
+        when (val built = config.environment(env).build()) {
+            is SdkResult.Failure -> built
+            is SdkResult.Success -> FileLoggingSdk.start(built.value)
+        }
     private fun record(text: String) = LogRecord(LogLevel.INFO, "sdk", text, null, 1, "test-session")
     private fun success(result: SdkResult<FileLoggingSession>) = (result as SdkResult.Success).value
     private fun logs(dir: File) = dir.listFiles()!!.filter { it.name.endsWith(".log") }
 
     @Test fun redactsBeforeDiskAndRotatesWithinByteLimit() = runTest {
         val dir = temp.newFolder()
-        val config = FileLoggingConfig.Builder(dir).maxRecordBytes(256).maxFileBytes(512).maxFiles(2).build()
-        val session = success(FileLoggingSdk.start(config, environment()))
+        val config = FileLoggingConfig.Builder(dir).maxRecordBytes(256).maxFileBytes(512).maxFiles(2)
+        val session = success(start(config, environment()))
         repeat(12) { session.write(record("token=supersecret person@example.com " + "x".repeat(200))) }
         assertTrue(session.flush() is SdkResult.Success)
         val files = logs(dir)
@@ -58,7 +63,7 @@ class FileLoggingTest {
     @Test fun boundedAdmissionDropsWithoutLaunchingPerRecord() = runTest {
         val dir = temp.newFolder()
         val session =
-            success(FileLoggingSdk.start(FileLoggingConfig.Builder(dir).queueCapacity(2).build(), environment()))
+            success(start(FileLoggingConfig.Builder(dir).queueCapacity(2), environment()))
         repeat(100) { session.write(record("event=$it")) }
         assertTrue(session.flush() is SdkResult.Success)
         assertEquals(2L, session.state.value.written)
@@ -69,8 +74,8 @@ class FileLoggingTest {
 
     @Test fun redactorFailureDropsAndNeverWritesRawInput() = runTest {
         val dir = temp.newFolder()
-        val config = FileLoggingConfig.Builder(dir).redactor(Redactor { throw IllegalStateException("bad") }).build()
-        val session = success(FileLoggingSdk.start(config, environment()))
+        val config = FileLoggingConfig.Builder(dir).redactor(Redactor { throw IllegalStateException("bad") })
+        val session = success(start(config, environment()))
         session.write(record("password=secret"))
         session.flush()
         assertEquals(1L, session.state.value.dropped)
@@ -82,7 +87,7 @@ class FileLoggingTest {
     @Test fun storageFailureIsObservableThroughFlush() = runTest {
         val dir = temp.newFolder()
         File(dir, "active.log").mkdir()
-        val session = success(FileLoggingSdk.start(FileLoggingConfig.Builder(dir).build(), environment()))
+        val session = success(start(FileLoggingConfig.Builder(dir), environment()))
         session.write(record("data"))
         val result = session.flush() as SdkResult.Failure
         assertEquals(FileLoggingErrors.STORAGE_FAILURE, result.error.code)
@@ -93,21 +98,21 @@ class FileLoggingTest {
 
     @Test fun exclusiveDirectoryLeaseReleasesEvenBeforeWriterExecutes() = runTest {
         val dir = temp.newFolder()
-        val config = FileLoggingConfig.Builder(dir).build()
+        val config = FileLoggingConfig.Builder(dir)
         val env = environment()
-        val first = success(FileLoggingSdk.start(config, env))
-        val busy = FileLoggingSdk.start(config, env) as SdkResult.Failure
+        val first = success(start(config, env))
+        val busy = start(config, env) as SdkResult.Failure
         assertEquals(FileLoggingErrors.DIRECTORY_IN_USE, busy.error.code)
         first.close()
         runCurrent()
-        val next = success(FileLoggingSdk.start(config, env))
+        val next = success(start(config, env))
         next.close()
         runCurrent()
     }
 
     @Test fun closeStopsWritesAndCallbackReturnsClosed() = runTest {
         val dir = temp.newFolder()
-        val session = success(FileLoggingSdk.start(FileLoggingConfig.Builder(dir).build(), environment()))
+        val session = success(start(FileLoggingConfig.Builder(dir), environment()))
         session.close()
         runCurrent()
         session.write(record("late"))
@@ -136,7 +141,7 @@ class FileLoggingTest {
             setLastModified(1000)
         }
         val session =
-            success(FileLoggingSdk.start(FileLoggingConfig.Builder(dir).retentionMillis(1000).build(), environment()))
+            success(start(FileLoggingConfig.Builder(dir).retentionMillis(1000), environment()))
         session.write(record("new"))
         session.flush()
         assertFalse(old.exists())
@@ -148,9 +153,9 @@ class FileLoggingTest {
     @Test fun unicodeRecordsAreByteBounded() = runTest {
         val dir = temp.newFolder()
         val session = success(
-            FileLoggingSdk.start(
+            start(
                 FileLoggingConfig.Builder(dir).maxRecordBytes(256)
-                    .maxFileBytes(256).build(),
+                    .maxFileBytes(256),
                 environment(),
             ),
         )
@@ -166,11 +171,11 @@ class FileLoggingTest {
         val dir = temp.newFolder()
         var delegated: Throwable? = null
         Thread.setDefaultUncaughtExceptionHandler { _, error -> delegated = error }
-        val config = FileLoggingConfig.Builder(dir).captureCrashes(true).maxCrashFiles(2).maxRecordBytes(512).build()
+        val config = FileLoggingConfig.Builder(dir).captureCrashes(true).maxCrashFiles(2).maxRecordBytes(512)
         val env = environment()
         var session: FileLoggingSession? = null
         try {
-            session = success(FileLoggingSdk.start(config, env))
+            session = success(start(config, env))
             val handler = Thread.getDefaultUncaughtExceptionHandler()!!
             repeat(4) {
                 val crash = IllegalStateException("password=supersecret person@example.com")
@@ -187,7 +192,7 @@ class FileLoggingTest {
             )
             session.close()
             runCurrent()
-            session = success(FileLoggingSdk.start(FileLoggingConfig.Builder(dir).build(), env))
+            session = success(start(FileLoggingConfig.Builder(dir), env))
             val recovered = (session.pendingCrashes() as SdkResult.Success).value
             assertEquals(2, recovered.size)
             session.acknowledgeCrash(recovered.first().id)
@@ -208,7 +213,7 @@ class FileLoggingTest {
         try {
             session =
                 success(
-                    FileLoggingSdk.start(FileLoggingConfig.Builder(dir).captureCrashes(true).build(), environment()),
+                    start(FileLoggingConfig.Builder(dir).captureCrashes(true), environment()),
                 )
             val handler = Thread.getDefaultUncaughtExceptionHandler()!!
             val hostError = IllegalArgumentException("host")
@@ -240,8 +245,8 @@ class FileLoggingTest {
         try {
             val dir = temp.newFolder()
             val config = FileLoggingConfig.Builder(dir).captureCrashes(true)
-                .redactor(Redactor { throw IllegalStateException("failed") }).build()
-            session = success(FileLoggingSdk.start(config, environment()))
+                .redactor(Redactor { throw IllegalStateException("failed") })
+            session = success(start(config, environment()))
             val crash = IllegalStateException("token=secret")
             crash.stackTrace = arrayOf(StackTraceElement("io.github.thanhng224.sdkbase.Demo", "go", "Demo.kt", 1))
             Thread.getDefaultUncaughtExceptionHandler()!!.uncaughtException(Thread.currentThread(), crash)
@@ -260,9 +265,9 @@ class FileLoggingTest {
         File(dir, "active.log").writeText("x".repeat(600))
         File(dir, "crash.pending").writeText("redacted crash")
         val session = success(
-            FileLoggingSdk.start(
+            start(
                 FileLoggingConfig.Builder(dir).maxFiles(1)
-                    .maxFileBytes(512).maxRecordBytes(256).maxCrashFiles(1).build(),
+                    .maxFileBytes(512).maxRecordBytes(256).maxCrashFiles(1),
                 environment(),
             ),
         )
@@ -276,7 +281,7 @@ class FileLoggingTest {
 
     @Test fun throwableCauseAndSuppressedAreRedactedBeforeDisk() = runTest {
         val dir = temp.newFolder()
-        val session = success(FileLoggingSdk.start(FileLoggingConfig.Builder(dir).build(), environment()))
+        val session = success(start(FileLoggingConfig.Builder(dir), environment()))
         val error = IllegalStateException("outer", IllegalArgumentException("password=cause-secret"))
         error.addSuppressed(IllegalArgumentException("token=suppressed-secret"))
         session.write(LogRecord(LogLevel.ERROR, "sdk", "failure", error, 1, null))
@@ -297,9 +302,9 @@ class FileLoggingTest {
         var session: FileLoggingSession? = null
         try {
             session = success(
-                FileLoggingSdk.start(
+                start(
                     FileLoggingConfig.Builder(dir).captureCrashes(true)
-                        .redactor(Redactor { it }).build(),
+                        .redactor(Redactor { it }),
                     environment(),
                 ),
             )
@@ -322,8 +327,8 @@ class FileLoggingTest {
 
     @Test fun invalidConfigDoesNotCreateDirectory() = runTest {
         val dir = File(temp.root, "absent")
-        val result = FileLoggingSdk.start(FileLoggingConfig.Builder(dir).maxFiles(0).build(), environment())
-        assertEquals(FileLoggingErrors.INVALID_CONFIG, (result as SdkResult.Failure).error.code)
+        val result = start(FileLoggingConfig.Builder(dir).maxFiles(0), environment())
+        assertEquals(SdkErrors.INVALID_CONFIG, (result as SdkResult.Failure).error.code)
         assertFalse(dir.exists())
     }
 }

@@ -572,6 +572,32 @@ if [[ "scaffold-new-feature-protects-dirty-topology" == "$FILTER"* ]]; then
   fi
 fi
 
+# --- rename-project.sh (positive gate: a renamed base is format-clean and green) --------------
+# Runs in its own scratch tree so the renamed sources never leak into the other cases. The script
+# requires a clean git tree, so the copy is committed first (local hooks disabled for that scratch repo).
+if [[ "rename-project-is-green" == "$FILTER"* ]]; then
+  name=rename-project-is-green
+  log="$LOGS/$name.log"
+  rename_work="$WORK-rename"
+  rm -rf "$rename_work"
+  mkdir -p "$rename_work"
+  rsync -a --exclude 'build/' --exclude '.gradle/' --exclude '.kotlin/' --exclude '.git/' \
+    --exclude '.idea/' --exclude 'docs/plans/' "$SRC/" "$rename_work/"
+  if ( cd "$rename_work" && git init -q && git config core.hooksPath /dev/null && git add -A &&
+       git -c user.name='SDK verification' -c user.email='sdk-verification@example.invalid' \
+         commit -qm 'Base' --no-gpg-sign &&
+       ./scripts/rename-project.sh --group com.acme --namespace com.acme.paykit --name PayKit \
+         --developer-id acme --developer-name 'Acme Inc.' --developer-url https://acme.com \
+         --repo-url https://github.com/acme/paykit &&
+       ./gradlew spotlessCheck check -Psdkbase.warningsAsErrors=true -q ) >"$log" 2>&1; then
+    echo "ok    $name"
+  else
+    echo "FAIL  $name — rename-project.sh, then spotlessCheck and check, did not all succeed (see $log)"
+    failures=$((failures + 1))
+  fi
+  rm -rf "$rename_work"
+fi
+
 # --- Cases appended by later tasks go above this line ------------------------------------------
 
 if [ "$failures" -gt 0 ]; then

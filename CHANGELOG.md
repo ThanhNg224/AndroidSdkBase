@@ -6,7 +6,22 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Breaking
+- `EventLoggingConfig` now carries the host `EventLoggingGateway` and `SdkEnvironment`
+  (`EventLoggingConfig.Builder(namespace, directory, gateway).environment(...)`; a Java
+  `EventLoggingCallbackGateway` overload of the constructor replaces the callback-gateway entry points).
+  `EventLoggingSdk` is reduced to `start(config)`, `deliverPending(config)` and their `ResultCallback`
+  twins; the `start`/`deliverPending` overloads taking a gateway and environment are removed.
+- `EventLoggingSession` is an interface (implemented internally) instead of a final class.
+- `EventLoggingWorkProvider.resolve` returns `EventLoggingConfig?`; `EventLoggingWorkConfiguration` is removed.
+- `FileLoggingConfig.Builder.build()` returns `SdkResult<FileLoggingConfig>` and validates there, with the
+  `SdkEnvironment` set on the builder; `FileLoggingSdk.start(config)` replaces `start(config, environment)`.
+  An invalid config now fails with core's `INVALID_CONFIG` (1001); `FileLoggingErrors.INVALID_CONFIG`
+  (3201) is removed from the constant, ledger and reference together.
+
 ### Added
+- `assertValueSemantics` in `core-testing` checks the hand-written `equals`/`hashCode` of a public plain class
+  property by property; `OtpState` and `OtpChallenge` tests use it.
 - Build tooling: extracted feature templates, registry-derived inclusion and UI/adapter/composition scaffolds; tested
   zone-guard convention and independent CI jobs for check, publication modes, integration and guards.
 - Tooling: root `spotlessCheck` enforces Kotlin and Gradle Kotlin formatting in `check`;
