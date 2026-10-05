@@ -75,4 +75,10 @@ echo "==> Recording the new project's ABI baselines"
 ./gradlew apiDump -q
 
 echo
-echo "Done. Next: ./gradlew spotlessCheck check -Psdkbase.warningsAsErrors=true && ./scripts/verify-publication.sh, then review git diff."
+echo "Done. Next steps:"
+echo "  1. Run verification gates:"
+echo "     ./gradlew spotlessCheck check -Psdkbase.warningsAsErrors=true && ./scripts/verify-publication.sh"
+echo "  2. Review git diff and commit the renamed base"
+echo "  3. Setup GitFlow for your new repository:"
+echo "     git checkout -b develop"
+echo "     git push -u origin main && git push -u origin develop"
