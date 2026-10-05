@@ -35,7 +35,4 @@ Use Conventional Commits format with concise, imperative subjects:
 
 ## Quality Gates Before Merging
 
-Run the appropriate local tier defined in [AGENTS.md](../AGENTS.md) before pushing:
-- **Tier 1:** `./gradlew :spotlessCheck :<module>:check` (single module change)
-- **Tier 2:** `./gradlew check -Psdkbase.warningsAsErrors=true` (public API / topology change)
-- **Tier 3:** Tier 2 + `./scripts/verify-publication.sh` + `./scripts/verify-guards.sh`
+Follow [Verification](VERIFICATION.md) for local risk levels, project gates, and contract escalation before pushing.

@@ -52,7 +52,7 @@ Gradle project path. The base is Android-only; it does not target Kotlin Multipl
   [public API checklist](#public-api-change-checklist).
   A new public state or value class with hand-written `equals`/`hashCode` adds a test using
   `assertValueSemantics` with one differing instance per property.
-- **Tier:** 1 for implementation only; Tier 2 for a public signature change.
+- **Verification:** level 1 for implementation only; level 2 for a public signature change.
 - **If skipped:** state transitions may race or survive session close, Java callers may lack a
   callback twin, and public ABI changes remain unreviewed.
 
@@ -95,7 +95,7 @@ Gradle project path. The base is Android-only; it does not target Kotlin Multipl
   `assertCompletesOnce` for callback gateways. A new abstract method on a host-implemented interface
   is a breaking API change; the pre-release policy allows changing it directly. Record the API diff
   and changelog entry. Route host calls through `safeCall`.
-- **Tier:** 2; Tier 3 if dependency, publishing, or consumer compatibility changes.
+- **Verification:** level 2; apply the additional contract gates in [Verification](VERIFICATION.md) for dependency, publishing, or consumer compatibility changes.
 - **If skipped:** host implementations may no longer compile, callback and suspend contracts may
   diverge, or exceptions can escape the SDK boundary.
 
@@ -133,7 +133,7 @@ Gradle project path. The base is Android-only; it does not target Kotlin Multipl
   a builder constructor overload. Implement the outbound Java twin with `launchCallback` returning
   `Cancellable`; cancellation suppresses delivery. Do not create a feature-owned coroutine scope.
 - **Verify:** dump the new API at the end, register any business error and reference row, add the
-  changelog entry, and run Tier 3. Add Java/Kotlin coordinate usage to the headless consumer so both
+  changelog entry, and run the applicable publication/integration gates in [Verification](VERIFICATION.md). Add Java/Kotlin coordinate usage to the headless consumer so both
   floor/current publication modes compile and execute the new API.
 
 ## Add a composition, adapter, or vendor binary
@@ -167,14 +167,14 @@ Gradle project path. The base is Android-only; it does not target Kotlin Multipl
   `sdkbase.android.library`, have no ABI/publication plugin, and skip `apiDump`.
   `--unpublished` is accepted only for adapters; vendor modules are always unpublished.
 
-  For composition/adapter integration, run Tier 3's `./scripts/verify-integration.sh`. If a published
+  For composition/adapter integration, run the existing `./scripts/verify-integration.sh`. If a published
   POM or Kotlin floor is affected, also run both publication modes:
 
   ```bash
   ./scripts/verify-publication.sh
   ./scripts/verify-publication.sh --current
   ```
-- **Tier:** 2 for topology/build changes; Tier 3 when integration, publication, POM, dependency
+- **Verification:** level 2 for topology/build changes; apply additional contract gates when integration, publication, POM, dependency
   resolution, or consumer behavior is affected.
 - **If skipped:** the zone guard can reject the module, an optional adapter/vendor can leak into
   consumers, or a coordinate-only consumer can fail to resolve it.
@@ -185,4 +185,12 @@ Gradle project path. The base is Android-only; it does not target Kotlin Multipl
 2. Add the required `CHANGELOG.md` entry and check `docs/COMPATIBILITY.md` versioning.
 3. For error codes, update the constant, ledger, and reference together.
 4. Apply the pre-release breaking-change rule in `AGENTS.md`; do not add compatibility shims.
-5. Run Tier 2 gates and report the commands that passed.
+5. Run the level 2 project gate in [Verification](VERIFICATION.md) and report the commands that passed.
+
+## Remove the examples
+
+Delete `sdk/features/otp*`, `sdk/features/remote-config` and the OTP-dependent
+`sdk/adapters/otp-fake-sms`, their entries in `gradle/module-topology.gradle.kts`, and the
+demo/consumer code and coordinate dependencies that use them. Remove their error ledger/reference rows and API baselines
+as permitted by the pre-release policy. Keep in `sdk/core` only the gateway-agnostic parts you still
+need — `SdkResult`, `SdkError`/`SdkErrors`, `SdkLogger`.

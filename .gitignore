@@ -94,3 +94,15 @@ docs/superpowers/
 .cache/
 node_modules/
 docs/plans/
+
+# Local plans, tooling, environment and signing inputs
+/docs/plans/
+!*.env.example
+!*.env.*.example
+**/keystore.properties
+**/key.properties
+**/signing.properties
+
+# Python tooling cache
+__pycache__/
+*.py[cod]

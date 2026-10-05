@@ -4,6 +4,13 @@ on:
   push:
     branches: [ main ]
   pull_request:
+  workflow_dispatch:
+    inputs:
+      initializer_build:
+        description: Build/check the renamed initializer clone
+        type: boolean
+        required: false
+        default: false
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -21,6 +28,21 @@ jobs:
           distribution: temurin
           java-version: '17'
       - uses: gradle/actions/setup-gradle@v4
+      - name: Set up Python for initializer checks
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.x'
+
+      - name: Test initializer tooling
+        run: python3 -B -m unittest discover -s scripts -p 'test_*.py' --verbose
+
+      - name: Smoke test initializer on a Git archive clone
+        run: python3 scripts/smoke_init_project.py
+
+      - name: Build/check initialized archive clone (manual)
+        if: github.event_name == 'workflow_dispatch' && inputs.initializer_build
+        run: python3 scripts/smoke_init_project.py --build
+
       - name: Unit tests, lint, ABI and formatting
         run: ./gradlew check -Psdkbase.warningsAsErrors=true
       - name: Upload reports on failure

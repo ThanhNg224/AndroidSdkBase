@@ -18,3 +18,7 @@ gradlew         text eol=lf
 # Keep generated baselines out of diff noise but still reviewable.
 api/*.api       text eol=lf linguist-generated=false
 gradle/wrapper/gradle-wrapper.jar binary linguist-vendored
+*.jpeg binary
+*.ico binary
+*.woff binary
+*.woff2 binary

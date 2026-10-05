@@ -11,9 +11,11 @@ OLD_GROUP="io.github.thanhng224"
 OLD_NS="io.github.thanhng224.sdkbase"
 OLD_NAME="AndroidSdkBase"
 
+SKIP_BUILD_CHECK=false
 NEW_GROUP="" NEW_NS="" NEW_NAME="" DEV_ID="" DEV_NAME="" DEV_URL="" REPO_URL=""
 while [ $# -gt 0 ]; do
   case "$1" in
+    --skip-build-check) SKIP_BUILD_CHECK=true; shift ;;
     --group) NEW_GROUP="$2"; shift 2 ;;
     --namespace) NEW_NS="$2"; shift 2 ;;
     --name) NEW_NAME="$2"; shift 2 ;;
@@ -68,11 +70,14 @@ find . -type d -path "*/$OLD_NS_PATH" -not -path '*/build/*' -not -path './.git/
 done
 find . -type d -empty -not -path './.git/*' -delete
 
-echo "==> Formatting the renamed project"
-./gradlew spotlessApply -q
-
-echo "==> Recording the new project's ABI baselines"
-./gradlew apiDump -q
+if [ "$SKIP_BUILD_CHECK" = true ]; then
+  echo "==> Rename complete; Gradle formatting/API dump skipped (--skip-build-check)."
+else
+  echo "==> Formatting the renamed project"
+  ./gradlew spotlessApply -q
+  echo "==> Recording the new project's ABI baselines"
+  ./gradlew apiDump -q
+fi
 
 echo
 echo "Done. Next steps:"

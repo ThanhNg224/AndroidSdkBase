@@ -1,25 +1,24 @@
-# AGENTS.md
+# Engineering Guidelines
 
-Android SDK starter. Clone it, run `scripts/rename-project.sh`, replace the OTP and remote-config examples with your
-own feature. Published artifacts: `core`, `core-testing`, `core-ui-compose`, `otp`, `otp-ui-compose`, `remote-config`, `event-logging`,
-`logging-file`, `event-logging-work`, `bom`.
+An Android SDK template with a manual demo host. The module map, enforced boundaries, and SDK contracts are described below and in [Architecture](docs/ARCHITECTURE.md).
 
-## Local gates
+## Workflow
 
-Use the smallest tier that covers the change. **CI runs every gate on each PR; CI is the merge
-gate.** “Done” means the applicable local tier passed; report the commands that actually ran.
+- Read only the owning documents relevant to the task, then inspect current implementation, callers, and existing tests.
+- Make the smallest complete change. Add infrastructure or abstractions only for a concrete requirement or failure mode.
+- Work in the current branch and checkout. Do not create a branch or worktree unless explicitly requested; preserve other contributors' edits.
+- Ask when unresolved intent or a tradeoff changes the work. Continue independent work while waiting.
+- Handle small and tightly coupled changes directly. Delegate only when independent tracks reduce total effort; use a reviewer for high-risk changes or when requested.
+- Use the smallest level in [Verification](docs/VERIFICATION.md). Test behavior, state, persistence, security, and concurrency when affected; do not add tests that merely mirror layout or styling.
+- Report exact commands and results. Keep local checks, archive checks, builds, remote CI, and device evidence distinct.
+- Keep rules in their owning documents and link elsewhere. Preserve active plans and decision records; keep handoff plans local under `docs/plans/` and delete them when completed.
+- Follow [Git workflow](docs/GIT_FLOW.md). Do not commit, push, tag, publish, or deploy unless explicitly requested.
 
-| Tier | When | Run |
-|---|---|---|
-| 1 | One module's implementation only; no public API/build/dependency/topology change | `./gradlew :spotlessCheck :<module>:check` (format with `./gradlew spotlessApply`) |
-| 2 | Public API, error code, UI string, build/dependency/topology change, or gate documentation | `./gradlew check -Psdkbase.warningsAsErrors=true` plus relevant API/error/changelog steps |
-| 3 | Publishing/POM/Kotlin floor/consumer change, guard change, or uncertainty | Tier 2 plus `./scripts/verify-publication.sh` (also `--current`), `./scripts/verify-integration.sh`, and/or `./scripts/verify-guards.sh` as relevant |
+## Documents
 
-When unsure, escalate. Build files, dependencies, topology, `consumer-rules.pro`, `.api`, and
-publishing changes require a higher tier. `spotlessCheck` is part of `check`; run
-`./gradlew spotlessApply` to format. It covers Kotlin in `sdk/`, `apps/`, `build-logic/src/` and
-recursive `*.gradle.kts`; the separate `verification/` build is excluded. Android only; no KMP.
-See [`docs/RECIPES.md`](docs/RECIPES.md) for task steps and verification.
+- [Architecture](docs/ARCHITECTURE.md): ownership, dependencies, and data flow.
+- [Verification](docs/VERIFICATION.md): risk levels, commands, side effects, and proof boundaries.
+- [Git workflow](docs/GIT_FLOW.md): existing branch, commit, and release conventions.
 
 ## Layout
 - `sdk/core` — shared Android toolkit: result/error, calls, time, concurrency, logging, telemetry, gateway, environment, session, and config.
