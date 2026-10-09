@@ -14,6 +14,11 @@ android {
         targetSdk = libs.versions.targetSdk.get().toInt()
         versionCode = 1
         versionName = providers.gradleProperty("sdkbase.version").get()
+        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+    }
+
+    bundle {
+        language { enableSplit = false }
     }
 
     buildTypes {
@@ -57,14 +62,25 @@ dependencies {
     }
     implementation(project(":sdk:features:otp"))
     implementation(project(":sdk:features:otp-ui-compose"))
+    implementation(project(":sdk:core-ui-compose"))
     implementation(platform(libs.compose.bom))
     implementation(libs.compose.ui)
+    implementation(libs.compose.foundation)
+    implementation(libs.compose.animation)
     implementation(libs.compose.material3)
     implementation(libs.activity.compose)
     implementation(libs.androidx.lifecycle.runtime)
     implementation(libs.androidx.lifecycle.runtime.compose)
+    implementation(libs.androidx.lifecycle.viewmodel)
+    implementation(libs.androidx.core)
     debugImplementation(libs.compose.tooling)
 
     testImplementation(project(":sdk:core-testing"))
     testImplementation(libs.junit)
+
+    androidTestImplementation(platform(libs.compose.bom))
+    androidTestImplementation(libs.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    debugImplementation(libs.compose.ui.test.manifest)
 }

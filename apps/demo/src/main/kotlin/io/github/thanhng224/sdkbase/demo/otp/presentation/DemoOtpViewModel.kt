@@ -2,6 +2,7 @@ package io.github.thanhng224.sdkbase.demo.otp.presentation
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import io.github.thanhng224.sdkbase.core.error.SdkError
 import io.github.thanhng224.sdkbase.core.environment.SdkEnvironment
 import io.github.thanhng224.sdkbase.core.logging.LogLevel
 import io.github.thanhng224.sdkbase.core.logging.LogcatSink
@@ -20,7 +21,7 @@ import kotlinx.coroutines.launch
 internal sealed interface DemoUiState {
     data object Starting : DemoUiState
     data class Ready(val session: OtpSession) : DemoUiState
-    data class Failed(val reason: String) : DemoUiState
+    data class Failed(val error: SdkError) : DemoUiState
 }
 
 /**
@@ -52,10 +53,10 @@ internal class DemoOtpViewModel : ViewModel() {
                 .build()
 
             when (configResult) {
-                is SdkResult.Failure -> _uiState.value = DemoUiState.Failed(configResult.error.reason)
+                is SdkResult.Failure -> _uiState.value = DemoUiState.Failed(configResult.error)
 
                 is SdkResult.Success -> when (val start = OtpSdk.start(configResult.value)) {
-                    is SdkResult.Failure -> _uiState.value = DemoUiState.Failed(start.error.reason)
+                    is SdkResult.Failure -> _uiState.value = DemoUiState.Failed(start.error)
 
                     is SdkResult.Success -> {
                         session = start.value

@@ -64,3 +64,38 @@ ProvideSdkLocale(Locale.forLanguageTag("vi")) { OtpTheme { OtpScreen(state, onCo
 not the Activity. An app published as an Android App Bundle must not split by language
 (`android.bundle.language.enableSplit = false`), or the requested language may be missing at runtime.
 There is no runtime or remote language manager: language is the device's, or set per screen here.
+
+## Demo host UI
+
+`apps/demo` owns a small, internal host UI under its `demo/ui` package. It is not part of the
+published toolkit: application navigation stays with the host. The capsule navigation and static
+palette, typography and shapes are adapted from AndroidComposeBase. Dynamic colour is used on
+Android 12+; the explicit static light/dark palettes are used on older devices.
+
+`DemoTheme` and `DemoAppearance` apply the saved appearance to both Activities. `DemoPreferences`
+stores theme and language in the host's named preferences; its Activity-owned readers expose
+state through `DemoSettingsViewModel` and release their listeners when cleared. The root wraps
+host and SDK UI in `ProvideSdkLocale`, and language splitting is disabled in the demo bundle.
+
+For another host screen, use `DemoScreen` for a header, scrollable content and optional lower action;
+compose `DemoCard`, `DemoStatus` and `DemoChoiceRow` with ordinary Material 3 controls. Components
+receive state/callbacks, a root modifier and content slots where needed. Keep screen wiring in the
+Activity/ViewModel and render content from values and callbacks. Use `SdkSpacing`/`SdkDimens` and
+Material theme roles. Add English/Vietnamese text to the host's `demo_*` resources.
+
+`DemoShell` keeps the selected tab and each tab's saveable UI state, moving the same screen
+composition between bottom navigation and rail layouts. Its compact layout measures
+the entire navigation slot before content, consumes the reserved bottom inset and leaves screens
+to consume the remaining safe insets. At 600dp width and 480dp height it uses a navigation rail.
+OTP opens a separate Activity with no tab navigation: its ViewModel survives rotation and closes
+the session when the Activity finishes. The host supplies a scrollable viewport so the unchanged
+SDK keypad remains reachable in short windows. The locale wrapper always uses the resolved locale,
+including System, to preserve the composition identity when changing language. Adding an SDK flow does not require moving host components
+into `core-ui-compose` or changing an SDK API.
+
+Behavior tests live in `apps/demo/src/androidTest`: tab/reselect/Back and saved-state restoration,
+appearance preferences in isolated stores, and real OTP session lifecycle/validation/resend.
+Build the debug and test APKs, install both with `adb install -r`, then run
+`adb shell am instrument -w io.github.thanhng224.sdkbase.demo.test/androidx.test.runner.AndroidJUnitRunner`.
+This avoids uninstalling or clearing the host's data. Successful instrumentation is distinct from
+visual review and actual TalkBack listening; neither establishes a performance benchmark result.

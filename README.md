@@ -26,7 +26,12 @@ Choose the smallest risk level in [Verification](docs/VERIFICATION.md). The exis
 
 ## Run the demo
 
-Run `:app` (`apps/demo`) manually on an Android device or emulator. Build/check evidence is separate from a successful device session.
+Build `:apps:demo:assembleDebug` and launch AndroidSdkBase Demo on an Android device or emulator.
+The host has Features, UI and Settings tabs. Features opens the OTP example in a separate screen;
+use code `123456`, and go back to end the session. UI demonstrates the same components used by
+the host. Settings saves the system/light/dark theme and system/Vietnamese/English language for
+both the host and OTP screen. The host UI is internal to `apps/demo`; see [Theming](docs/THEMING.md#demo-host-ui)
+to add another screen. Build/check evidence is separate from a successful device session.
 
 ## Further reading
 

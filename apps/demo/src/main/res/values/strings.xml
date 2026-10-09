@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="demo_app_name">AndroidSdkBase Demo</string>
+    <string name="demo_features">Features</string>
+    <string name="demo_ui">UI</string>
+    <string name="demo_settings">Settings</string>
+    <string name="demo_back">Back</string>
+    <string name="demo_otp">OTP verification</string>
+    <string name="demo_features_intro">Explore an SDK flow in a sample host app.</string>
+    <string name="demo_otp_description">Enter a six-digit code, try validation, and request a new code.</string>
+    <string name="demo_otp_test_code">Test code: 123456</string>
+    <string name="demo_otp_session_hint">Opening the demo starts a new session. Going back ends it.</string>
+    <string name="demo_open_otp">Open OTP demo</string>
+    <string name="demo_ui_intro">Try the cards, actions, choices, and states used throughout this app.</string>
+    <string name="demo_actions">Actions</string>
+    <string name="demo_action">Try an action</string>
+    <string name="demo_click_count">Actions performed: %1$d</string>
+    <string name="demo_disabled">Unavailable action</string>
+    <string name="demo_loading">Loading</string>
+    <string name="demo_loading_message">A sample loading state.</string>
+    <string name="demo_choices">Choices</string>
+    <string name="demo_notifications">Sample notifications</string>
+    <string name="demo_choice_one">First option</string>
+    <string name="demo_choice_two">Second option</string>
+    <string name="demo_example_error">Something went wrong</string>
+    <string name="demo_example_error_message">This is a sample error. You can reset the action counter.</string>
+    <string name="demo_reset_example">Reset example</string>
+    <string name="demo_settings_intro">Your choices apply to this app and the OTP demo.</string>
+    <string name="demo_theme">Appearance</string>
+    <string name="demo_language">Language</string>
+    <string name="demo_system">System default</string>
+    <string name="demo_light">Light</string>
+    <string name="demo_dark">Dark</string>
+    <string name="demo_vietnamese">Tiếng Việt</string>
+    <string name="demo_english">English</string>
+    <string name="demo_starting">Starting verification</string>
+    <string name="demo_starting_message">Please wait while your code is requested.</string>
+    <string name="demo_start_failed">Could not start verification</string>
+    <plurals name="demo_nav_badge_count">
+        <item quantity="one">%d notification</item>
+        <item quantity="other">%d notifications</item>
+    </plurals>
+</resources>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="demo_app_name">AndroidSdkBase Demo</string>
+    <string name="demo_features">Tính năng</string>
+    <string name="demo_ui">UI</string>
+    <string name="demo_settings">Cài đặt</string>
+    <string name="demo_back">Quay lại</string>
+    <string name="demo_otp">Xác thực OTP</string>
+    <string name="demo_features_intro">Trải nghiệm luồng SDK trong app host mẫu.</string>
+    <string name="demo_otp_description">Nhập mã sáu chữ số, thử xác thực và yêu cầu mã mới.</string>
+    <string name="demo_otp_test_code">Mã thử: 123456</string>
+    <string name="demo_otp_session_hint">Mở demo bắt đầu một phiên mới. Quay lại kết thúc phiên.</string>
+    <string name="demo_open_otp">Mở demo OTP</string>
+    <string name="demo_ui_intro">Thử thẻ nội dung, thao tác, lựa chọn và trạng thái dùng trong app.</string>
+    <string name="demo_actions">Thao tác</string>
+    <string name="demo_action">Thử thao tác</string>
+    <string name="demo_click_count">Số lần thao tác: %1$d</string>
+    <string name="demo_disabled">Thao tác chưa khả dụng</string>
+    <string name="demo_loading">Đang tải</string>
+    <string name="demo_loading_message">Ví dụ trạng thái đang tải.</string>
+    <string name="demo_choices">Lựa chọn</string>
+    <string name="demo_notifications">Thông báo mẫu</string>
+    <string name="demo_choice_one">Lựa chọn thứ nhất</string>
+    <string name="demo_choice_two">Lựa chọn thứ hai</string>
+    <string name="demo_example_error">Đã xảy ra lỗi</string>
+    <string name="demo_example_error_message">Đây là lỗi mẫu. Bạn có thể đặt lại số lần thao tác.</string>
+    <string name="demo_reset_example">Đặt lại ví dụ</string>
+    <string name="demo_settings_intro">Lựa chọn được áp dụng cho app và demo OTP.</string>
+    <string name="demo_theme">Giao diện</string>
+    <string name="demo_language">Ngôn ngữ</string>
+    <string name="demo_system">Theo hệ thống</string>
+    <string name="demo_light">Sáng</string>
+    <string name="demo_dark">Tối</string>
+    <string name="demo_vietnamese">Tiếng Việt</string>
+    <string name="demo_english">English</string>
+    <string name="demo_starting">Đang bắt đầu xác thực</string>
+    <string name="demo_starting_message">Vui lòng chờ trong khi yêu cầu mã xác thực.</string>
+    <string name="demo_start_failed">Không thể bắt đầu xác thực</string>
+    <plurals name="demo_nav_badge_count">
+        <item quantity="other">%d thông báo</item>
+    </plurals>
+</resources>

@@ -15,6 +15,7 @@ coroutines = "1.11.0"
 androidxWork = "2.10.5"
 androidxAnnotation = "1.10.0"
 androidxLifecycle = "2.11.0"
+androidxCore = "1.19.1"
 activityCompose = "1.13.0"
 composeBom = "2026.09.00"
 # Resolved by BOM 2026.09.00 (`./gradlew :sdk:features:otp-ui-compose:dependencies
@@ -39,12 +40,18 @@ androidx-work-testing = { module = "androidx.work:work-testing", version.ref = "
 androidx-annotation = { module = "androidx.annotation:annotation", version.ref = "androidxAnnotation" }
 androidx-lifecycle-runtime = { module = "androidx.lifecycle:lifecycle-runtime-ktx", version.ref = "androidxLifecycle" }
 androidx-lifecycle-runtime-compose = { module = "androidx.lifecycle:lifecycle-runtime-compose", version.ref = "androidxLifecycle" }
+androidx-lifecycle-viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref = "androidxLifecycle" }
+androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidxCore" }
 coroutines-core = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-core", version.ref = "coroutines" }
 coroutines-android = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-android", version.ref = "coroutines" }
 coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "coroutines" }
 
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
 compose-ui = { module = "androidx.compose.ui:ui" }
+compose-foundation = { module = "androidx.compose.foundation:foundation" }
+compose-animation = { module = "androidx.compose.animation:animation" }
+compose-ui-test-junit4 = { module = "androidx.compose.ui:ui-test-junit4" }
+compose-ui-test-manifest = { module = "androidx.compose.ui:ui-test-manifest" }
 compose-ui-graphics = { module = "androidx.compose.ui:ui-graphics" }
 compose-material3 = { module = "androidx.compose.material3:material3" }
 compose-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }

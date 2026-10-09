@@ -20,6 +20,8 @@ All notable changes to this project are documented here. The format follows
   (3201) is removed from the constant, ledger and reference together.
 
 ### Added
+- Demo host: Features/UI/Settings tabs with adaptive capsule navigation, internal shared components,
+  saved theme/language and a separate OTP screen; SDK public APIs are unchanged.
 - `remote-config`: a published one-shot feature example with an immutable revision/value snapshot,
   host-owned suspend/Java callback gateways, timeout containment and no session. Error 3301 rejects
   a blank revision; Java/Kotlin coordinate consumers exercise both entry points on floor/current compilers.
